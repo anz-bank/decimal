@@ -19,6 +19,12 @@ var Zero64 = newFromParts(0, 0, 0)
 // NegZero64 represents -0 as a Decimal64.
 var NegZero64 = newFromParts(1, 0, 0)
 
+// One64 represents 1 as a Decimal64.
+var One64 = New64FromInt64(1)
+
+// NegOne64 represents -1 as a Decimal64.
+var NegOne64 = New64FromInt64(1).Neg()
+
 // Infinity64 represents ∞ as a Decimal64.
 var Infinity64 = Decimal64{inf64}
 
@@ -45,9 +51,9 @@ const (
 	flSNaN
 )
 
-func signalNaN64() {
+func signalNaN64() Decimal64 {
 	// TODO: What's the right behavior?
-	panic("SNaN64")
+	panic("sNaN64")
 }
 
 // New64FromInt64 returns a new Decimal64 with the given value.
@@ -161,7 +167,7 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	flavor1, sign1, exp1, significand1 := d.parts()
 	flavor2, sign2, exp2, significand2 := e.parts()
 	if flavor1 == flSNaN || flavor2 == flSNaN {
-		signalNaN64()
+		return signalNaN64()
 	}
 	if flavor1 == flQNaN || flavor2 == flQNaN {
 		return QNaN64
@@ -196,7 +202,7 @@ func (d Decimal64) Div(e Decimal64) Decimal64 {
 	flavor2, sign2, exp2, significand2 := e.parts()
 
 	if flavor1 == flSNaN || flavor2 == flSNaN {
-		signalNaN64()
+		return signalNaN64()
 	}
 	if flavor1 == flQNaN || flavor2 == flQNaN {
 		return QNaN64
@@ -220,7 +226,7 @@ func (d Decimal64) Div(e Decimal64) Decimal64 {
 	}
 
 	exp := exp1 - exp2 - 16
-	significand, _ := umul64(10000000000000000, significand1).div64(significand2)
+	significand := umul64(10000000000000000, significand1).div64(significand2)
 	for significand.hi > 0 || significand.lo > 9999999999999999 {
 		exp++
 		significand = significand.divBy10()
@@ -257,7 +263,7 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 	flavor2, sign2, exp2, significand2 := e.parts()
 
 	if flavor1 == flSNaN || flavor2 == flSNaN {
-		signalNaN64()
+		return signalNaN64()
 	}
 	if flavor1 == flQNaN || flavor2 == flQNaN {
 		return QNaN64
@@ -305,6 +311,34 @@ func (d Decimal64) String() string {
 		return "NaN"
 	}
 	return ""
+}
+
+// Sqrt computes √d.
+func (d Decimal64) Sqrt() Decimal64 {
+	flavor, sign, exp, significand := d.parts()
+	switch flavor {
+	case flNormal:
+		if significand == 0 {
+			return d
+		}
+		if sign == 1 {
+			return QNaN64
+		}
+		if exp&1 == 1 {
+			exp--
+			significand *= 10
+		}
+		sqrt := umul64(10000000000000000, significand).sqrt()
+		exp, significand = renormalize(exp/2-8, sqrt)
+		return newFromParts(sign, exp, significand)
+	case flInf:
+		return d
+	case flQNaN:
+		return d
+	case flSNaN:
+		return signalNaN64()
+	}
+	return Decimal64{}
 }
 
 // Sub computes d - e.

@@ -55,7 +55,16 @@ func partialQuotient32(a0, a12, d0, d1 uint64) uint64 {
 	return q
 }
 
-func (a uint128T) div64(d uint64) (q uint128T, r uint64) {
+func (a uint128T) bitLen() uint {
+	return 128 - a.leadingZeros()
+}
+
+func (a uint128T) div64(d uint64) uint128T {
+	q, _ := a.divrem64(d)
+	return q
+}
+
+func (a uint128T) divrem64(d uint64) (q uint128T, r uint64) {
 	r = 0
 	q.hi, r = uint128T{a.hi, r}.divPart64(d)
 	q.lo, r = uint128T{a.lo, r}.divPart64(d)
@@ -140,6 +149,20 @@ func (a uint128T) shr(s uint) uint128T {
 		return uint128T{a.lo>>s | a.hi<<(64-s), a.hi >> s}
 	}
 	return uint128T{a.hi >> (s - 64), 0}
+}
+
+// Assumes a < 1<<125
+func (a uint128T) sqrt() uint64 {
+	if a.hi == 0 && a.lo < 2 {
+		return a.lo
+	}
+	for x := uint64(1) << (a.bitLen()/2 + 1); ; {
+		y := (a.div64(x).lo + x) >> 1
+		if y >= x {
+			return x
+		}
+		x = y
+	}
 }
 
 func (a uint128T) trailingZeros() uint {
