@@ -196,6 +196,35 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	return newFromParts(sign2, exp2, significand2-significand1)
 }
 
+// Cmp returns:
+//
+//   -1 if d <  e
+//    0 if d == e (incl. -0 == 0, -Inf == -Inf, and +Inf == +Inf)
+//   +1 if d >  e
+//
+func (d Decimal64) Cmp(e Decimal64) int {
+	flavor1, _, _, _ := d.parts()
+	flavor2, _, _, _ := e.parts()
+	if flavor1 == flSNaN || flavor2 == flSNaN {
+		signalNaN64()
+		return 0
+	}
+	if flavor1 == flQNaN || flavor2 == flQNaN {
+		panic("Can't compare NaNs")
+	}
+	if d == NegZero64 {
+		d = Zero64
+	}
+	if e == NegZero64 {
+		e = Zero64
+	}
+	if d == e {
+		return 0
+	}
+	d = d.Sub(e)
+	return 1 - 2*int(d.bits>>63)
+}
+
 // Div computes d / e.
 func (d Decimal64) Div(e Decimal64) Decimal64 {
 	flavor1, sign1, exp1, significand1 := d.parts()

@@ -41,6 +41,22 @@ func TestAdd64(t *testing.T) {
 	)
 }
 
+func TestCmp64(t *testing.T) {
+	r := require.New(t)
+	negOne := NegOne64
+	zero := Zero64
+	one := One64
+	r.True(negOne.Cmp(negOne) == 0)
+	r.True(zero.Cmp(zero) == 0)
+	r.True(one.Cmp(one) == 0)
+	r.True(negOne.Cmp(zero) < 0)
+	r.True(negOne.Cmp(one) < 0)
+	r.True(zero.Cmp(one) < 0)
+	r.True(zero.Cmp(negOne) > 0)
+	r.True(one.Cmp(negOne) > 0)
+	r.True(one.Cmp(zero) > 0)
+}
+
 func TestMulThreeByOneTenthByTen(t *testing.T) {
 	r := require.New(t)
 
