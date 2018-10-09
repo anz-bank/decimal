@@ -1,6 +1,9 @@
 package decimal
 
 import (
+	"encoding/binary"
+	"fmt"
+	"math"
 	"strconv"
 )
 
@@ -20,10 +23,10 @@ var Zero64 = newFromParts(0, 0, 0)
 var NegZero64 = newFromParts(1, 0, 0)
 
 // One64 represents 1 as a Decimal64.
-var One64 = New64FromInt64(1)
+var One64 = NewDecimal64FromInt64(1)
 
 // NegOne64 represents -1 as a Decimal64.
-var NegOne64 = New64FromInt64(1).Neg()
+var NegOne64 = NewDecimal64FromInt64(1).Neg()
 
 // Infinity64 represents ∞ as a Decimal64.
 var Infinity64 = Decimal64{inf64}
@@ -56,8 +59,8 @@ func signalNaN64() Decimal64 {
 	panic("sNaN64")
 }
 
-// New64FromInt64 returns a new Decimal64 with the given value.
-func New64FromInt64(value int64) Decimal64 {
+// NewDecimal64FromInt64 returns a new Decimal64 with the given value.
+func NewDecimal64FromInt64(value int64) Decimal64 {
 	if value == 0 {
 		return Zero64
 	}
@@ -196,6 +199,11 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	return newFromParts(sign2, exp2, significand2-significand1)
 }
 
+// Append is not yet implemented.
+func (d Decimal64) Append(buf []byte, fmt byte, prec int) []byte {
+	panic("Not implemented")
+}
+
 // Cmp returns:
 //
 //   -1 if d <  e
@@ -225,6 +233,47 @@ func (d Decimal64) Cmp(e Decimal64) int {
 	return 1 - 2*int(d.bits>>63)
 }
 
+// Float64 returns a float64 representation of d.
+func (d Decimal64) Float64() float64 {
+	flavor, sign, exp, significand := d.parts()
+	switch flavor {
+	case flNormal:
+		if significand == 0 {
+			return 0.0 * float64(1-2*sign)
+		}
+		if exp&1 == 1 {
+			exp--
+			significand *= 10
+		}
+		return float64(1-2*sign) * float64(significand) * math.Pow10(exp)
+	case flInf:
+		return math.Inf(1 - 2*sign)
+	case flQNaN:
+		return math.NaN()
+	}
+	signalNaN64()
+	return 0
+}
+
+// Format implements fmt.Formatter.
+func (d Decimal64) Format(s fmt.State, format rune) {
+	panic("Not implemented")
+}
+
+// GobDecode implements encoding.GobDecoder.
+func (d *Decimal64) GobDecode(buf []byte) error {
+	d.bits = binary.BigEndian.Uint64(buf)
+	// TODO: Check for out of bounds significand.
+	return nil
+}
+
+// GobEncode implements encoding.GobEncoder.
+func (d Decimal64) GobEncode() ([]byte, error) {
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, d.bits)
+	return buf, nil
+}
+
 // Int64 converts d to an int64.
 func (d Decimal64) Int64() int64 {
 	flavor, sign, exp, significand := d.parts()
@@ -245,6 +294,41 @@ func (d Decimal64) Int64() int64 {
 		return int64(significand)
 	}
 	return -int64(significand)
+}
+
+// IsInf returns true iff d = ±∞.
+func (d Decimal64) IsInf() bool {
+	flavor, _, _, _ := d.parts()
+	return flavor == flInf
+}
+
+// IsNaN returns true iff d is not a number.
+func (d Decimal64) IsNaN() bool {
+	flavor, _, _, _ := d.parts()
+	return flavor == flQNaN || flavor == flSNaN
+}
+
+// IsQNaN returns true iff d is a quiet NaN.
+func (d Decimal64) IsQNaN() bool {
+	flavor, _, _, _ := d.parts()
+	return flavor == flQNaN
+}
+
+// IsSNaN returns true iff d is a signalling NaN.
+func (d Decimal64) IsSNaN() bool {
+	flavor, _, _, _ := d.parts()
+	return flavor == flQNaN
+}
+
+// IsInt is not yet implemented.
+func (d Decimal64) IsInt() bool {
+	panic("Not implemented")
+}
+
+// MarshalText implements the encoding.TextMarshaler interface.
+func (d Decimal64) MarshalText() []byte {
+	var buf []byte
+	return d.Append(buf, 'g', -1)
 }
 
 // Mul computes d * e.
@@ -280,6 +364,11 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 // Neg computes -d.
 func (d Decimal64) Neg() Decimal64 {
 	return Decimal64{neg64 ^ uint64(d.bits)}
+}
+
+// ParseDecimal64 is not yet implemented.
+func ParseDecimal64(s string, base int) (Decimal64, error) {
+	panic("Not implemented")
 }
 
 // Quo computes d / e.
@@ -321,6 +410,21 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	return newFromParts(sign, exp, significand.lo)
 }
 
+// Scan is not yet implemented.
+func (d Decimal64) Scan(s fmt.ScanState, ch rune) error {
+	panic("Not implemented")
+}
+
+// Sign is not yet implemented.
+func (d Decimal64) Sign() int {
+	panic("Not implemented")
+}
+
+// Signbit is not yet implemented.
+func (d Decimal64) Signbit() bool {
+	panic("Not implemented")
+}
+
 // Sqrt computes √d.
 func (d Decimal64) Sqrt() Decimal64 {
 	flavor, sign, exp, significand := d.parts()
@@ -349,7 +453,7 @@ func (d Decimal64) Sqrt() Decimal64 {
 	return Decimal64{}
 }
 
-// String computes a string representation of d.
+// String returns a string representation of d.
 func (d Decimal64) String() string {
 	// TODO: Implement non-integers
 	flavor, sign, _, _ := d.parts()
@@ -370,7 +474,23 @@ func (d Decimal64) String() string {
 	return ""
 }
 
-// Sub computes d - e.
+// Sub returns d - e.
 func (d Decimal64) Sub(e Decimal64) Decimal64 {
 	return d.Add(e.Neg())
+}
+
+// Text converts the floating-point number x to a string according to the given
+// format and precision prec.
+func (d Decimal64) Text(format byte, prec int) string {
+	panic("Not implemented")
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (d *Decimal64) UnmarshalText(text []byte) error {
+	var err error
+	*d, err = ParseDecimal64(string(text), 0)
+	if err != nil {
+		err = fmt.Errorf("decimal: cannot unmarshal %q as Decimal64 (%v)", text, err)
+	}
+	return err
 }
