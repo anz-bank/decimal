@@ -8,7 +8,7 @@ import (
 
 func TestDiv10_64(t *testing.T) {
 	for i := uint64(0); i <= 10000; i++ {
-		d := div10_64(uint128T{i, 0}).lo
+		d := uint128T{i, 0}.divBy10().lo
 		require.EqualValues(t, i/10, d, "%d/10 ≠ %d (expecting %d)", i, d, i/10)
 	}
 }
@@ -63,7 +63,7 @@ func TestDiv10_64_po10(t *testing.T) {
 		if i > 0 {
 			e = powersOf10[i-1]
 		}
-		a := div10_64(u)
+		a := u.divBy10()
 		require.EqualValues(t, e, a, "%v/10 ≠ %v (expecting %d)", u, a, e)
 	}
 }
