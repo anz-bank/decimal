@@ -73,7 +73,7 @@ func TestMulThreeByOneTenthByTen(t *testing.T) {
 	decThree := New64FromInt64(3)
 	decTen := New64FromInt64(10)
 	decOne := New64FromInt64(1)
-	decOneTenth := decOne.Div(decTen)
+	decOneTenth := decOne.Quo(decTen)
 	decProduct := decThree.Mul(decOneTenth).Mul(decTen)
 	r.Equal(decTen.Mul(decOneTenth), decOne)
 	r.Equal(decThree, decProduct)
@@ -111,7 +111,7 @@ func requireDiv64ByF(t *testing.T, f int64) {
 			k := i * j
 			n := New64FromInt64(k)
 			d := New64FromInt64(j)
-			q := n.Div(d)
+			q := n.Quo(d)
 			r.EqualValues(e, q, "%d / %d ≠ %v (expecting %v)", k, j, q, e)
 		}
 	}

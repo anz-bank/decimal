@@ -225,45 +225,6 @@ func (d Decimal64) Cmp(e Decimal64) int {
 	return 1 - 2*int(d.bits>>63)
 }
 
-// Div computes d / e.
-func (d Decimal64) Div(e Decimal64) Decimal64 {
-	flavor1, sign1, exp1, significand1 := d.parts()
-	flavor2, sign2, exp2, significand2 := e.parts()
-
-	if flavor1 == flSNaN || flavor2 == flSNaN {
-		return signalNaN64()
-	}
-	if flavor1 == flQNaN || flavor2 == flQNaN {
-		return QNaN64
-	}
-
-	sign := sign1 ^ sign2
-	if d == Zero64 || d == NegZero64 {
-		if e == Zero64 || e == NegZero64 {
-			return QNaN64
-		}
-		return zeroes[sign]
-	}
-	if flavor1 == flInf {
-		if flavor2 == flInf {
-			return QNaN64
-		}
-		return infinities[sign]
-	}
-	if flavor2 == flInf {
-		return zeroes[sign]
-	}
-
-	exp := exp1 - exp2 - 16
-	significand := umul64(10000000000000000, significand1).div64(significand2)
-	for significand.hi > 0 || significand.lo > 9999999999999999 {
-		exp++
-		significand = significand.divBy10()
-	}
-
-	return newFromParts(sign, exp, significand.lo)
-}
-
 // Int64 converts d to an int64.
 func (d Decimal64) Int64() int64 {
 	flavor, sign, exp, significand := d.parts()
@@ -321,25 +282,43 @@ func (d Decimal64) Neg() Decimal64 {
 	return Decimal64{neg64 ^ uint64(d.bits)}
 }
 
-// String computes a string representation of d.
-func (d Decimal64) String() string {
-	// TODO: Implement non-integers
-	flavor, sign, _, _ := d.parts()
-	switch flavor {
-	case flNormal:
-		if d == NegZero64 {
-			return "-0"
-		}
-		return strconv.FormatInt(d.Int64(), 10)
-	case flInf:
-		if sign == 0 {
-			return "∞"
-		}
-		return "-∞"
-	case flQNaN, flSNaN:
-		return "NaN"
+// Quo computes d / e.
+func (d Decimal64) Quo(e Decimal64) Decimal64 {
+	flavor1, sign1, exp1, significand1 := d.parts()
+	flavor2, sign2, exp2, significand2 := e.parts()
+
+	if flavor1 == flSNaN || flavor2 == flSNaN {
+		return signalNaN64()
 	}
-	return ""
+	if flavor1 == flQNaN || flavor2 == flQNaN {
+		return QNaN64
+	}
+
+	sign := sign1 ^ sign2
+	if d == Zero64 || d == NegZero64 {
+		if e == Zero64 || e == NegZero64 {
+			return QNaN64
+		}
+		return zeroes[sign]
+	}
+	if flavor1 == flInf {
+		if flavor2 == flInf {
+			return QNaN64
+		}
+		return infinities[sign]
+	}
+	if flavor2 == flInf {
+		return zeroes[sign]
+	}
+
+	exp := exp1 - exp2 - 16
+	significand := umul64(10000000000000000, significand1).div64(significand2)
+	for significand.hi > 0 || significand.lo > 9999999999999999 {
+		exp++
+		significand = significand.divBy10()
+	}
+
+	return newFromParts(sign, exp, significand.lo)
 }
 
 // Sqrt computes √d.
@@ -368,6 +347,27 @@ func (d Decimal64) Sqrt() Decimal64 {
 		return signalNaN64()
 	}
 	return Decimal64{}
+}
+
+// String computes a string representation of d.
+func (d Decimal64) String() string {
+	// TODO: Implement non-integers
+	flavor, sign, _, _ := d.parts()
+	switch flavor {
+	case flNormal:
+		if d == NegZero64 {
+			return "-0"
+		}
+		return strconv.FormatInt(d.Int64(), 10)
+	case flInf:
+		if sign == 0 {
+			return "∞"
+		}
+		return "-∞"
+	case flQNaN, flSNaN:
+		return "NaN"
+	}
+	return ""
 }
 
 // Sub computes d - e.
