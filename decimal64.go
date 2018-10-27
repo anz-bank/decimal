@@ -173,11 +173,10 @@ func newFromParts(sign int, exp int, significand uint64) Decimal64 {
 }
 
 func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
-	u := uint64(d.bits)
-	sign = int(u >> 63)
-	switch (u >> (63 - 4)) & (1<<4 - 1) {
+	sign = int(d.bits >> 63)
+	switch (d.bits >> (63 - 4)) & 0xf {
 	case 15:
-		switch (u >> (63 - 6)) & 3 {
+		switch (d.bits >> (63 - 6)) & 3 {
 		case 0, 1:
 			fl = flInf
 		case 2:
@@ -189,14 +188,14 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//     EE ∈ {00, 01, 10}
 		fl = flNormal
-		exp = int((u>>(63-12))&(1<<10-1)) - 398
-		significand = u&(1<<51-1) | (1 << 53)
+		exp = int((d.bits>>(63-12))&(1<<10-1)) - 398
+		significand = d.bits&(1<<51-1) | (1 << 53)
 	default:
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
 		fl = flNormal
-		exp = int((u>>(63-10))&(1<<10-1)) - 398
-		significand = u & (1<<53 - 1)
+		exp = int((d.bits>>(63-10))&(1<<10-1)) - 398
+		significand = d.bits & (1<<53 - 1)
 	}
 	return
 }
