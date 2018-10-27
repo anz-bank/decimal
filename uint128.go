@@ -84,17 +84,17 @@ func (a uint128T) divBy10() uint128T {
 	return q.add(r.add(uint128T{6, 0}).shr(4))
 }
 
-func (a uint128T) ge(b uint128T) bool {
-	return !a.lt(b)
-}
+// func (a uint128T) ge(b uint128T) bool {
+// 	return !a.lt(b)
+// }
 
-func (a uint128T) gt(b uint128T) bool {
-	return b.lt(a)
-}
+// func (a uint128T) gt(b uint128T) bool {
+// 	return b.lt(a)
+// }
 
-func (a uint128T) le(b uint128T) bool {
-	return !b.lt(a)
-}
+// func (a uint128T) le(b uint128T) bool {
+// 	return !b.lt(a)
+// }
 
 func (a uint128T) leadingZeros() uint {
 	if a.hi > 0 {
@@ -103,20 +103,20 @@ func (a uint128T) leadingZeros() uint {
 	return uint(64 + bits.LeadingZeros64(a.lo))
 }
 
-func (a uint128T) lt(b uint128T) bool {
-	if a.hi != b.hi {
-		return a.hi < b.hi
-	}
-	return a.lo < b.lo
-}
+// func (a uint128T) lt(b uint128T) bool {
+// 	if a.hi != b.hi {
+// 		return a.hi < b.hi
+// 	}
+// 	return a.lo < b.lo
+// }
 
 func (a uint128T) mulBy10() uint128T {
 	return a.shl(1).add(a.shl(3))
 }
 
-func (a uint128T) mul(b uint128T) uint128T {
-	return umul64(a.hi, b.lo).add(umul64(a.lo, b.hi)).shl(64).add(umul64(a.lo, b.lo))
-}
+// func (a uint128T) mul(b uint128T) uint128T {
+// 	return umul64(a.hi, b.lo).add(umul64(a.lo, b.hi)).shl(64).add(umul64(a.lo, b.lo))
+// }
 
 func (a uint128T) mul64(b uint64) uint128T {
 	return uint128T{0, umul64(a.hi, b).lo}.add(umul64(a.lo, b))
@@ -165,9 +165,9 @@ func (a uint128T) sqrt() uint64 {
 	}
 }
 
-func (a uint128T) trailingZeros() uint {
-	if a.lo > 0 {
-		return uint(bits.TrailingZeros64(a.lo))
-	}
-	return uint(bits.TrailingZeros64(a.hi) + 64)
-}
+// func (a uint128T) trailingZeros() uint {
+// 	if a.lo > 0 {
+// 		return uint(bits.TrailingZeros64(a.lo))
+// 	}
+// 	return uint(bits.TrailingZeros64(a.hi) + 64)
+// }
