@@ -147,28 +147,31 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 func (d Decimal64) Sqrt() Decimal64 {
 	flavor, sign, exp, significand := d.parts()
 	switch flavor {
-	case flNormal:
-		if significand == 0 {
-			return d
-		}
+	case flInf:
 		if sign == 1 {
 			return QNaN64
 		}
-		if exp&1 == 1 {
-			exp--
-			significand *= 10
-		}
-		sqrt := umul64(decimal64Base, significand).sqrt()
-		exp, significand = renormalize(exp/2-8, sqrt)
-		return newFromParts(sign, exp, significand)
-	case flInf:
 		return d
 	case flQNaN:
 		return d
 	case flSNaN:
 		return signalNaN64()
+	case flNormal:
 	}
-	return Decimal64{}
+
+	if significand == 0 {
+		return d
+	}
+	if sign == 1 {
+		return QNaN64
+	}
+	if exp&1 == 1 {
+		exp--
+		significand *= 10
+	}
+	sqrt := umul64(decimal64Base, significand).sqrt()
+	exp, significand = renormalize(exp/2-8, sqrt)
+	return newFromParts(sign, exp, significand)
 }
 
 // Sub returns d - e.

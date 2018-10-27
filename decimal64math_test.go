@@ -25,6 +25,19 @@ func checkDecimal64BinOp(
 	}
 }
 
+func TestDecimal64Abs(t *testing.T) {
+	require := require.New(t)
+
+	require.Equal(Zero64, Zero64.Abs())
+	require.Equal(Zero64, NegZero64.Abs())
+	require.Equal(Infinity64, Infinity64.Abs())
+	require.Equal(Infinity64, NegInfinity64.Abs())
+
+	fortyTwo := NewDecimal64FromInt64(42)
+	require.Equal(fortyTwo, fortyTwo.Abs())
+	require.Equal(fortyTwo, NewDecimal64FromInt64(-42).Abs())
+}
+
 func TestDecimal64Add(t *testing.T) {
 	checkDecimal64BinOp(t,
 		func(a, b int64) int64 { return a + b },
@@ -33,20 +46,71 @@ func TestDecimal64Add(t *testing.T) {
 	)
 }
 
+func TestDecimal64AddNaN(t *testing.T) {
+	require := require.New(t)
+
+	fortyTwo := NewDecimal64FromInt64(42)
+
+	require.Equal(QNaN64, fortyTwo.Add(QNaN64))
+	require.Equal(QNaN64, QNaN64.Add(fortyTwo))
+
+	require.Panics(func() { fortyTwo.Add(SNaN64) })
+	require.Panics(func() { SNaN64.Add(fortyTwo) })
+}
+
+func TestDecimal64AddInf(t *testing.T) {
+	require := require.New(t)
+
+	fortyTwo := NewDecimal64FromInt64(42)
+
+	require.Equal(Infinity64, fortyTwo.Add(Infinity64))
+	require.Equal(Infinity64, Infinity64.Add(fortyTwo))
+
+	require.Equal(NegInfinity64, fortyTwo.Add(NegInfinity64))
+	require.Equal(NegInfinity64, NegInfinity64.Add(fortyTwo))
+
+	require.Equal(Infinity64, Infinity64.Add(Infinity64))
+	require.Equal(NegInfinity64, NegInfinity64.Add(NegInfinity64))
+
+	require.Equal(QNaN64, Infinity64.Add(NegInfinity64))
+	require.Equal(QNaN64, NegInfinity64.Add(Infinity64))
+}
+
 func TestDecimal64Cmp(t *testing.T) {
-	r := require.New(t)
-	negOne := NegOne64
-	zero := Zero64
-	one := One64
-	r.True(negOne.Cmp(negOne) == 0)
-	r.True(zero.Cmp(zero) == 0)
-	r.True(one.Cmp(one) == 0)
-	r.True(negOne.Cmp(zero) < 0)
-	r.True(negOne.Cmp(one) < 0)
-	r.True(zero.Cmp(one) < 0)
-	r.True(zero.Cmp(negOne) > 0)
-	r.True(one.Cmp(negOne) > 0)
-	r.True(one.Cmp(zero) > 0)
+	require := require.New(t)
+
+	require.Equal(0, NegOne64.Cmp(NegOne64))
+
+	require.Equal(0, Zero64.Cmp(Zero64))
+	require.Equal(0, Zero64.Cmp(NegZero64))
+	require.Equal(0, NegZero64.Cmp(Zero64))
+	require.Equal(0, NegZero64.Cmp(NegZero64))
+
+	require.Equal(0, One64.Cmp(One64))
+	require.Equal(-1, NegOne64.Cmp(Zero64))
+	require.Equal(-1, NegOne64.Cmp(NegZero64))
+	require.Equal(-1, NegOne64.Cmp(One64))
+	require.Equal(-1, Zero64.Cmp(One64))
+	require.Equal(-1, NegZero64.Cmp(One64))
+	require.Equal(1, Zero64.Cmp(NegOne64))
+	require.Equal(1, NegZero64.Cmp(NegOne64))
+	require.Equal(1, One64.Cmp(NegOne64))
+	require.Equal(1, One64.Cmp(Zero64))
+	require.Equal(1, One64.Cmp(NegZero64))
+}
+
+func TestDecimal64CmpNaN(t *testing.T) {
+	require := require.New(t)
+
+	require.Equal(-2, QNaN64.Cmp(QNaN64))
+	require.Equal(-2, Zero64.Cmp(QNaN64))
+	require.Equal(-2, QNaN64.Cmp(Zero64))
+
+	require.Panics(func() { SNaN64.Cmp(SNaN64) })
+	require.Panics(func() { SNaN64.Cmp(QNaN64) })
+	require.Panics(func() { QNaN64.Cmp(SNaN64) })
+	require.Panics(func() { SNaN64.Cmp(Zero64) })
+	require.Panics(func() { Zero64.Cmp(SNaN64) })
 }
 
 func TestDecimal64MulThreeByOneTenthByTen(t *testing.T) {
@@ -71,20 +135,46 @@ func TestDecimal64MulThreeByOneTenthByTen(t *testing.T) {
 	r.Equal(decThree, decProduct)
 }
 
-func TestDecimal64Sub(t *testing.T) {
-	checkDecimal64BinOp(t,
-		func(a, b int64) int64 { return a - b },
-		func(a, b Decimal64) Decimal64 { return a.Sub(b) },
-		"-",
-	)
-}
-
 func TestDecimal64Mul(t *testing.T) {
 	checkDecimal64BinOp(t,
 		func(a, b int64) int64 { return a * b },
 		func(a, b Decimal64) Decimal64 { return a.Mul(b) },
 		"*",
 	)
+}
+
+func TestDecimal64MulNaN(t *testing.T) {
+	require := require.New(t)
+
+	fortyTwo := NewDecimal64FromInt64(42)
+
+	require.Equal(QNaN64, fortyTwo.Mul(QNaN64))
+	require.Equal(QNaN64, QNaN64.Mul(fortyTwo))
+
+	require.Panics(func() { fortyTwo.Mul(SNaN64) })
+	require.Panics(func() { SNaN64.Mul(fortyTwo) })
+}
+
+func TestDecimal64MulInf(t *testing.T) {
+	require := require.New(t)
+
+	fortyTwo := NewDecimal64FromInt64(42)
+	negFortyTwo := NewDecimal64FromInt64(-42)
+
+	require.Equal(Infinity64, fortyTwo.Mul(Infinity64))
+	require.Equal(Infinity64, Infinity64.Mul(fortyTwo))
+	require.Equal(NegInfinity64, negFortyTwo.Mul(Infinity64))
+	require.Equal(NegInfinity64, Infinity64.Mul(negFortyTwo))
+
+	require.Equal(NegInfinity64, fortyTwo.Mul(NegInfinity64))
+	require.Equal(NegInfinity64, NegInfinity64.Mul(fortyTwo))
+	require.Equal(Infinity64, negFortyTwo.Mul(NegInfinity64))
+	require.Equal(Infinity64, NegInfinity64.Mul(negFortyTwo))
+
+	require.Equal(Infinity64, Infinity64.Mul(Infinity64))
+	require.Equal(Infinity64, NegInfinity64.Mul(NegInfinity64))
+	require.Equal(NegInfinity64, Infinity64.Mul(NegInfinity64))
+	require.Equal(NegInfinity64, NegInfinity64.Mul(Infinity64))
 }
 
 func checkDecimal64QuoByF(t *testing.T, f int64) {
@@ -113,6 +203,40 @@ func TestDecimal64Quo(t *testing.T) {
 	checkDecimal64QuoByF(t, 1)
 	checkDecimal64QuoByF(t, 7)
 	checkDecimal64QuoByF(t, 13)
+}
+
+func TestDecimal64QuoNaN(t *testing.T) {
+	require := require.New(t)
+
+	fortyTwo := NewDecimal64FromInt64(42)
+
+	require.Equal(QNaN64, fortyTwo.Quo(QNaN64))
+	require.Equal(QNaN64, QNaN64.Quo(fortyTwo))
+
+	require.Panics(func() { fortyTwo.Quo(SNaN64) })
+	require.Panics(func() { SNaN64.Quo(fortyTwo) })
+}
+
+func TestDecimal64QuoInf(t *testing.T) {
+	require := require.New(t)
+
+	fortyTwo := NewDecimal64FromInt64(42)
+	negFortyTwo := NewDecimal64FromInt64(-42)
+
+	require.Equal(Zero64, fortyTwo.Quo(Infinity64))
+	require.Equal(Infinity64, Infinity64.Quo(fortyTwo))
+	require.Equal(NegZero64, negFortyTwo.Quo(Infinity64))
+	require.Equal(NegInfinity64, Infinity64.Quo(negFortyTwo))
+
+	require.Equal(NegZero64, fortyTwo.Quo(NegInfinity64))
+	require.Equal(NegInfinity64, NegInfinity64.Quo(fortyTwo))
+	require.Equal(Zero64, negFortyTwo.Quo(NegInfinity64))
+	require.Equal(Infinity64, NegInfinity64.Quo(negFortyTwo))
+
+	require.Equal(QNaN64, Infinity64.Quo(Infinity64))
+	require.Equal(QNaN64, NegInfinity64.Quo(NegInfinity64))
+	require.Equal(QNaN64, Infinity64.Quo(NegInfinity64))
+	require.Equal(QNaN64, NegInfinity64.Quo(Infinity64))
 }
 
 func TestDecimal64MulPo10(t *testing.T) {
@@ -147,4 +271,26 @@ func TestDecimal64Sqrt(t *testing.T) {
 
 func TestDecimal64SqrtNeg(t *testing.T) {
 	require.EqualValues(t, QNaN64, NewDecimal64FromInt64(-1).Sqrt())
+}
+
+func TestDecimal64SqrtNaN(t *testing.T) {
+	require := require.New(t)
+
+	require.Equal(QNaN64, QNaN64.Sqrt())
+	require.Panics(func() { SNaN64.Sqrt() })
+}
+
+func TestDecimal64SqrtInf(t *testing.T) {
+	require := require.New(t)
+
+	require.Equal(Infinity64, Infinity64.Sqrt())
+	require.Equal(QNaN64, NegInfinity64.Sqrt())
+}
+
+func TestDecimal64Sub(t *testing.T) {
+	checkDecimal64BinOp(t,
+		func(a, b int64) int64 { return a - b },
+		func(a, b Decimal64) Decimal64 { return a.Sub(b) },
+		"-",
+	)
 }
