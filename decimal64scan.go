@@ -7,6 +7,39 @@ import (
 	"strings"
 )
 
+// ParseDecimal64 parses a string representation of a number as a Decimal64.
+func ParseDecimal64(s string) (Decimal64, error) {
+	r := strings.NewReader(s)
+	d := Zero64
+	if err := d.scan(r); err != nil {
+		return d, err
+	}
+
+	// entire string must have been consumed
+	if ch, err := r.ReadByte(); err == nil {
+		return d, fmt.Errorf("expected end of string, found %q", ch)
+	} else if err != io.EOF {
+		return d, err
+	}
+	return d, nil
+}
+
+// MustParseDecimal64 parses a string as a Decimal64 and returns the value or
+// panics if the string doesn't represent a valid Decimal64.
+func MustParseDecimal64(s string) Decimal64 {
+	d, err := ParseDecimal64(s)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
+// Scan implements fmt.Scanner.
+func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
+	state.SkipSpace()
+	return d.scan(byteReader{state})
+}
+
 func notDecimal64() error {
 	return fmt.Errorf("Not a valid Decimal64")
 }
