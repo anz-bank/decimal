@@ -216,3 +216,9 @@ func TestDecimal64Format(t *testing.T) {
 		require.Equal(t, expected, actual)
 	}
 }
+
+func TestDecimal64SNaN(t *testing.T) {
+	require.Panics(t, func() {
+		SNaN64.Add(Zero64)
+	})
+}
