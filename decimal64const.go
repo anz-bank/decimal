@@ -3,12 +3,8 @@ package decimal
 // Zero64 represents 0 as a Decimal64.
 var Zero64 = newFromParts(0, 0, 0)
 
-// var Zero64 = Decimal64{0}
-
 // NegZero64 represents -0 as a Decimal64.
 var NegZero64 = newFromParts(1, 0, 0)
-
-// var NegZero64 = Decimal64{1 << 63}
 
 // One64 represents 1 as a Decimal64.
 var One64 = NewDecimal64FromInt64(1)
@@ -33,3 +29,9 @@ var inf64 uint64 = 0x78 << 56
 
 // 10E15
 const decimal64Base = 10 * 1000 * 1000 * 1000 * 1000 * 1000
+
+const expOffset = 398
+const expMax = 369
+
+var zeroes = []Decimal64{Zero64, NegZero64}
+var infinities = []Decimal64{Infinity64, NegInfinity64}

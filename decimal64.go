@@ -46,19 +46,19 @@ func renormalize(exp int, significand uint64) (int, uint64) {
 	}
 
 	// TODO: Optimize to O(1) with bits.LeadingZeros64
-	for ; significand < 100000000 && exp > -391; exp -= 8 {
+	for ; significand < 100000000 && exp > -expOffset+7; exp -= 8 {
 		significand *= 100000000
 	}
-	for ; significand < 1000000000000 && exp > -395; exp -= 4 {
+	for ; significand < 1000000000000 && exp > -expOffset+3; exp -= 4 {
 		significand *= 10000
 	}
-	for ; significand < 100000000000000 && exp > -397; exp -= 2 {
+	for ; significand < 100000000000000 && exp > -expOffset+1; exp -= 2 {
 		significand *= 100
 	}
-	for ; significand < 1000000000000000 && exp > -398; exp-- {
+	for ; significand < 1000000000000000 && exp > -expOffset; exp-- {
 		significand *= 10
 	}
-	for ; significand >= decimal64Base && exp < 369; exp++ {
+	for ; significand >= decimal64Base && exp < expMax; exp++ {
 		significand /= 10
 	}
 	return exp, significand
@@ -100,12 +100,12 @@ func newFromParts(sign int, exp int, significand uint64) Decimal64 {
 	if significand < 0x8<<50 {
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
-		return Decimal64{s | uint64(exp+398)<<(63-10) | significand}
+		return Decimal64{s | uint64(exp+expOffset)<<(63-10) | significand}
 	}
 	// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 	//     EE ∈ {00, 01, 10}
 	significand &= 0x8<<50 - 1
-	return Decimal64{s | uint64(0xc00|(exp+398))<<(63-12) | significand}
+	return Decimal64{s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand}
 }
 
 func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
@@ -124,14 +124,20 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//     EE ∈ {00, 01, 10}
 		fl = flNormal
-		exp = int((d.bits>>(63-12))&(1<<10-1)) - 398
+		exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
 		significand = d.bits&(1<<51-1) | (1 << 53)
+		if significand == 0 {
+			exp = 0
+		}
 	default:
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
 		fl = flNormal
-		exp = int((d.bits>>(63-10))&(1<<10-1)) - 398
+		exp = int((d.bits>>(63-10))&(1<<10-1)) - expOffset
 		significand = d.bits & (1<<53 - 1)
+		if significand == 0 {
+			exp = 0
+		}
 	}
 	return
 }
@@ -224,7 +230,7 @@ func (d Decimal64) IsQNaN() bool {
 // IsSNaN returns true iff d is a signalling NaN.
 func (d Decimal64) IsSNaN() bool {
 	flavor, _, _, _ := d.parts()
-	return flavor == flQNaN
+	return flavor == flSNaN
 }
 
 // IsInt returns true iff d is an integer.
