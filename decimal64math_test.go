@@ -178,7 +178,7 @@ func TestDecimal64MulInf(t *testing.T) {
 }
 
 func checkDecimal64QuoByF(t *testing.T, f int64) {
-	r := require.New(t)
+	require := require.New(t)
 	for i := int64(-1000 * f); i <= 1000*f; i += f {
 		for j := int64(-100); j <= 100; j++ {
 			var e Decimal64
@@ -194,7 +194,13 @@ func checkDecimal64QuoByF(t *testing.T, f int64) {
 			n := NewDecimal64FromInt64(k)
 			d := NewDecimal64FromInt64(j)
 			q := n.Quo(d)
-			r.EqualValues(e, q, "%d / %d ≠ %v (expecting %v)", k, j, q, e)
+			if q != e {
+				eFlavor, eSign, eExp, eSignificand := q.parts()
+				qFlavor, qSign, qExp, qSignificand := q.parts()
+				t.Log("e", e.bits, eFlavor, eSign, eExp, eSignificand)
+				t.Log("q", q.bits, qFlavor, qSign, qExp, qSignificand)
+			}
+			require.Equal(e, q, "%d / %d ≠ %v (expecting %v)", k, j, q, e)
 		}
 	}
 }
@@ -248,7 +254,7 @@ func TestDecimal64MulPo10(t *testing.T) {
 				continue
 			}
 			w := powersOf10[k]
-			if !(w.hi == 0 && w.lo < 0x8000000000000000) {
+			if !(w.hi == 0 && w.lo < decimal64Base) {
 				continue
 			}
 			e := NewDecimal64FromInt64(int64(w.lo))

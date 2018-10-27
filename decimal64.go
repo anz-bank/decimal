@@ -24,6 +24,11 @@ func signalNaN64() Decimal64 {
 	panic("sNaN64")
 }
 
+func checkSignificandIsNormal(significand uint64) {
+	logicCheck(decimal64Base <= significand, "%d <= %d", decimal64Base, significand)
+	logicCheck(significand < 10*decimal64Base, "%d < %d", significand, 10*decimal64Base)
+}
+
 // NewDecimal64FromInt64 returns a new Decimal64 with the given value.
 func NewDecimal64FromInt64(value int64) Decimal64 {
 	if value == 0 {
@@ -37,6 +42,7 @@ func NewDecimal64FromInt64(value int64) Decimal64 {
 	// TODO: handle abs(value) > 9 999 999 999 999 999
 	// lz := bits.LeadingZeros64(uint64(value))
 	exp, significand := renormalize(0, uint64(value))
+	checkSignificandIsNormal(significand)
 	return newFromParts(sign, exp, significand)
 }
 
@@ -44,19 +50,24 @@ func renormalize(exp int, significand uint64) (int, uint64) {
 	logicCheck(significand != 0, "significand (%d) != 0", significand)
 
 	// TODO: Optimize to O(1) with bits.LeadingZeros64
-	for ; significand < 100000000 && exp > -expOffset+7; exp -= 8 {
+	if significand < 10*decimal64Base/100000000 && exp > -1-expOffset+8 {
+		exp -= 8
 		significand *= 100000000
 	}
-	for ; significand < 1000000000000 && exp > -expOffset+3; exp -= 4 {
+	if significand < 10*decimal64Base/10000 && exp > -1-expOffset+4 {
+		exp -= 4
 		significand *= 10000
 	}
-	for ; significand < 100000000000000 && exp > -expOffset+1; exp -= 2 {
+	if significand < 10*decimal64Base/100 && exp > -1-expOffset+2 {
+		exp -= 2
 		significand *= 100
 	}
-	for ; significand < 1000000000000000 && exp > -expOffset; exp-- {
+	if significand < 10*decimal64Base/10 && exp > -1-expOffset+1 {
+		exp--
 		significand *= 10
 	}
-	for ; significand >= decimal64Base && exp < expMax; exp++ {
+	if significand >= 10*decimal64Base && exp < expMax {
+		exp++
 		significand /= 10
 	}
 	return exp, significand

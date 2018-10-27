@@ -91,7 +91,7 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 
 	exp := exp1 + exp2
 	significand := umul64(significand1, significand2)
-	for significand.hi > 0 || significand.lo >= decimal64Base {
+	for significand.hi > 0 || significand.lo >= 10*decimal64Base {
 		exp++
 		significand = significand.divBy10()
 	}
@@ -134,12 +134,12 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	}
 
 	exp := exp1 - exp2 - 16
-	significand := umul64(decimal64Base, significand1).div64(significand2)
-	for significand.hi > 0 || significand.lo >= decimal64Base {
+	significand := umul64(10*decimal64Base, significand1).div64(significand2)
+	for significand.hi > 0 || significand.lo >= 10*decimal64Base {
 		exp++
 		significand = significand.divBy10()
 	}
-
+	checkSignificandIsNormal(significand.lo)
 	return newFromParts(sign, exp, significand.lo)
 }
 
@@ -169,7 +169,7 @@ func (d Decimal64) Sqrt() Decimal64 {
 		exp--
 		significand *= 10
 	}
-	sqrt := umul64(decimal64Base, significand).sqrt()
+	sqrt := umul64(10*decimal64Base, significand).sqrt()
 	exp, significand = renormalize(exp/2-8, sqrt)
 	return newFromParts(sign, exp, significand)
 }

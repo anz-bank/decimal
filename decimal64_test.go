@@ -44,7 +44,7 @@ func TestDecimal64Float64(t *testing.T) {
 	oneThird := One64.Quo(NewDecimal64FromInt64(3))
 	one := oneThird.Add(oneThird).Add(oneThird)
 	require.InEpsilon(oneThird.Float64(), 1.0/3.0, 0.00000001)
-	require.Equal(1.0, one.Float64())
+	require.InEpsilon(1.0, one.Float64(), 0.00000001)
 
 	require.True(math.IsNaN(QNaN64.Float64()))
 	require.Panics(func() { SNaN64.Float64() })
