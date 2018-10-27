@@ -1,5 +1,8 @@
 package decimal
 
+var zeroes = []Decimal64{Zero64, NegZero64}
+var infinities = []Decimal64{Infinity64, NegInfinity64}
+
 // Abs computes ||d||.
 func (d Decimal64) Abs() Decimal64 {
 	return Decimal64{^neg64 & uint64(d.bits)}
