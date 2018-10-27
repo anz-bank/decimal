@@ -33,7 +33,7 @@ func (d Decimal64) Append(buf []byte, format byte, prec int) []byte {
 	flavor, sign, exp, significand := d.parts()
 	switch flavor {
 	case flQNaN, flSNaN:
-		return append(buf, []byte("NaN")...)
+		return append(buf, []byte("nan")...)
 	case flInf:
 		if sign == 0 {
 			return append(buf, []byte("inf")...)
@@ -55,7 +55,7 @@ formatBlock:
 			buf = appendFrac64(append(buf, '.'), frac, decimal64Base/10)
 		}
 
-		exp += 16
+		exp += 15
 		if exp != 0 {
 			buf = append(buf, format)
 			if exp < 0 {
