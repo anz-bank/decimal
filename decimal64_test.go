@@ -16,6 +16,16 @@ func TestNew64FromInt64(t *testing.T) {
 	}
 }
 
+func TestNew64FromInt64Big(t *testing.T) {
+	const limit = decimal64Base
+	const step = limit / 997
+	for i := -int64(limit); i <= limit; i += step {
+		d := NewDecimal64FromInt64(i)
+		j := d.Int64()
+		require.EqualValues(t, i, j)
+	}
+}
+
 func TestParseDecimal64(t *testing.T) {
 	for i := int64(0); i <= 1000; i++ {
 		s := strconv.Itoa(int(i))
