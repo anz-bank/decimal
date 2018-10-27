@@ -44,9 +44,8 @@ var SNaN64 = Decimal64{0x7e00000000000000}
 var zeroes = []Decimal64{Zero64, NegZero64}
 var infinities = []Decimal64{Infinity64, NegInfinity64}
 
-const oneE15 = 1000 * 1000 * 1000 * 1000 * 1000
-const oneE16 = 10 * oneE15
-const oneE17 = 10 * oneE16
+// 10^15
+const decimal64Base = 10 * 1000 * 1000 * 1000 * 1000 * 1000
 
 type flavor int
 
@@ -123,7 +122,7 @@ func renormalize(exp int, significand uint64) (int, uint64) {
 	for ; significand < 1000000000000000 && exp > -398; exp-- {
 		significand *= 10
 	}
-	for ; significand > 9999999999999999 && exp < 369; exp++ {
+	for ; significand >= decimal64Base && exp < 369; exp++ {
 		significand /= 10
 	}
 	return exp, significand
@@ -205,7 +204,7 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 	if exp >= 0 {
 		return exp, significand, 0
 	}
-	n := uint128T{significand, 0}.mul64(oneE17)
+	n := uint128T{significand, 0}.mul64(10 * decimal64Base)
 	// exp++ till it hits 0 or continuing would throw away digits.
 	for ; exp < 0; exp++ {
 		nOver10 := n.divBy10()
@@ -215,8 +214,8 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 		}
 		n = nOver10
 	}
-	nWhole := n.div64(oneE17)
-	nFrac := n.sub(nWhole.mul64(oneE17))
+	nWhole := n.div64(10 * decimal64Base)
+	nFrac := n.sub(nWhole.mul64(10 * decimal64Base))
 	return exp, nWhole.lo, nFrac.lo
 }
 
@@ -247,7 +246,7 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	exp1, significand1, exp2, significand2 = matchScales(exp1, significand1, exp2, significand2)
 	if sign1 == sign2 {
 		significand := significand1 + significand2
-		if significand > 9999999999999999 {
+		if significand >= decimal64Base {
 			exp1++
 			significand /= 10
 		}
@@ -303,11 +302,11 @@ func (d Decimal64) Append(buf []byte, format byte, prec int) []byte {
 formatBlock:
 	switch format {
 	case 'e', 'E':
-		whole := significand / oneE16
+		whole := significand / decimal64Base
 		buf = append(buf, byte('0'+whole))
-		frac := significand - oneE16*whole
+		frac := significand - decimal64Base*whole
 		if frac > 0 {
-			buf = appendFrac64(append(buf, '.'), frac, oneE15)
+			buf = appendFrac64(append(buf, '.'), frac, decimal64Base/10)
 		}
 
 		exp += 16
@@ -325,7 +324,7 @@ formatBlock:
 	case 'f', 'F':
 		exp, whole, frac := expWholeFrac(exp, significand)
 		if whole > 0 {
-			buf = appendUint64(buf, whole, oneE16)
+			buf = appendUint64(buf, whole, decimal64Base)
 			for ; exp > 0; exp-- {
 				buf = append(buf, '0')
 			}
@@ -333,7 +332,7 @@ formatBlock:
 			buf = append(buf, '0')
 		}
 		if frac > 0 {
-			buf = appendFrac64(append(buf, '.'), frac, oneE16)
+			buf = appendFrac64(append(buf, '.'), frac, decimal64Base)
 		}
 		return buf
 	case 'g', 'G':
@@ -515,7 +514,7 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 
 	exp := exp1 + exp2
 	significand := umul64(significand1, significand2)
-	for significand.hi > 0 || significand.lo > 9999999999999999 {
+	for significand.hi > 0 || significand.lo >= decimal64Base {
 		exp++
 		significand = significand.divBy10()
 	}
@@ -558,8 +557,8 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	}
 
 	exp := exp1 - exp2 - 16
-	significand := umul64(10000000000000000, significand1).div64(significand2)
-	for significand.hi > 0 || significand.lo > 9999999999999999 {
+	significand := umul64(decimal64Base, significand1).div64(significand2)
+	for significand.hi > 0 || significand.lo >= decimal64Base {
 		exp++
 		significand = significand.divBy10()
 	}
@@ -601,7 +600,7 @@ func (d Decimal64) Sqrt() Decimal64 {
 			exp--
 			significand *= 10
 		}
-		sqrt := umul64(10000000000000000, significand).sqrt()
+		sqrt := umul64(decimal64Base, significand).sqrt()
 		exp, significand = renormalize(exp/2-8, sqrt)
 		return newFromParts(sign, exp, significand)
 	case flInf:
