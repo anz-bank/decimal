@@ -161,11 +161,15 @@ func matchScales(exp1 int, significand1 uint64, exp2 int, significand2 uint64) (
 
 func newFromParts(sign int, exp int, significand uint64) Decimal64 {
 	s := uint64(sign) << 63
-	if significand < 0x20000000000000 {
+	if significand < 0x8<<50 {
+		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
+		//   EE ∈ {00, 01, 10}
 		return Decimal64{s | uint64(exp+398)<<(63-10) | significand}
 	}
-	significand &= 0x7ffffffffffff
-	return Decimal64{s | uint64(exp+398)<<(63-12) | significand | 0x6000000000000000}
+	// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
+	//     EE ∈ {00, 01, 10}
+	significand &= 0x8<<50 - 1
+	return Decimal64{s | uint64(0xc00|(exp+398))<<(63-12) | significand}
 }
 
 func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
