@@ -41,9 +41,7 @@ func NewDecimal64FromInt64(value int64) Decimal64 {
 }
 
 func renormalize(exp int, significand uint64) (int, uint64) {
-	if significand == 0 {
-		return 0, 0
-	}
+	logicCheck(significand != 0, "significand (%d) != 0", significand)
 
 	// TODO: Optimize to O(1) with bits.LeadingZeros64
 	for ; significand < 100000000 && exp > -expOffset+7; exp -= 8 {
@@ -126,9 +124,6 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 		fl = flNormal
 		exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
 		significand = d.bits&(1<<51-1) | (1 << 53)
-		if significand == 0 {
-			exp = 0
-		}
 	default:
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
@@ -195,7 +190,10 @@ func (d Decimal64) Int64() int64 {
 			return math.MaxInt64
 		}
 		return math.MinInt64
-	case flQNaN, flSNaN:
+	case flQNaN:
+		return 0
+	case flSNaN:
+		signalNaN64()
 		return 0
 	}
 	exp, whole, _ := expWholeFrac(exp, significand)

@@ -1,6 +1,7 @@
 package decimal
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -8,6 +9,13 @@ import (
 
 func TestNew64FromInt64(t *testing.T) {
 	for i := int64(-1000); i <= 1000; i++ {
+		d := NewDecimal64FromInt64(i)
+		j := d.Int64()
+		require.EqualValues(t, i, j)
+	}
+
+	// Test around the threshold for high-significand representation.
+	for i := int64(0x20000000000000 - 10); i <= 0x20000000000000+10; i++ {
 		d := NewDecimal64FromInt64(i)
 		j := d.Int64()
 		require.EqualValues(t, i, j)
@@ -25,23 +33,48 @@ func TestNew64FromInt64Big(t *testing.T) {
 }
 
 func TestDecimal64Float64(t *testing.T) {
-	r := require.New(t)
-	r.Equal(NegOne64.Float64(), -1.0)
-	r.Equal(Zero64.Float64(), 0.0)
-	r.Equal(NegZero64.Float64(), -0.0)
-	r.Equal(One64.Float64(), 1.0)
-	r.Equal(NewDecimal64FromInt64(10).Float64(), 10.0)
+	require := require.New(t)
+
+	require.Equal(-1.0, NegOne64.Float64())
+	require.Equal(0.0, Zero64.Float64())
+	require.Equal(-0.0, NegZero64.Float64())
+	require.Equal(1.0, One64.Float64())
+	require.Equal(10.0, NewDecimal64FromInt64(10).Float64())
 
 	oneThird := One64.Quo(NewDecimal64FromInt64(3))
 	one := oneThird.Add(oneThird).Add(oneThird)
-	r.InEpsilon(oneThird.Float64(), 1.0/3.0, 0.00000001)
-	r.Equal(one.Float64(), 1.0)
+	require.InEpsilon(oneThird.Float64(), 1.0/3.0, 0.00000001)
+	require.Equal(1.0, one.Float64())
+
+	require.True(math.IsNaN(QNaN64.Float64()))
+	require.Panics(func() { SNaN64.Float64() })
+
+	require.Equal(math.Inf(1), Infinity64.Float64())
+	require.Equal(math.Inf(-1), NegInfinity64.Float64())
 }
 
-func TestDecimal64SNaN(t *testing.T) {
-	require.Panics(t, func() {
-		SNaN64.Add(Zero64)
-	})
+func TestDecimal64Int64(t *testing.T) {
+	require := require.New(t)
+
+	require.EqualValues(-1, NegOne64.Int64())
+	require.EqualValues(0, Zero64.Int64())
+	require.EqualValues(-0, NegZero64.Int64())
+	require.EqualValues(1, One64.Int64())
+	require.EqualValues(10, NewDecimal64FromInt64(10).Int64())
+
+	require.EqualValues(0, QNaN64.Int64())
+	require.Panics(func() { SNaN64.Int64() })
+
+	require.EqualValues(math.MaxInt64, Infinity64.Int64())
+	require.EqualValues(math.MinInt64, NegInfinity64.Int64())
+
+	googol, err := ParseDecimal64("1e100")
+	require.NoError(err)
+	require.EqualValues(math.MaxInt64, googol.Int64())
+
+	long, err := ParseDecimal64("91234567890123456789e20")
+	require.NoError(err)
+	require.EqualValues(math.MaxInt64, long.Int64())
 }
 
 func TestDecimal64IsInf(t *testing.T) {
@@ -78,4 +111,39 @@ func TestDecimal64IsNaN(t *testing.T) {
 		require.False(t, n.IsQNaN(), "%v", n)
 		require.False(t, n.IsSNaN(), "%v", n)
 	}
+}
+
+func TestDecimal64IsInt(t *testing.T) {
+	require := require.New(t)
+
+	fortyTwo := NewDecimal64FromInt64(42)
+
+	require.True(Zero64.IsInt())
+	require.True(fortyTwo.IsInt())
+	require.True(fortyTwo.Mul(fortyTwo).IsInt())
+	require.True(fortyTwo.Quo(fortyTwo).IsInt())
+	require.False(One64.Quo(fortyTwo).IsInt())
+
+	require.False(Infinity64.IsInt())
+	require.False(NegInfinity64.IsInt())
+	require.False(QNaN64.IsInt())
+	require.False(SNaN64.IsInt())
+}
+
+func TestDecimal64Sign(t *testing.T) {
+	require := require.New(t)
+
+	require.Equal(0, Zero64.Sign())
+	require.Equal(0, NegZero64.Sign())
+	require.Equal(1, One64.Sign())
+	require.Equal(-1, NegOne64.Sign())
+}
+
+func TestDecimal64Signbit(t *testing.T) {
+	require := require.New(t)
+
+	require.Equal(false, Zero64.Signbit())
+	require.Equal(true, NegZero64.Signbit())
+	require.Equal(false, One64.Signbit())
+	require.Equal(true, NegOne64.Signbit())
 }
