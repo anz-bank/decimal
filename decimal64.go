@@ -106,6 +106,10 @@ func MustParseDecimal64(s string) Decimal64 {
 }
 
 func renormalize(exp int, significand uint64) (int, uint64) {
+	if significand == 0 {
+		return 0, 0
+	}
+
 	// TODO: Optimize to O(1) with bits.LeadingZeros64
 	for ; significand < 100000000 && exp > -391; exp -= 8 {
 		significand *= 100000000
