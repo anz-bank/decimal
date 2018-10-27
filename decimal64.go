@@ -447,6 +447,10 @@ func (d Decimal64) Int64() int64 {
 		return 0
 	}
 	exp, whole, _ := expWholeFrac(exp, significand)
+	for exp > 0 && whole < math.MaxInt64/10 {
+		exp--
+		whole *= 10
+	}
 	if exp > 0 {
 		return math.MaxInt64
 	}
