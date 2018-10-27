@@ -1,6 +1,7 @@
 package decimal
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -87,12 +88,22 @@ func TestDecimal64ScanFlakyScanState(t *testing.T) {
 }
 
 func parseEquals64(t *testing.T) func(expected Decimal64, input string) {
+	require := require.New(t)
+
 	return func(expected Decimal64, input string) {
-		require.NotPanics(t, func() {
-			MustParseDecimal64(input)
-		})
+		require.NotPanics(func() {
+			n := MustParseDecimal64(input)
+			require.Equal(expected, n, "%s", input)
+		}, "%s", input)
+
 		n, err := ParseDecimal64(input)
-		require.NoError(t, err)
-		require.Equal(t, expected, n, "%s", input)
+		require.NoError(err, "%s", input)
+		require.Equal(expected, n, "%s", input)
+
+		n = SNaN64
+		count, err := fmt.Sscanf(input, "%g", &n)
+		require.NoError(err, "%s", input)
+		require.Equal(1, count, "%s", input)
+		require.Equal(expected, n, "%s", input)
 	}
 }

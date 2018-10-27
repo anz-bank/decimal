@@ -18,7 +18,7 @@ func ParseDecimal64(s string) (Decimal64, error) {
 	// entire string must have been consumed
 	r, _, err := state.ReadRune()
 	if err == nil {
-		return d, fmt.Errorf("expected end of string, found %q", r)
+		return d, fmt.Errorf("expected end of string, found %c", r)
 	}
 	logicCheck(err == io.EOF, "%v == io.EOF", err)
 	return d, nil
@@ -42,11 +42,11 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 	}
 
 	// Word-number ([Ii]nf|∞|nan|NaN)
-	word, err := state.Token(false, isLetterOrInf)
+	word, err := tokenString(state, isLetterOrInf)
 	if err != nil {
 		return err
 	}
-	switch string(word) {
+	switch word {
 	case "":
 	case "inf", "Inf", "∞":
 		if sign == 0 {
@@ -62,12 +62,12 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 		return notDecimal64()
 	}
 
-	whole, err := state.Token(false, unicode.IsDigit)
+	whole, err := tokenString(state, unicode.IsDigit)
 	if err != nil {
 		return err
 	}
 
-	dot, err := state.Token(false, func(r rune) bool { return r == '.' })
+	dot, err := tokenString(state, func(r rune) bool { return r == '.' })
 	if err != nil {
 		return err
 	}
@@ -75,12 +75,12 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 		return fmt.Errorf("Too many dots")
 	}
 
-	frac, err := state.Token(false, unicode.IsDigit)
+	frac, err := tokenString(state, unicode.IsDigit)
 	if err != nil {
 		return err
 	}
 
-	e, err := state.Token(false, func(r rune) bool { return r == 'e' || r == 'E' })
+	e, err := tokenString(state, func(r rune) bool { return r == 'e' || r == 'E' })
 	if err != nil {
 		return err
 	}
@@ -89,22 +89,22 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 	}
 
 	var expSign int
-	var exp []byte
+	var exp string
 	if len(e) == 1 {
 		expSign, err = scanSign(state)
 		if err != nil {
 			return err
 		}
-		exp, err = state.Token(false, unicode.IsDigit)
+		exp, err = tokenString(state, unicode.IsDigit)
 		if err != nil {
 			return err
 		}
-		if string(exp) == "" {
+		if exp == "" {
 			return fmt.Errorf("Exponent value missing")
 		}
 	}
 
-	mantissa := string(whole) + string(frac)
+	mantissa := whole + frac
 	if mantissa == "" {
 		return fmt.Errorf("Mantissa missing")
 	}
@@ -119,7 +119,7 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 		return nil
 	}
 
-	exponent, _ := parseUint(string(exp))
+	exponent, _ := parseUint(exp)
 	exponent *= int64(1 - 2*expSign)
 	if exponent > 1000 {
 		*d = infinities[sign]
@@ -150,6 +150,14 @@ func parseUint(s string) (int64, int) {
 		a = 10*a + int64(c-'0')
 	}
 	return a, exp
+}
+
+func tokenString(state fmt.ScanState, f func(r rune) bool) (string, error) {
+	token, err := state.Token(false, f)
+	if err != nil {
+		return "", err
+	}
+	return string(token), err
 }
 
 func scanSign(state fmt.ScanState) (int, error) {
