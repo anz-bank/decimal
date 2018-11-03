@@ -2,6 +2,7 @@ package decimal
 
 import (
 	"math"
+	"math/bits"
 )
 
 // Decimal64 represents an IEEE 754 64-bit floating point decimal number.
@@ -46,27 +47,54 @@ func NewDecimal64FromInt64(value int64) Decimal64 {
 	return newFromParts(sign, exp, significand)
 }
 
+var powersOf10 = []uint64{
+	1,
+	10,
+	100,
+	1000,
+	10000,
+	100000,
+	1000000,
+	10000000,
+	100000000,
+	1000000000,
+	10000000000,
+	100000000000,
+	1000000000000,
+	10000000000000,
+	100000000000000,
+	1000000000000000,
+	10000000000000000,
+	100000000000000000,
+	1000000000000000000,
+	10000000000000000000,
+}
+
 func renormalize(exp int, significand uint64) (int, uint64) {
 	logicCheck(significand != 0, "significand (%d) != 0", significand)
 
-	// TODO: Optimize to O(1) with bits.LeadingZeros64
-	if significand < 10*decimal64Base/100000000 && exp > -1-expOffset+8 {
-		exp -= 8
-		significand *= 100000000
+	numBits := 64 - bits.LeadingZeros64(significand)
+	numDigits := numBits * 3 / 10
+	normExp := 15 - numDigits
+	if normExp > 0 {
+		if exp-normExp < -expOffset {
+			normExp = exp + expOffset
+		}
+		exp -= normExp
+		significand *= powersOf10[normExp]
+	} else if normExp < -1 {
+		normExp++
+		if exp-normExp > expMax {
+			normExp = exp - expMax
+		}
+		exp -= normExp
+		significand /= powersOf10[-normExp]
 	}
-	if significand < 10*decimal64Base/10000 && exp > -1-expOffset+4 {
-		exp -= 4
-		significand *= 10000
-	}
-	if significand < 10*decimal64Base/100 && exp > -1-expOffset+2 {
-		exp -= 2
-		significand *= 100
-	}
-	if significand < 10*decimal64Base/10 && exp > -1-expOffset+1 {
+	for significand < decimal64Base && exp > -expOffset {
 		exp--
 		significand *= 10
 	}
-	if significand >= 10*decimal64Base && exp < expMax {
+	for significand >= 10*decimal64Base && exp < expMax {
 		exp++
 		significand /= 10
 	}

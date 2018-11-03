@@ -9,16 +9,24 @@ import (
 
 func TestNew64FromInt64(t *testing.T) {
 	for i := int64(-1000); i <= 1000; i++ {
-		d := NewDecimal64FromInt64(i)
-		j := d.Int64()
-		require.EqualValues(t, i, j)
+		require.NotPanics(t, func() {
+			d := NewDecimal64FromInt64(i)
+			j := d.Int64()
+			require.EqualValues(t, i, j)
+		}, "%d", i)
 	}
 
-	// Test around the threshold for high-significand representation.
-	for i := int64(0x20000000000000 - 10); i <= 0x20000000000000+10; i++ {
-		d := NewDecimal64FromInt64(i)
-		j := d.Int64()
-		require.EqualValues(t, i, j)
+	// Test the neighborhood of powers of two up to the high-significand
+	// representation threshold.
+	for e := 4; e < 54; e++ {
+		base := int64(1) << uint(e)
+		for i := base - 10; i <= base+10; i++ {
+			require.NotPanics(t, func() {
+				d := NewDecimal64FromInt64(i)
+				j := d.Int64()
+				require.EqualValues(t, i, j)
+			}, "%d", i)
+		}
 	}
 }
 
