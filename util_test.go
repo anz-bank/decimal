@@ -15,7 +15,7 @@ func TestDiv10_64(t *testing.T) {
 
 const mask64 = 1<<64 - 1
 
-var powersOf10 = []uint128T{
+var powersOf10U128 = []uint128T{
 	{1, 0},
 	{10, 0},
 	{100, 0},
@@ -58,10 +58,10 @@ var powersOf10 = []uint128T{
 }
 
 func TestDiv10_64_po10(t *testing.T) {
-	for i, u := range powersOf10 {
+	for i, u := range powersOf10U128 {
 		var e uint128T
 		if i > 0 {
-			e = powersOf10[i-1]
+			e = powersOf10U128[i-1]
 		}
 		a := u.divBy10()
 		require.EqualValues(t, e, a, "%v/10 ≠ %v (expecting %d)", u, a, e)
@@ -69,11 +69,11 @@ func TestDiv10_64_po10(t *testing.T) {
 }
 
 func TestUmul64_po10(t *testing.T) {
-	for i, u := range powersOf10 {
+	for i, u := range powersOf10U128 {
 		if u.hi == 0 {
-			for j, v := range powersOf10 {
+			for j, v := range powersOf10U128 {
 				if v.hi == 0 {
-					e := powersOf10[i+j]
+					e := powersOf10U128[i+j]
 					a := umul64(u.lo, v.lo)
 					require.EqualValues(t, e, a, "%v/10 ≠ %v (expecting %d)", u, a, e)
 				}
