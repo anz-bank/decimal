@@ -7,10 +7,10 @@ var Zero64 = newFromParts(0, 0, 0)
 var NegZero64 = newFromParts(1, 0, 0)
 
 // One64 represents 1 as a Decimal64.
-var One64 = NewDecimal64FromInt64(1)
+var One64 = newFromParts(0, -15, decimal64Base)
 
 // NegOne64 represents -1 as a Decimal64.
-var NegOne64 = NewDecimal64FromInt64(1).Neg()
+var NegOne64 = newFromParts(1, -15, decimal64Base)
 
 // Infinity64 represents ∞ as a Decimal64.
 var Infinity64 = Decimal64{inf64}
