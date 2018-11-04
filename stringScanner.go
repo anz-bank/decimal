@@ -9,8 +9,6 @@ import (
 
 type stringScanner struct {
 	reader *strings.Reader
-	wid    int
-	widSet bool
 }
 
 func (s *stringScanner) ReadRune() (r rune, size int, err error) {
@@ -58,7 +56,7 @@ func (s *stringScanner) Token(skipSpace bool, f func(rune) bool) (token []byte, 
 }
 
 func (s *stringScanner) Width() (wid int, ok bool) {
-	return s.wid, s.widSet
+	return 0, false
 }
 
 func (s *stringScanner) Read(buf []byte) (n int, err error) {

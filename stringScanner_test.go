@@ -37,19 +37,6 @@ func TestStringScannerTokenSkipSpace(t *testing.T) {
 	require.Equal([]byte("xyz"), token)
 }
 
-func TestStringScannerWidth(t *testing.T) {
-	require := require.New(t)
-
-	state := &stringScanner{reader: strings.NewReader("foo"), wid: 0, widSet: false}
-	wid, ok := state.Width()
-	require.False(ok)
-
-	state = &stringScanner{reader: strings.NewReader("foo"), wid: 10, widSet: true}
-	wid, ok = state.Width()
-	require.True(ok)
-	require.Equal(10, wid)
-}
-
 func TestStringScannerRead(t *testing.T) {
 	require := require.New(t)
 
