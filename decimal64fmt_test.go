@@ -3,6 +3,7 @@ package decimal
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,18 +16,21 @@ func TestDecimal64String(t *testing.T) {
 		require.Equal(strconv.Itoa(int(i)), NewDecimal64FromInt64(i).String())
 	}
 
-	for f := 1; f < 100; f += 2 {
-		fraction := NewDecimal64FromInt64(int64(f)).Quo(NewDecimal64FromInt64(100))
+	for f := 1; f < 1000; f += 11 {
+		fdigits := strings.TrimRight(fmt.Sprintf("%03d", f), "0")
+		fraction := NewDecimal64FromInt64(int64(f)).Quo(NewDecimal64FromInt64(1000))
 		for i := int64(0); i <= 100; i++ {
 			require.Equal(
-				strconv.Itoa(int(i))+"."+strconv.Itoa(100 + f)[1:3],
+				strconv.Itoa(int(i))+"."+fdigits,
 				NewDecimal64FromInt64(i).Add(fraction).String(),
+				"%d.%03d", f, i,
 			)
 		}
 		for i := int64(-100); i < 0; i++ {
 			require.Equal(
-				strconv.Itoa(int(i))+"."+strconv.Itoa(100 + f)[1:3],
+				strconv.Itoa(int(i))+"."+fdigits,
 				NewDecimal64FromInt64(i).Sub(fraction).String(),
+				"%d.%03d", f, i,
 			)
 		}
 	}
@@ -36,7 +40,11 @@ func TestDecimal64Format(t *testing.T) {
 	require := require.New(t)
 
 	for i := int64(-1000); i <= 1000; i++ {
-		require.Equal(strconv.FormatInt(i, 10), fmt.Sprintf("%v", NewDecimal64FromInt64(i)))
+		require.Equal(
+			strconv.FormatInt(i, 10),
+			fmt.Sprintf("%v", NewDecimal64FromInt64(i)),
+			"%d", i,
+		)
 	}
 
 	require.Equal("%!s(*decimal.Decimal64=42)", fmt.Sprintf("%s", NewDecimal64FromInt64(42)))

@@ -9,11 +9,9 @@ import (
 
 func TestNew64FromInt64(t *testing.T) {
 	for i := int64(-1000); i <= 1000; i++ {
-		require.NotPanics(t, func() {
-			d := NewDecimal64FromInt64(i)
-			j := d.Int64()
-			require.EqualValues(t, i, j)
-		}, "%d", i)
+		d := NewDecimal64FromInt64(i)
+		j := d.Int64()
+		require.EqualValues(t, i, j, "%d", i)
 	}
 
 	// Test the neighborhood of powers of two up to the high-significand
@@ -21,11 +19,9 @@ func TestNew64FromInt64(t *testing.T) {
 	for e := 4; e < 54; e++ {
 		base := int64(1) << uint(e)
 		for i := base - 10; i <= base+10; i++ {
-			require.NotPanics(t, func() {
-				d := NewDecimal64FromInt64(i)
-				j := d.Int64()
-				require.EqualValues(t, i, j)
-			}, "%d", i)
+			d := NewDecimal64FromInt64(i)
+			j := d.Int64()
+			require.EqualValues(t, i, j, "1<<%d + %d", e, i)
 		}
 	}
 }
@@ -36,7 +32,7 @@ func TestNew64FromInt64Big(t *testing.T) {
 	for i := -int64(limit); i <= limit; i += step {
 		d := NewDecimal64FromInt64(i)
 		j := d.Int64()
-		require.EqualValues(t, i, j)
+		require.EqualValues(t, i, j, "%d", i)
 	}
 }
 

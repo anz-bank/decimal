@@ -78,7 +78,7 @@ func TestDecimal64ScanFlakyScanState(t *testing.T) {
 			failAt: failAt,
 		}
 		var d Decimal64
-		require.Error(t, d.Scan(&state, 'e'))
+		require.Error(t, d.Scan(&state, 'e'), "%d", failAt)
 	}
 
 	requireFailAt("x", 0)
