@@ -300,3 +300,73 @@ func TestDecimal64Sub(t *testing.T) {
 		"-",
 	)
 }
+
+func benchmarkDecimal64Data() []Decimal64 {
+	return []Decimal64{
+		One64,
+		QNaN64,
+		Infinity64,
+		NegInfinity64,
+		Pi64,
+		E64,
+		NewDecimal64FromInt64(42),
+		MustParseDecimal64("2345678e100"),
+		NewDecimal64FromInt64(1234567),
+		NewDecimal64FromInt64(-42),
+		MustParseDecimal64("3456789e-120"),
+	}
+}
+
+func BenchmarkDecimal64Abs(b *testing.B) {
+	x := benchmarkDecimal64Data()
+	for i := 0; i <= b.N; i++ {
+		_ = x[i%len(x)].Abs()
+	}
+}
+
+func BenchmarkDecimal64Add(b *testing.B) {
+	x := benchmarkDecimal64Data()
+	y := x[:len(x)-2]
+	for i := 0; i <= b.N; i++ {
+		_ = x[i%len(x)].Add(y[i%len(y)])
+	}
+}
+
+func BenchmarkDecimal64Cmp(b *testing.B) {
+	x := benchmarkDecimal64Data()
+	y := x[:len(x)-2]
+	for i := 0; i <= b.N; i++ {
+		_ = x[i%len(x)].Cmp(y[i%len(y)])
+	}
+}
+
+func BenchmarkDecimal64Mul(b *testing.B) {
+	x := benchmarkDecimal64Data()
+	y := x[:len(x)-2]
+	for i := 0; i <= b.N; i++ {
+		_ = x[i%len(x)].Mul(y[i%len(y)])
+	}
+}
+
+func BenchmarkDecimal64Quo(b *testing.B) {
+	x := benchmarkDecimal64Data()
+	y := x[:len(x)-2]
+	for i := 0; i <= b.N; i++ {
+		_ = x[i%len(x)].Quo(y[i%len(y)])
+	}
+}
+
+func BenchmarkDecimal64Sqrt(b *testing.B) {
+	x := benchmarkDecimal64Data()
+	for i := 0; i <= b.N; i++ {
+		_ = x[i%len(x)].Sqrt()
+	}
+}
+
+func BenchmarkDecimal64Sub(b *testing.B) {
+	x := benchmarkDecimal64Data()
+	y := x[:len(x)-2]
+	for i := 0; i <= b.N; i++ {
+		_ = x[i%len(x)].Sub(y[i%len(y)])
+	}
+}

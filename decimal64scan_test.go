@@ -1,6 +1,7 @@
 package decimal
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
@@ -84,6 +85,23 @@ func TestDecimal64ScanFlakyScanState(t *testing.T) {
 	requireFailAt("x", 0)
 	for i := 0; i < 7; i++ {
 		requireFailAt("-1.0e-3", i)
+	}
+}
+
+func BenchmarkParseDecimal64(b *testing.B) {
+	var d Decimal64
+	for n := 0; n < b.N; n++ {
+		buf := bytes.NewBufferString("123456789")
+		fmt.Fscanf(buf, "%g", &d)
+	}
+}
+
+func BenchmarkDecimal64Scan(b *testing.B) {
+	reader := strings.NewReader("")
+	for n := 0; n < b.N; n++ {
+		reader.Reset("123456789")
+		var d Decimal64
+		d.Scan(&stringScanner{reader: reader}, 'g')
 	}
 }
 

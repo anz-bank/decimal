@@ -36,6 +36,13 @@ func TestDecimal64String(t *testing.T) {
 	}
 }
 
+func BenchmarkDecimal64String(b *testing.B) {
+	d := NewDecimal64FromInt64(123456789)
+	for i := 0; i <= b.N; i++ {
+		_ = d.String()
+	}
+}
+
 func TestDecimal64Format(t *testing.T) {
 	require := require.New(t)
 
@@ -48,6 +55,13 @@ func TestDecimal64Format(t *testing.T) {
 	}
 
 	require.Equal("%!s(*decimal.Decimal64=42)", fmt.Sprintf("%s", NewDecimal64FromInt64(42)))
+}
+
+func BenchmarkDecimal64Format(b *testing.B) {
+	d := NewDecimal64FromInt64(123456789)
+	for i := 0; i <= b.N; i++ {
+		_ = fmt.Sprintf("%v", d)
+	}
 }
 
 func TestDecimal64Append(t *testing.T) {
@@ -86,4 +100,12 @@ func TestDecimal64Append(t *testing.T) {
 	requireAppend("-inf", NegInfinity64, 'f', 0)
 
 	requireAppend("%w", Zero64, 'w', 0)
+}
+
+func BenchmarkDecimal64Append(b *testing.B) {
+	d := NewDecimal64FromInt64(123456789)
+	buf := make([]byte, 10)
+	for i := 0; i <= b.N; i++ {
+		_ = d.Append(buf, 'g', 0)
+	}
 }
