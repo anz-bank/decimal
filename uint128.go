@@ -49,8 +49,9 @@ func (a uint128T) divPart64(d uint64) (q, r uint64) {
 // Helper for divPart64
 func partialQuotient32(a0, a12, d0, d1 uint64) uint64 {
 	q := a12 / d1
-	for r := a12 - q*d1; r < base32 && !(q < base32 && q*d0 <= r<<32+a0); r += d1 {
+	if r := a12 - q*d1; r < base32 && !(q < base32 && q*d0 <= r<<32+a0) {
 		q--
+		r += d1
 	}
 	return q
 }
@@ -71,8 +72,9 @@ func (a uint128T) divrem64(d uint64) (q uint128T, r uint64) {
 	return
 }
 
+// See http://www.hackersdelight.org/divcMore.pdf for div-by-const tricks.
+
 func (a uint128T) divBy10() uint128T {
-	// http://www.hackersdelight.org/divcMore.pdf
 	q := a.shr(1).add(a.shr(2))
 	q = q.add(q.shr(4))
 	q = q.add(q.shr(8))
@@ -81,7 +83,7 @@ func (a uint128T) divBy10() uint128T {
 	q = q.add(q.shr(64))
 	q = q.shr(3)
 	r := a.sub(q.mulBy10())
-	return q.add(r.add(uint128T{6, 0}).shr(4))
+	return q.add(uint128T{(r.lo + 6) >> 4, 0})
 }
 
 // func (a uint128T) ge(b uint128T) bool {
@@ -111,7 +113,10 @@ func (a uint128T) leadingZeros() uint {
 // }
 
 func (a uint128T) mulBy10() uint128T {
-	return a.shl(1).add(a.shl(3))
+	// a*10 = a*8 + a*2
+	a8 := a.shl(3)
+	a2 := a.shl(1)
+	return a8.add(a2)
 }
 
 // func (a uint128T) mul(b uint128T) uint128T {

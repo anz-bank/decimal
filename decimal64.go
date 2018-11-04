@@ -183,15 +183,25 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 	if exp >= 0 {
 		return exp, significand, 0
 	}
-	n := uint128T{significand, 0}.mul64(10 * decimal64Base)
-	// exp++ till it hits 0 or continuing would throw away digits.
-	for ; exp < 0; exp++ {
-		nOver10 := n.divBy10()
-		rem := n.sub(nOver10.mul64(10))
-		if rem.lo > 0 {
-			break
+	n := uint128T{significand, 0}
+	exp += 16
+	if exp > 0 {
+		n = n.mul64(powersOf10[exp])
+		exp = 0
+	} else {
+		// exp++ till it hits 0 or continuing would throw away digits.
+		for step := 3; step >= 0; step-- {
+			expStep := 1 << uint(step)
+			powerOf10 := powersOf10[expStep]
+			for ; n.lo >= powerOf10 && exp <= -expStep; exp += expStep {
+				quo := n.lo / powerOf10
+				rem := n.lo - quo*powerOf10
+				if rem > 0 {
+					break
+				}
+				n.lo = quo
+			}
 		}
-		n = nOver10
 	}
 	whole128 := n.div64(10 * decimal64Base)
 	frac128 := n.sub(whole128.mul64(10 * decimal64Base))

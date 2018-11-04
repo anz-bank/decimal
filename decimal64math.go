@@ -89,11 +89,11 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 		return infinities[sign]
 	}
 
-	exp := exp1 + exp2
-	significand := umul64(significand1, significand2)
-	for significand.hi > 0 || significand.lo >= 10*decimal64Base {
+	exp := exp1 + exp2 + 15
+	significand := umul64(significand1, significand2).div64(decimal64Base)
+	for significand.lo >= 10*decimal64Base {
 		exp++
-		significand = significand.divBy10()
+		significand.lo /= 10
 	}
 
 	return newFromParts(sign, exp, significand.lo)
@@ -139,7 +139,6 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 		exp++
 		significand = significand.divBy10()
 	}
-	checkSignificandIsNormal(significand.lo)
 	return newFromParts(sign, exp, significand.lo)
 }
 
