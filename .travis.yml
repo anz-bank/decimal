@@ -2,8 +2,7 @@ language: go
 deploy:
   provider: pages
   skip-cleanup: true
+  github-token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
   keep-history: true
-  go get -t -v ./...
-  script: go test -v ./...
   on:
-    branch: master 
+    branch: master
