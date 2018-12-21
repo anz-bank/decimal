@@ -8,11 +8,12 @@ test:
   github-token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
   keep-history: true
   script: 
-  - go get -u golang.org/x/lint/golint
-  - golint ./...
+  
   #- golangci-lint run 
   - go get -t -v ./...
   - go test -v ./...
+  - go get -u golang.org/x/lint/golint
+  - golint ./...
   
   
   on:
