@@ -2,11 +2,13 @@ language: go
 test:
   provider: pages
   skip-cleanup: true
+  before_script:
+   - go install -mod vendor github.com/golangci/golangci-lint/cmd/golangci-lint
 
   github-token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
   keep-history: true
   script: 
-  - go install -mod vendor github.com/golangci/golangci-lint/cmd/golangci-lint
+ 
   - golangci-lint run 
   - go get -t -v ./...
   - go test -v ./...
