@@ -1,18 +1,17 @@
-sudo: false
 language: go
-go:
-  - 1.x
-  - master
 matrix:
   allow_failures:
     - go: master
   fast_finish: true
+env:
+- GO111MODULE=on
+before_script:
+  - go install -mod vendor github.com/golangci/golangci-lint/cmd/golangci-lint
 install:
   - # Do nothing. This is needed to prevent default install action "go get -t -v ./..." from happening here (we want it to happen inside script step).
+- stage: test
 script:
-  - go get -u github.com/golang/lint/golint
-  - out=$(golint $(go list ./... | grep -v "vendor"))
-  - if [ "$out" ]; then echo "$out"; exit 1; fi
+  - golangci-lint run
   - go get -t -v ./...
   - diff -u <(echo -n) <(gofmt -d -s .)
   - go tool vet .
