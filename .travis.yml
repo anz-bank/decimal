@@ -3,7 +3,10 @@ go:
 - master
 env:
 - GO111MODULE=on
-
+matrix:
+  allow_failures:
+    - go: master
+fast_finish: true
 install:
   - go get -u golang.org/x/lint/golint
 jobs:
