@@ -1,24 +1,13 @@
 language: go
-go:
-- master
-
-matrix:
-  allow_failures:
-    - go: master
-fast_finish: false
 
 install:
- - 
-jobs:
-  include:
-    - stage: test
-      script: 
-      - go test
-      - go vet .
-    - stage: style
-    
-      script:
-      # use built in go formatter in order to save setup time on travisci
-      - diff -u <(echo -n) <(gofmt -d -s .)
-      
-    
+  - go get -d -t
+  - go get -u github.com/alecthomas/gometalinter
+  - gometalinter --install
+
+script:
+  - gometalinter --enable-all .
+  - go test -race -coverprofile=coverage.txt -covermode=atomic
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
