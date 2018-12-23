@@ -4,7 +4,6 @@ go:
  - 1.11.4
 
 env:
- - GO111MODULE=on
  - PATH=$PATH:./bin/
 
 install:
