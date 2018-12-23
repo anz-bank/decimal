@@ -31,7 +31,7 @@ func checkSignificandIsNormal(significand uint64) {
 }
 
 // NewDecimal64FromInt64 returns a new Decimal64 with the given value.
-func   NewDecimal64FromInt64(value int64) Decimal64 {
+func NewDecimal64FromInt64(value int64) Decimal64 {
 	if value == 0 {
 		return Zero64
 	}
