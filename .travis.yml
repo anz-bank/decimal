@@ -4,8 +4,8 @@ go:
  - 1.11.4
 
 env:
- - GO111MODULE= on
- - export PATH=$PATH:./bin/
+ - GO111MODULE=on
+ - PATH=$PATH:./bin/
 
 install:
  - go get -d -t
