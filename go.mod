@@ -1,4 +1,3 @@
-package main
 module github.com/anz-private/decimal
 
 require (
