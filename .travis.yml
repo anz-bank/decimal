@@ -5,11 +5,11 @@ go:
 
 env:
  - GO111MODULE= on
+ - export PATH=$PATH:./bin/
 
 install:
  - go get -d -t
  - curl -L https://git.io/vp6lP | sh
- - export PATH=$PATH:./bin/
  
 script:
  - gometalinter .
