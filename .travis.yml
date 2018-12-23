@@ -6,8 +6,6 @@ matrix:
   allow_failures:
     - go: master
 fast_finish: true
-install:
-  -#jg
 
 
 jobs:
@@ -15,5 +13,9 @@ jobs:
     - stage: test
       script: 
       - go test
-    - stage: deploy
+      - go tool vet .
+    - stage: style
+      script:
+      - diff -u <(echo -n) <(gofmt -d -s .)
+      
     
