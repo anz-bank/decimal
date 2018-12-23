@@ -1,20 +1,19 @@
 language: go
 go:
 - master
-env:
-- GO111MODULE=on
+
 matrix:
   allow_failures:
     - go: master
 fast_finish: true
 install:
   #jg
-cache:
-  - go get -u golang.org/x/lint/golint
+
 
 jobs:
   include:
     - stage: test
-      script: go test
+      script: 
+      - go test
     - stage: deploy
     
