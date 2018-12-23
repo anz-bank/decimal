@@ -7,12 +7,10 @@ env:
  - GO111MODULE= on
 
 install:
-  - go get -d -t
-#  - go get -u github.com/alecthomas/gometalinter
-#  - gometalinter --install
+ - go get -d -t
  - curl -L https://git.io/vp6lP | sh
  
 script:
  - go build 
  - gometalinter .
-  - go test -v -race ./...
+ - go test -v -race ./...
