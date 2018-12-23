@@ -5,17 +5,20 @@ go:
 matrix:
   allow_failures:
     - go: master
-fast_finish: true
+fast_finish: false
 
-
+install:
+ - 
 jobs:
   include:
     - stage: test
       script: 
       - go test
-      - go tool vet .
+      - go vet .
     - stage: style
+    
       script:
+      # use built in go formatter in order to save setup time on travisci
       - diff -u <(echo -n) <(gofmt -d -s .)
       
     
