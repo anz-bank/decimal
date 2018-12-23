@@ -1,4 +1,4 @@
-language: go
+\language: go
 
 go:
  - 1.11.4
@@ -12,6 +12,5 @@ install:
  - export PATH=$PATH:./bin/
  
 script:
- - go build 
  - gometalinter .
  - go test -v -race ./...
