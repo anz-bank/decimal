@@ -5,14 +5,11 @@ matrix:
   fast_finish: true
 env:
 - GO111MODULE=on
-before_script:
-  - go install -mod vendor github.com/golangci/golangci-lint/cmd/golangci-lint
+
 install:
-  - # Do nothing. This is needed to prevent default install action "go get -t -v ./..." from happening here (we want it to happen inside script step).
+  - go get -u golang.org/x/lint/golint
 - stage: test
 script:
-  - golangci-lint run
-  - go get -t -v ./...
-  - diff -u <(echo -n) <(gofmt -d -s .)
+  - golint -set_exit_status
   - go tool vet .
   - go test -v -race ./...
