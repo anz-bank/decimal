@@ -9,6 +9,7 @@ env:
 install:
  - go get -d -t
  - curl -L https://git.io/vp6lP | sh
+ - export PATH=$PATH:./bin/
  
 script:
  - go build 
