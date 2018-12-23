@@ -2,7 +2,8 @@ language: go
 
 go:
 - 1.11.4
-
+env:
+GO111MODULE= on
 install:
   - go get -d -t
   - go get -u github.com/alecthomas/gometalinter
