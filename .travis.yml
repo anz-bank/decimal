@@ -8,9 +8,11 @@ env:
 
 install:
   - go get -d -t
-  - go get -u github.com/alecthomas/gometalinter
-  - gometalinter --install
-
+#  - go get -u github.com/alecthomas/gometalinter
+#  - gometalinter --install
+ - curl -L https://git.io/vp6lP | sh
+ 
 script:
-  - gometalinter .
+ - go build 
+ - gometalinter .
   - go test -v -race ./...
