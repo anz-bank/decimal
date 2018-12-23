@@ -7,7 +7,7 @@ matrix:
     - go: master
 fast_finish: true
 install:
-  #jg
+  -#jg
 
 
 jobs:
