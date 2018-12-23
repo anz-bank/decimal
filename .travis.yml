@@ -1,1 +1,7 @@
 language: go
+jobs:
+  include:
+    - stage: test
+      script: go test
+    - stage: deploy
+    
