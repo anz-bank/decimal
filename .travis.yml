@@ -9,6 +9,10 @@ matrix:
 fast_finish: true
 install:
   - go get -u golang.org/x/lint/golint
+cache:
+  directories:
+    - golang.org/x/lint/golint
+
 jobs:
   include:
     - stage: test
