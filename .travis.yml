@@ -1,0 +1,15 @@
+language: go
+
+go:
+ - 1.11.4
+
+env:
+ - PATH=$PATH:./bin/
+
+install:
+ - go get -d -t
+ - curl -L https://git.io/vp6lP | sh
+
+script:
+ - gometalinter . # check .gometalinter.json for conifg
+ - go test -v -race ./...

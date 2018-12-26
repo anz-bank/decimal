@@ -1,0 +1,5 @@
+
+{
+  "DisableAll": true,
+  "Enable": ["golint" , "vet", "varcheck"]
+}
