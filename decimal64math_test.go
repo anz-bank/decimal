@@ -39,6 +39,9 @@ func TestDecimal64Abs(t *testing.T) {
 }
 
 func TestDecimal64Add(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TestDecimal64Add in short mode.")
+	}
 	checkDecimal64BinOp(t,
 		func(a, b int64) int64 { return a + b },
 		func(a, b Decimal64) Decimal64 { return a.Add(b) },
@@ -136,6 +139,9 @@ func TestDecimal64MulThreeByOneTenthByTen(t *testing.T) {
 }
 
 func TestDecimal64Mul(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TestDecimal64Mul in short mode.")
+	}
 	checkDecimal64BinOp(t,
 		func(a, b int64) int64 { return a * b },
 		func(a, b Decimal64) Decimal64 { return a.Mul(b) },
@@ -206,6 +212,9 @@ func checkDecimal64QuoByF(t *testing.T, f int64) {
 }
 
 func TestDecimal64Quo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TestDecimal64Quo in short mode.")
+	}
 	checkDecimal64QuoByF(t, 1)
 	checkDecimal64QuoByF(t, 7)
 	checkDecimal64QuoByF(t, 13)
