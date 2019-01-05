@@ -1,9 +1,9 @@
 package decimal
 
 import (
-	"testing"
-
+	"fmt"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func checkDecimal64BinOp(
@@ -369,4 +369,19 @@ func BenchmarkDecimal64Sub(b *testing.B) {
 	for i := 0; i <= b.N; i++ {
 		_ = x[i%len(x)].Sub(y[i%len(y)])
 	}
+}
+
+
+func TestBoundaries(t *testing.T) {
+	require := require.New(t)
+	x := MustParseDecimal64("9e384")
+	fmt.Println("x.parts()")
+	fmt.Println(x.parts())
+	y := MustParseDecimal64("1")
+	fmt.Println("x", x)
+	z := x.Mul(y)
+	fmt.Println("z", z)
+
+	require.Equal(x, z)
+
 }
