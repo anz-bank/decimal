@@ -11,6 +11,9 @@ import (
 )
 
 func TestParseDecimal64(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping TestParseDecimal64 in short mode.")
+	}
 	parseEquals64 := parseEquals64(t)
 
 	for i := int64(-1000); i <= 1000; i++ {
