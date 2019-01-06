@@ -25,11 +25,18 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 		return QNaN64
 	}
 	exp1, significand1, exp2, significand2 = matchScales(exp1, significand1, exp2, significand2)
+
 	if sign1 == sign2 {
 		significand := significand1 + significand2
-		if significand >= decimal64Base {
+
+		// avoid overflow and round to inf
+		if significand >= decimal64Base && exp1 < expMax {
 			exp1++
 			significand /= 10
+
+		} else if significand >= decimal64Base {
+
+			return infinities[sign1]
 		}
 		return newFromParts(sign1, exp1, significand)
 	}
