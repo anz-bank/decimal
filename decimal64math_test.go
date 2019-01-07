@@ -379,20 +379,15 @@ func BenchmarkDecimal64Sub(b *testing.B) {
 	}
 }
 
-func TestNegOverflow(t *testing.T) {
+func TestAddOverflow(t *testing.T) {
 	require := require.New(t)
 
 	max := MustParseDecimal64("-9.999999999999999e384") // largest dec64 number
 	small := MustParseDecimal64("0.000000000000001e384")
 	require.Equal(NegInfinity64, max.Sub(small))
 
-}
-
-func TestPosOverflow(t *testing.T) {
-	require := require.New(t)
-
-	max := MustParseDecimal64("9.999999999999999e384") // largest dec64 number
-	small := MustParseDecimal64("0.000000000000001e384")
+	max = MustParseDecimal64("9.999999999999999e384") // largest dec64 number
+	small = MustParseDecimal64("0.000000000000001e384")
 	require.Equal(Infinity64, max.Add(small))
 
 }

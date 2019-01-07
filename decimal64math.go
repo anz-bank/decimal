@@ -33,9 +33,7 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 		if significand >= decimal64Base && exp1 < expMax {
 			exp1++
 			significand /= 10
-
 		} else if significand >= decimal64Base {
-
 			return infinities[sign1]
 		}
 		return newFromParts(sign1, exp1, significand)
