@@ -101,6 +101,10 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 		significand.lo /= 10
 	}
 
+	if significand.lo >= decimal64Base && exp > expMax {
+		return infinities[sign1^sign2]
+	}
+
 	return newFromParts(sign, exp, significand.lo)
 }
 
