@@ -138,12 +138,22 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 		return zeroes[sign]
 	}
 
+	if e == Zero64 || e == NegZero64 {
+		return infinities[sign1]
+	}
+
 	exp := exp1 - exp2 - 16
 	significand := umul64(10*decimal64Base, significand1).div64(significand2)
 	for significand.hi > 0 || significand.lo >= 10*decimal64Base {
 		exp++
 		significand = significand.divBy10()
+
 	}
+
+	if significand.lo >= decimal64Base && exp > expMax {
+		return infinities[sign1^sign2]
+	}
+
 	return newFromParts(sign, exp, significand.lo)
 }
 

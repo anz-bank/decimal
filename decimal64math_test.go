@@ -391,3 +391,31 @@ func TestAddOverflow(t *testing.T) {
 	require.Equal(Infinity64, max.Add(small))
 
 }
+func TestQuoOverflow(t *testing.T) {
+	require := require.New(t)
+
+	max := MustParseDecimal64("1e384") // largest dec64 number
+	small := MustParseDecimal64(".01")
+	require.Equal(Infinity64, max.Quo(small))
+
+	max = MustParseDecimal64("1e384") // largest dec64 number
+	small = MustParseDecimal64("-.01")
+	require.Equal(NegInfinity64, max.Quo(small))
+
+	max = MustParseDecimal64("-1e384") // largest dec64 number
+	small = MustParseDecimal64(".01")
+	require.Equal(NegInfinity64, max.Quo(small))
+
+	max = MustParseDecimal64("-1e384") // largest dec64 number
+	small = MustParseDecimal64("0")
+	require.Equal(NegInfinity64, max.Quo(small))
+
+	max = MustParseDecimal64("0") // largest dec64 number
+	small = MustParseDecimal64("0")
+	require.Equal(QNaN64, max.Quo(small))
+
+	max = MustParseDecimal64("0") // largest dec64 number
+	small = MustParseDecimal64("100")
+	require.Equal(Zero64, max.Quo(small))
+
+}
