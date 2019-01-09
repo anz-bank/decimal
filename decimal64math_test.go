@@ -1,7 +1,6 @@
 package decimal
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -452,12 +451,13 @@ func TestMul(t *testing.T) {
 
 }
 
-func TestQuoUnderflow(t *testing.T) {
-	// require := require.New(t)
-
-	max := MustParseDecimal64("1e-384") // largest dec64 number
-	small := MustParseDecimal64("10")
-	// require.Equal(Infinity64, max.Quo(small))
-	fmt.Println(max.Quo(small))
-
-}
+// func TestQuoUnderflow(t *testing.T) {
+// 	// require := require.New(t)
+//
+// 	// max := MustParseDecimal64("1e-384") // largest dec64 number
+// 	// small := MustParseDecimal64("10")
+// 	// require.Equal(Infinity64, max.Quo(small))
+// 	// a, b := rescale(-384, 1000000000000, -383)
+// 	fmt.Println(decimal64Base)
+//
+// }
