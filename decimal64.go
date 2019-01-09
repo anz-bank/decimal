@@ -133,8 +133,12 @@ func matchScales(exp1 int, significand1 uint64, exp2 int, significand2 uint64) (
 }
 
 func newFromParts(sign int, exp int, significand uint64) Decimal64 {
-	//must be able to take non integer significands (for denormal numbers)
+	// Must be able to signify when significand is subnormal
 	s := uint64(sign) << 63
+
+	if significand >= decimal64Base && exp > expMax {
+		return infinities[sign]
+	}
 	if significand < 0x8<<50 {
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}

@@ -30,11 +30,9 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 		significand := significand1 + significand2
 
 		// avoid overflow and round to inf
-		if significand >= decimal64Base && exp1 < expMax {
+		if significand >= decimal64Base {
 			exp1++
 			significand /= 10
-		} else if significand >= decimal64Base {
-			return infinities[sign1]
 		}
 		return newFromParts(sign1, exp1, significand)
 	}
@@ -101,10 +99,6 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 		significand.lo /= 10
 	}
 
-	if significand.lo >= decimal64Base && exp > expMax {
-		return infinities[sign1^sign2]
-	}
-
 	return newFromParts(sign, exp, significand.lo)
 }
 
@@ -152,10 +146,6 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 		exp++
 		significand = significand.divBy10()
 
-	}
-
-	if significand.lo >= decimal64Base && exp > expMax {
-		return infinities[sign1^sign2]
 	}
 
 	return newFromParts(sign, exp, significand.lo)

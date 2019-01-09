@@ -1,8 +1,10 @@
 package decimal
 
 import (
-	"github.com/stretchr/testify/require"
+	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func checkDecimal64BinOp(
@@ -447,5 +449,15 @@ func TestMul(t *testing.T) {
 	a = MustParseDecimal64("0") // largest dec64 number
 	b = MustParseDecimal64("100")
 	require.Equal(Zero64, a.Mul(b))
+
+}
+
+func TestQuoUnderflow(t *testing.T) {
+	// require := require.New(t)
+
+	max := MustParseDecimal64("1e-384") // largest dec64 number
+	small := MustParseDecimal64("10")
+	// require.Equal(Infinity64, max.Quo(small))
+	fmt.Println(max.Quo(small))
 
 }
