@@ -136,7 +136,7 @@ func newFromParts(sign int, exp int, significand uint64) Decimal64 {
 	// Must be able to signify when significand is subnormal
 	s := uint64(sign) << 63
 
-	if significand >= decimal64Base && exp > expMax {
+	if significand >= decimal64Base && exp >= expMax {
 		return infinities[sign]
 	}
 	if significand < 0x8<<50 {
