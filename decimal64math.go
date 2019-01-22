@@ -26,15 +26,9 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	}
 
 	exp1, significand1, exp2, significand2 = matchScales(exp1, significand1, exp2, significand2)
-
 	if sign1 == sign2 {
 		significand := significand1 + significand2
 
-		// avoid overflow and round to inf
-		if significand >= decimal64Base {
-			exp1++
-			significand /= 10
-		}
 		return newFromParts(sign1, exp1, significand)
 	}
 	if significand1 > significand2 {
@@ -95,10 +89,6 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 
 	exp := exp1 + exp2 + 15
 	significand := umul64(significand1, significand2).div64(decimal64Base)
-	for significand.lo >= 10*decimal64Base {
-		exp++
-		significand.lo /= 10
-	}
 
 	return newFromParts(sign, exp, significand.lo)
 }
@@ -143,11 +133,15 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 
 	exp := exp1 - exp2 - 16
 	significand := umul64(10*decimal64Base, significand1).div64(significand2)
-	for significand.hi > 0 || significand.lo >= 10*decimal64Base {
-		exp++
-		significand = significand.divBy10()
 
-	}
+	// TODO : Redundant code (moved to newFromParts) but havent fully tested Quo function
+	// for significand.hi > 0 || significand.lo >= 10*decimal64Base {
+	// 	exp++
+	// 	fmt.Println(significand)
+	// 	significand = significand.divBy10()
+	// 	fmt.Println(significand)
+	//
+	// }
 
 	return newFromParts(sign, exp, significand.lo)
 }

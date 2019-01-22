@@ -388,9 +388,7 @@ func TestAddOverflow(t *testing.T) {
 
 	a = Max64
 	require.Equal(Infinity64, a.Add(MustParseDecimal64("0.000000000000001e384")))
-	a = Max64
 	require.Equal(a, a.Add(MustParseDecimal64("1")))
-	a = Max64
 	require.Equal(a, Zero64.Add(a))
 
 }
