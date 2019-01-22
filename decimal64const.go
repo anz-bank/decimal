@@ -42,8 +42,10 @@ const maxSig = (10 ^ 16) - 1
 const expOffset = 398
 const expMax = 369
 
-// Max  and min numbers for decimal64
+// Max64  is max num
 var Max64 = newFromParts(0, 369, 9999999999999999)
+
+// Min64 is min subnormal
 var Min64 = newFromParts(0, 398, 1)
 
 var zeroes = []Decimal64{Zero64, NegZero64}
