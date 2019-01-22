@@ -24,6 +24,7 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 		}
 		return QNaN64
 	}
+
 	exp1, significand1, exp2, significand2 = matchScales(exp1, significand1, exp2, significand2)
 
 	if sign1 == sign2 {
