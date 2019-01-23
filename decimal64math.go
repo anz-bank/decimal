@@ -24,11 +24,18 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 		}
 		return QNaN64
 	}
+	if significand1 == 0 && significand2 == 0 {
+		return Zero64
+	}
 
 	exp1, significand1, exp2, significand2 = matchScales(exp1, significand1, exp2, significand2)
+
 	if sign1 == sign2 {
 		significand := significand1 + significand2
-
+		exp1, significand = renormalize(exp1, significand)
+		if significand > maxSig || exp1 > expMax {
+			return infinities[sign1]
+		}
 		return newFromParts(sign1, exp1, significand)
 	}
 	if significand1 > significand2 {
@@ -89,7 +96,10 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 
 	exp := exp1 + exp2 + 15
 	significand := umul64(significand1, significand2).div64(decimal64Base)
-
+	exp, significand.lo = renormalize(exp, significand.lo)
+	if significand.lo > maxSig || exp > expMax {
+		return infinities[sign]
+	}
 	return newFromParts(sign, exp, significand.lo)
 }
 
@@ -133,15 +143,10 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 
 	exp := exp1 - exp2 - 16
 	significand := umul64(10*decimal64Base, significand1).div64(significand2)
-
-	// TODO : Redundant code (moved to newFromParts) but havent fully tested Quo function
-	// for significand.hi > 0 || significand.lo >= 10*decimal64Base {
-	// 	exp++
-	// 	fmt.Println(significand)
-	// 	significand = significand.divBy10()
-	// 	fmt.Println(significand)
-	//
-	// }
+	exp, significand.lo = renormalize(exp, significand.lo)
+	if significand.lo > maxSig || exp > expMax {
+		return infinities[sign]
+	}
 
 	return newFromParts(sign, exp, significand.lo)
 }
