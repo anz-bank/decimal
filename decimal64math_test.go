@@ -389,7 +389,6 @@ func TestAddOverflow(t *testing.T) {
 	require.Equal(Infinity64, a.Add(MustParseDecimal64("0.000000000000001e384")))
 	require.Equal(a, a.Add(MustParseDecimal64("1")))
 	require.Equal(a, Zero64.Add(a))
-
 }
 
 func TestQuoOverflow(t *testing.T) {
@@ -405,7 +404,6 @@ func TestQuoOverflow(t *testing.T) {
 	require.Equal(NegInfinity64, a.Quo(MustParseDecimal64("0")))
 	require.Equal(QNaN64, Zero64.Quo(Zero64))
 	require.Equal(Zero64, Zero64.Quo(MustParseDecimal64("100")))
-
 }
 
 func TestMul(t *testing.T) {
@@ -421,5 +419,4 @@ func TestMul(t *testing.T) {
 	require.Equal(NegZero64, a.Mul(Zero64))
 	require.Equal(Zero64, Zero64.Mul(Zero64))
 	require.Equal(Zero64, Zero64.Mul(MustParseDecimal64("100")))
-
 }
