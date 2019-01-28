@@ -36,8 +36,17 @@ var inf64 uint64 = 0x78 << 56
 // 1E15
 const decimal64Base = 1000 * 1000 * 1000 * 1000 * 1000
 
+// Max significand possible (16 decimal places)
+const maxSig = decimal64Base*10 - 1
+
 const expOffset = 398
 const expMax = 369
+
+// Max64  is max number possible with Decimal64
+var Max64 = newFromParts(0, expMax, maxSig)
+
+// Min64 is minimum number that is subnormal possible with Decimal64
+var Min64 = newFromParts(0, -398, 1)
 
 var zeroes = []Decimal64{Zero64, NegZero64}
 var infinities = []Decimal64{Infinity64, NegInfinity64}

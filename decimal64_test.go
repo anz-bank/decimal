@@ -1,10 +1,9 @@
 package decimal
 
 import (
+	"github.com/stretchr/testify/require"
 	"math"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestNew64FromInt64(t *testing.T) {
