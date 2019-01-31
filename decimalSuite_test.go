@@ -8,6 +8,39 @@ import (
 	"testing"
 )
 
+// master tester for the suite
+func TestFromSuite(t *testing.T) {
+	// require := require.New(t)
+	testVals, testNames := getInput("dectest/ddAdd.decTest")
+
+	var testName string
+	var TestResult string
+	var TestPass bool
+	var testVal1, testVal2, testAns Decimal64
+	var parseResult string
+
+	for i := range testNames {
+		testName = testNames[i]
+		testVal1, testVal2, testAns, parseResult = convertToDec64(testVals[testName], testName)
+		TestPass, TestResult = doTests(testVal1, testVal2, testAns, testVals[testName]["TestFunc"])
+		if TestPass == false {
+			fmt.Printf("%s: \n %s\n %s\n", testName, TestResult, parseResult)
+		}
+	}
+
+}
+
+// func TestNew(t *testing.T) {
+// 	// require := require.New(t)
+// 	// // propper rounding
+// 	// require.Equal(MustParseDecimal64("4444444444444445"), MustParseDecimal64("4444444444444444").Add(MustParseDecimal64("0.5001")))
+// 	// require.Equal(MustParseDecimal64("0.23"), MustParseDecimal64("1.3").Add(MustParseDecimal64("-1.07")))
+// 	// fmt.Println("sjoidgf", MustParseDecimal64("4444444444444444").Add(MustParseDecimal64("1.5001")))
+// 	// // require.Equal(MustParseDecimal64("12345678901234.29"), MustParseDecimal64("12345678901234").Add(MustParseDecimal64("0.2951")))
+//
+// }
+
+//getInput gets the test file and extracts test using regex, then returns a map object and a list of test names
 func getInput(file string) (map[string]map[string]string, []string) {
 	dat, _ := ioutil.ReadFile("dectest/ddAdd.decTest")
 	dataString := string(dat)
@@ -41,6 +74,8 @@ func getInput(file string) (map[string]map[string]string, []string) {
 	return data, testList
 
 }
+
+//convertToDec64 converts the map object strings to decimal64s
 func convertToDec64(testVals map[string]string, testName string) (testVal1, testVal2, testAns Decimal64, parseErr string) {
 	var err1, err2, err3 error
 	// var TestResult []string
@@ -54,6 +89,7 @@ func convertToDec64(testVals map[string]string, testName string) (testVal1, test
 	return
 }
 
+//checkErrors checks to see if there are any string parsing errors
 func checkErrors(err1, err2, err3 error, testVals map[string]string) (errReturn string) {
 	var errReturnSlice []string
 	if err2 != nil {
@@ -69,6 +105,7 @@ func checkErrors(err1, err2, err3 error, testVals map[string]string) (errReturn 
 	return strings.Join(errReturnSlice, "")
 }
 
+//doTests completes the tests and returns a boolean and string on if the test passes
 func doTests(testVal1, testVal2, testAns Decimal64, testfunc string) (testStatus bool, testString string) {
 
 	fmt.Println()
@@ -99,34 +136,3 @@ func doTests(testVal1, testVal2, testAns Decimal64, testfunc string) (testStatus
 	}
 
 }
-
-func TestFromCTests(t *testing.T) {
-	// require := require.New(t)
-	testVals, testNames := getInput("dectest/ddAdd.decTest")
-
-	var testName string
-	var TestResult string
-	var TestPass bool
-	var testVal1, testVal2, testAns Decimal64
-	var parseResult string
-
-	for i := range testNames {
-		testName = testNames[i]
-		testVal1, testVal2, testAns, parseResult = convertToDec64(testVals[testName], testName)
-		TestPass, TestResult = doTests(testVal1, testVal2, testAns, testVals[testName]["TestFunc"])
-		if TestPass == false {
-			fmt.Printf("%s: \n %s\n %s\n", testName, TestResult, parseResult)
-		}
-	}
-
-}
-
-// func TestNew(t *testing.T) {
-// 	// require := require.New(t)
-// 	// // propper rounding
-// 	// require.Equal(MustParseDecimal64("4444444444444445"), MustParseDecimal64("4444444444444444").Add(MustParseDecimal64("0.5001")))
-// 	// require.Equal(MustParseDecimal64("0.23"), MustParseDecimal64("1.3").Add(MustParseDecimal64("-1.07")))
-// 	// fmt.Println("sjoidgf", MustParseDecimal64("4444444444444444").Add(MustParseDecimal64("1.5001")))
-// 	// // require.Equal(MustParseDecimal64("12345678901234.29"), MustParseDecimal64("12345678901234").Add(MustParseDecimal64("0.2951")))
-//
-// }
