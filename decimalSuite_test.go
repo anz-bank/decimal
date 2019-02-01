@@ -30,6 +30,7 @@ func TestFromSuite(t *testing.T) {
 
 }
 
+// TODO: any tests that are failing a particular test in the test suite will be turned into a unit test
 // func TestNew(t *testing.T) {
 // 	// require := require.New(t)
 // 	// // propper rounding
@@ -54,7 +55,7 @@ func getInput(file string) (map[string]map[string]string, []string) {
 	// (?P<TestVals_2>(\+|-[^->])?[^\r\n\t\f\v\' ]*) testvals2 same as 1 but no '->'
 	// ('?\s*->\s*'?) matches the indicator to answer
 	// (?P<answer>(\+|-)*[^\r\n\t\f\v\' ]*) matches the answer that's anything that is plus minus but not quotations
-
+	//
 	// split into groups: testName, TestFunct, TestVals (x2) and TestAns
 	regex := `(\n|\r)(?P<TestName>dd[\w]*)(\s*)(?P<TestFunc>[\S]*)(\s*\'?)(?P<TestVals_1>(\+|-)*[^\r\n\t\f\v\' ]*)('?\s*'?)(?P<TestVals_2>(\+|-[^->])?[^\r\n\t\f\v\' ]*)('?\s*->\s*'?)(?P<answer>(\+|-)*[^\r\n\t\f\v\' ]*)`
 	r := regexp.MustCompile(regex)
