@@ -37,7 +37,7 @@ var inf64 uint64 = 0x78 << 56
 const decimal64Base = 1000 * 1000 * 1000 * 1000 * 1000
 
 // Max significand possible (16 decimal places)
-const maxSig = decimal64Base*10 - 1
+const maxSig = 10*decimal64Base - 1
 
 const expOffset = 398
 const expMax = 369
