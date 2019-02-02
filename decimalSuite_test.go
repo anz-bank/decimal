@@ -59,27 +59,25 @@ func TestFromSuite(t *testing.T) {
 func getInput(file string) (data []testCaseStrings) {
 	dat, _ := ioutil.ReadFile("dectest/ddAdd.decTest")
 	dataString := string(dat)
-	//  "(\n)") // start with newline
-	//  "(?P<TestName>dd[\w]*)") // TestName must start with dd (double decimal)
-	//  "(?P<TestFunc>[\S]*)") // testfunc made of anything that isn't a whitespace
-	//  "(\s*\'?)") // after can be any number of spaces and quotations if they exist
-	// "(?P<TestVals_1>(\+|-)*[^\t\f\v\' ]*)") // first test val is anything that isnt a whitespace or a quoteation mark
-	//  "(?P<TestVals_1>(\+|-)*[^\t\f\v\' ]*)") // first test val is anything that isnt a whitespace or a quoteation mark
-	// ('?\s*'?) match any quotation marks and any spaces
-	// (?P<TestVals_2>(\+|-[^->])?[^\t\f\v\' ]*) testvals2 same as 1 but no '->'
-	// ('?\s*->\s*'?) matches the indicator to answer
-	// (?P<answer>(\+|-)*[^\t\f\v\' ]*) matches the answer that's anything that is plus minus but not quotations
-	// split into groups: testName, TestFunct, TestVals (x2) and TestAns
-	regex := `(\n)(?P<TestName>dd[\w]*)(\s*)(?P<TestFunc>[\S]*)(\s*\'?)(?P<TestVals_1>(\+|-)*[^\t\f\v\' ]*)('?\s*'?)(?P<TestVals_2>(\+|-[^->])?[^\t\f\v\' ]*)('?\s*->\s*'?)(?P<answer>(\+|-)*[^\r\n\t\f\v\' ]*)`
-	r := regexp.MustCompile(regex)
+	r := regexp.MustCompile((`(\n)` + // start with newline
+		`(?P<TestName>dd[\w]*)` + // first capturing group: testfunc made of anything that isn't a whitespace
+		`(\s*)(?P<TestFunc>[\S]*)` + // testfunc made of anything that isn't a whitespace
+		`(\s*\'?)` + // after can be any number of spaces and quotations if they exist
+		`(?P<TestVals_1>(\+|-)*[^\t\f\v\' ]*)` + // first test val is anything that isnt a whitespace or a quoteation mark
+		`('?\s*'?)` + // match any quotation marks and any space
+		`(?P<TestVals_2>(\+|-[^->])?[^\t\f\v\' ]*)` + //testvals2 same as 1 but specifically dont match with '->'
+		`('?\s*->\s*'?)` + // matches the indicator to answer and surrounding whitespaces
+		`(?P<answer>(\+|-)*[^\r\n\t\f\v\' ]*)`)) // matches the answer that's anything that is plus minus but not quotations
+	// capturing gorups are testName, TestFunct, TestVals_1,  TestVals_2, and answer)
+
 	ans := r.FindAllStringSubmatch(dataString, -1)
 	var datum testCaseStrings
-	for i := range ans {
-		datum.op = ans[i][4]
-		datum.val1 = ans[i][6]
-		datum.val2 = ans[i][9]
-		datum.expectedResult = ans[i][12]
-		datum.name = ans[i][2]
+	for _, a := range ans {
+		datum.op = a[4]
+		datum.val1 = a[6]
+		datum.val2 = a[9]
+		datum.expectedResult = a[12]
+		datum.name = a[2]
 		data = append(data, datum)
 
 	}
