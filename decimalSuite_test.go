@@ -96,9 +96,12 @@ func doTest(testVals decValContainer, testValStrings testCaseStrings) (testFaile
 	switch testValStrings.op {
 	case "add":
 		testString = fmt.Sprintf("%v + %v != %v \n(expected %v)", testValStrings.val1, testValStrings.val2, testVals.val1.d.Add(testVals.val2.d), testVals.expected.d)
-		if testVals.expected.d.Cmp(testVals.val1.d.Add(testVals.val2.d)) != 0 {
+		if testVals.expected.d != testVals.val1.d.Add(testVals.val2.d) {
 			return true, testString
 		}
+		// TODO: get cmp function working properly
+		// if testVals.expected.d.Cmp(testVals.val1.d.Add(testVals.val2.d)) != 0 {
+
 	// TODO: get doTest to run more functions
 	// 	return
 	// case "abs":
