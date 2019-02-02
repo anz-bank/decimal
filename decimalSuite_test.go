@@ -93,7 +93,6 @@ func convertToDec64(testvals testCaseStrings) (dec64Vals decValContainer) {
 	return
 }
 
-// TODO: get doTest to run more functions
 //doTest completes the tests and returns a boolean and string on if the test passes
 func doTest(testVals decValContainer, testValStrings testCaseStrings) (testFailed bool, testString string) {
 	switch testValStrings.op {
@@ -102,26 +101,29 @@ func doTest(testVals decValContainer, testValStrings testCaseStrings) (testFaile
 		if testVals.expectedResult.Cmp(testVals.val1.Add(testVals.val2)) != 0 {
 			return true, testString
 		}
-		return
-	case "abs":
-
-		// testStatus = testAns == testVal1.Abs()
-		return
-	case "divide":
-
-		// testStatus = testAns == testVal1.Quo(testVal2)
-		return
-	case "minus":
-
-		// testStatus = testAns == testVal1.Sub(testVal2)
-		return
-	case "multiply":
-		// testString = fmt.Sprintf("%v * %v != %v (expected %v)", testVal1, testVal2, testVal1.Mul(testVal2), testAns)
-		// testStatus = testAns == testVal1.Mul(testVal2)
-		return
+	// TODO: get doTest to run more functions
+	// 	return
+	// case "abs":
+	//
+	// 	// testStatus = testAns == testVal1.Abs()
+	// 	return
+	// case "divide":
+	//
+	// 	// testStatus = testAns == testVal1.Quo(testVal2)
+	// 	return
+	// case "minus":
+	//
+	// 	// testStatus = testAns == testVal1.Sub(testVal2)
+	// 	return
+	// case "multiply":
+	// 	// testString = fmt.Sprintf("%v * %v != %v (expected %v)", testVal1, testVal2, testVal1.Mul(testVal2), testAns)
+	// 	// testStatus = testAns == testVal1.Mul(testVal2)
+	// 	return
 	default:
 		testFailed = true
 		return
+
 	}
+	return
 
 }
