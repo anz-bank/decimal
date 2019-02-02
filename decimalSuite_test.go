@@ -28,12 +28,12 @@ func TestFromSuite(t *testing.T) {
 	// require := require.New(t)
 	testVals := getInput("dectest/ddAdd.decTest")
 	var TestResult string
-	var TestPass bool
+	var TestFailed bool
 	for i := range testVals {
 		Dec64Vals := convertToDec64(testVals[i])
-		TestPass, TestResult = doTests(Dec64Vals, testVals[i]) // do more here
+		TestFailed, TestResult = doTest(Dec64Vals, testVals[i]) // do more here
 
-		if TestPass == false {
+		if TestFailed {
 			fmt.Printf("\n%s: \n %s\n", testVals[i].name, TestResult)
 		}
 		if Dec64Vals.val1Err != nil || Dec64Vals.val2Err != nil || Dec64Vals.expecValErr != nil {
@@ -93,13 +93,15 @@ func convertToDec64(testvals testCaseStrings) (dec64Vals decValContainer) {
 	return
 }
 
-// TODO: get doTests to run more functions
-//doTests completes the tests and returns a boolean and string on if the test passes
-func doTests(testVals decValContainer, testValStrings testCaseStrings) (testStatus bool, testString string) {
+// TODO: get doTest to run more functions
+//doTest completes the tests and returns a boolean and string on if the test passes
+func doTest(testVals decValContainer, testValStrings testCaseStrings) (testFailed bool, testString string) {
 	switch testValStrings.op {
 	case "add":
 		testString = fmt.Sprintf("%v + %v != %v \n(expected %v)", testValStrings.val1, testValStrings.val2, testVals.val1.Add(testVals.val2), testVals.expectedResult)
-		testStatus = testVals.expectedResult == testVals.val1.Add(testVals.val2)
+		if testVals.expectedResult.Cmp(testVals.val1.Add(testVals.val2)) != 0 {
+			return true, testString
+		}
 		return
 	case "abs":
 
@@ -118,7 +120,7 @@ func doTests(testVals decValContainer, testValStrings testCaseStrings) (testStat
 		// testStatus = testAns == testVal1.Mul(testVal2)
 		return
 	default:
-		testStatus = false
+		testFailed = true
 		return
 	}
 
