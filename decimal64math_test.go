@@ -382,7 +382,6 @@ func BenchmarkDecimal64Sub(b *testing.B) {
 
 func TestAddOverflow(t *testing.T) {
 	require := require.New(t)
-
 	require.Equal(NegInfinity64, NegMax64.Sub(MustParseDecimal64("0.00000000000001e384")))
 	require.Equal(Infinity64, Max64.Add(MustParseDecimal64("0.000000000000001e384")))
 	require.Equal(Max64, Max64.Add(MustParseDecimal64("1")))
@@ -391,7 +390,6 @@ func TestAddOverflow(t *testing.T) {
 
 func TestQuoOverflow(t *testing.T) {
 	require := require.New(t)
-
 	require.Equal(Infinity64, MustParseDecimal64("1e384").Quo(MustParseDecimal64(".01")))
 	require.Equal(NegInfinity64, MustParseDecimal64("1e384").Quo(MustParseDecimal64("-.01")))
 	require.Equal(NegInfinity64, MustParseDecimal64("-1e384").Quo(MustParseDecimal64(".01")))
@@ -402,7 +400,6 @@ func TestQuoOverflow(t *testing.T) {
 
 func TestMul(t *testing.T) {
 	require := require.New(t)
-
 	require.Equal(Infinity64, MustParseDecimal64("1e384").Mul(MustParseDecimal64("10")))
 	require.Equal(NegInfinity64, MustParseDecimal64("1e384").Mul(MustParseDecimal64("-10")))
 	require.Equal(NegInfinity64, MustParseDecimal64("-1e384").Mul(MustParseDecimal64("10")))

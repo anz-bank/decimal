@@ -39,6 +39,7 @@ const decimal64Base = 1000 * 1000 * 1000 * 1000 * 1000
 // Max significand possible (16 decimal places)
 const maxSig = 10*decimal64Base - 1
 
+
 const expOffset = 398
 const expMax = 369
 
