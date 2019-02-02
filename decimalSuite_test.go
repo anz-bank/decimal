@@ -71,14 +71,13 @@ func getInput(file string) (data []testCaseStrings) {
 	// capturing gorups are testName, TestFunct, TestVals_1,  TestVals_2, and answer)
 
 	ans := r.FindAllStringSubmatch(dataString, -1)
-	var datum testCaseStrings
 	for _, a := range ans {
-		datum.op = a[4]
-		datum.val1 = a[6]
-		datum.val2 = a[9]
-		datum.expectedResult = a[12]
-		datum.name = a[2]
-		data = append(data, datum)
+		data = append(data, testCaseStrings{
+			name:           a[2],
+			op:             a[4],
+			val1:           a[6],
+			val2:           a[9],
+			expectedResult: a[12]})
 
 	}
 	return data
