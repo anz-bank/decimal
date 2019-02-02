@@ -7,13 +7,12 @@ import (
 	"testing"
 )
 
+type parseResult struct {
+	d   Decimal64
+	err error
+}
 type decValContainer struct {
-	val1           Decimal64
-	val1Err        error
-	val2           Decimal64
-	val2Err        error
-	expectedResult Decimal64
-	expecValErr    error
+	val1, val2, expected parseResult
 }
 type testCaseStrings struct {
 	name           string
@@ -36,8 +35,8 @@ func TestFromSuite(t *testing.T) {
 		if TestFailed {
 			fmt.Printf("\n%s: \n %s\n", testVals[i].name, TestResult)
 		}
-		if Dec64Vals.val1Err != nil || Dec64Vals.val2Err != nil || Dec64Vals.expecValErr != nil {
-			fmt.Printf("\nError parsing in test: %s: \n val 1:%s: \n Val2: %s\n val 3: %s \n", testVals[i].name, Dec64Vals.val1Err, Dec64Vals.val2Err, Dec64Vals.expecValErr)
+		if Dec64Vals.val1.err != nil || Dec64Vals.val2.err != nil || Dec64Vals.expected.err != nil {
+			fmt.Printf("\nError parsing in test: %s: \n val 1:%s: \n Val2: %s\n val 3: %s \n", testVals[i].name, Dec64Vals.val1.err, Dec64Vals.val1.err, Dec64Vals.expected.err)
 
 		}
 	}
@@ -80,15 +79,15 @@ func getInput(file string) (data []testCaseStrings) {
 			expectedResult: a[12]})
 
 	}
-	return data
+	return
 
 }
 
 //convertToDec64 converts the map object strings to decimal64s
 func convertToDec64(testvals testCaseStrings) (dec64Vals decValContainer) {
-	dec64Vals.val1, dec64Vals.val1Err = ParseDecimal64(testvals.val1)
-	dec64Vals.expectedResult, dec64Vals.expecValErr = ParseDecimal64(testvals.expectedResult)
-	dec64Vals.val2, dec64Vals.val2Err = ParseDecimal64(testvals.val2)
+	dec64Vals.expected.d, dec64Vals.val1.err = ParseDecimal64(testvals.val1)
+	dec64Vals.expected.d, dec64Vals.expected.err = ParseDecimal64(testvals.expectedResult)
+	dec64Vals.val2.d, dec64Vals.val2.err = ParseDecimal64(testvals.val2)
 	return
 }
 
@@ -96,8 +95,8 @@ func convertToDec64(testvals testCaseStrings) (dec64Vals decValContainer) {
 func doTest(testVals decValContainer, testValStrings testCaseStrings) (testFailed bool, testString string) {
 	switch testValStrings.op {
 	case "add":
-		testString = fmt.Sprintf("%v + %v != %v \n(expected %v)", testValStrings.val1, testValStrings.val2, testVals.val1.Add(testVals.val2), testVals.expectedResult)
-		if testVals.expectedResult.Cmp(testVals.val1.Add(testVals.val2)) != 0 {
+		testString = fmt.Sprintf("%v + %v != %v \n(expected %v)", testValStrings.val1, testValStrings.val2, testVals.val1.d.Add(testVals.val2.d), testVals.expected.d)
+		if testVals.expected.d.Cmp(testVals.val1.d.Add(testVals.val2.d)) != 0 {
 			return true, testString
 		}
 	// TODO: get doTest to run more functions
