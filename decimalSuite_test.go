@@ -54,7 +54,7 @@ func TestFromSuite(t *testing.T) {
 //
 // }
 
-//getInput gets the test file and extracts test using regex, then returns a map object and a list of test names
+// getInput gets the test file and extracts test using regex, then returns a map object and a list of test names
 func getInput(file string) (data []testCaseStrings) {
 	dat, _ := ioutil.ReadFile("dectest/ddAdd.decTest")
 	dataString := string(dat)
@@ -83,7 +83,7 @@ func getInput(file string) (data []testCaseStrings) {
 
 }
 
-//convertToDec64 converts the map object strings to decimal64s
+// convertToDec64 converts the map object strings to decimal64s
 func convertToDec64(testvals testCaseStrings) (dec64Vals decValContainer) {
 	dec64Vals.expected.d, dec64Vals.val1.err = ParseDecimal64(testvals.val1)
 	dec64Vals.expected.d, dec64Vals.expected.err = ParseDecimal64(testvals.expectedResult)
@@ -91,7 +91,7 @@ func convertToDec64(testvals testCaseStrings) (dec64Vals decValContainer) {
 	return
 }
 
-//doTest completes the tests and returns a boolean and string on if the test passes
+// doTest completes the tests and returns a boolean and string on if the test passes
 func doTest(testVals decValContainer, testValStrings testCaseStrings) (testFailed bool, testString string) {
 	switch testValStrings.op {
 	case "add":
@@ -120,8 +120,6 @@ func doTest(testVals decValContainer, testValStrings testCaseStrings) (testFaile
 	default:
 		testFailed = true
 		return
-
 	}
 	return
-
 }
