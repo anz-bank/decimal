@@ -85,7 +85,7 @@ func getInput(file string) (data []testCaseStrings) {
 
 // convertToDec64 converts the map object strings to decimal64s
 func convertToDec64(testvals testCaseStrings) (dec64Vals decValContainer) {
-	dec64Vals.expected.d, dec64Vals.val1.err = ParseDecimal64(testvals.val1)
+	dec64Vals.val1.d, dec64Vals.val1.err = ParseDecimal64(testvals.val1)
 	dec64Vals.expected.d, dec64Vals.expected.err = ParseDecimal64(testvals.expectedResult)
 	dec64Vals.val2.d, dec64Vals.val2.err = ParseDecimal64(testvals.val2)
 	return
@@ -96,11 +96,9 @@ func doTest(testVals decValContainer, testValStrings testCaseStrings) (testFaile
 	switch testValStrings.op {
 	case "add":
 		testString = fmt.Sprintf("%v + %v != %v \n(expected %v)", testValStrings.val1, testValStrings.val2, testVals.val1.d.Add(testVals.val2.d), testVals.expected.d)
-		if testVals.expected.d != testVals.val1.d.Add(testVals.val2.d) {
+		if testVals.expected.d.Cmp(testVals.val1.d.Add(testVals.val2.d)) != 0 {
 			return true, testString
 		}
-		// TODO: get cmp function working properly
-		// if testVals.expected.d.Cmp(testVals.val1.d.Add(testVals.val2.d)) != 0 {
 
 	// TODO: get doTest to run more functions
 	// 	return
