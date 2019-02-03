@@ -22,7 +22,7 @@ type testCaseStrings struct {
 	expectedResult string
 }
 
-// TODO: currently uses print statements but will implement assert/require statements as test cases pass
+// //TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
 // TestFromSuite is the master tester for the dectest suite
 func TestFromSuite(t *testing.T) {
 	// require := require.New(t)
