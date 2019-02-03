@@ -58,25 +58,26 @@ func TestFromSuite(t *testing.T) {
 func getInput(file string) (data []testCaseStrings) {
 	dat, _ := ioutil.ReadFile("dectest/ddAdd.decTest")
 	dataString := string(dat)
-	r := regexp.MustCompile((`(\n)` + // start with newline
+	r := regexp.MustCompile((`(?:\n)` + // start with newline (?: non capturing group)
 		`(?P<TestName>dd[\w]*)` + // first capturing group: testfunc made of anything that isn't a whitespace
-		`(\s*)(?P<TestFunc>[\S]*)` + // testfunc made of anything that isn't a whitespace
-		`(\s*\'?)` + // after can be any number of spaces and quotations if they exist
-		`(?P<TestVals_1>(\+|-)*[^\t\f\v\' ]*)` + // first test val is anything that isnt a whitespace or a quoteation mark
-		`('?\s*'?)` + // match any quotation marks and any space
-		`(?P<TestVals_2>(\+|-[^->])?[^\t\f\v\' ]*)` + //testvals2 same as 1 but specifically dont match with '->'
-		`('?\s*->\s*'?)` + // matches the indicator to answer and surrounding whitespaces
-		`(?P<answer>(\+|-)*[^\r\n\t\f\v\' ]*)`)) // matches the answer that's anything that is plus minus but not quotations
+		`(?:\s*)` + // match any whitespace (?: non capturing group)
+		`(?P<TestFunc>[\S]*)` + // testfunc made of anything that isn't a whitespace
+		`(?:\s*\'?)` + // after can be any number of spaces and quotations if they exist (?: non capturing group)
+		`(?P<TestVals_1>\+?-?[^\t\f\v\' ]*)` + // first test val is anything that isnt a whitespace or a quoteation mark
+		`(?:'?\s*'?)` + // match any quotation marks and any space (?: non capturing group)
+		`(?P<TestVals_2>\+?-?[^->]?[^\t\f\v\' ]*)` + //testvals2 same as 1 but specifically dont match with '->'
+		`(?:'?\s*->\s*'?)` + // matches the indicator to answer and surrounding whitespaces (?: non capturing group)
+		`(?P<answer>\+?-?[^\r\n\t\f\v\' ]*)`)) // matches the answer that's anything that is plus minus but not quotations
 	// capturing gorups are testName, TestFunct, TestVals_1,  TestVals_2, and answer)
 
 	ans := r.FindAllStringSubmatch(dataString, -1)
 	for _, a := range ans {
 		data = append(data, testCaseStrings{
-			name:           a[2],
-			op:             a[4],
-			val1:           a[6],
-			val2:           a[9],
-			expectedResult: a[12]})
+			name:           a[1],
+			op:             a[2],
+			val1:           a[3],
+			val2:           a[4],
+			expectedResult: a[5]})
 
 	}
 	return
