@@ -22,7 +22,8 @@ type testCaseStrings struct {
 	expectedResult string
 }
 
-// master tester for the suite, currently uses print statements but will implement assert statements as test cases pass
+// TODO: currently uses print statements but will implement assert/require statements as test cases pass
+// TestFromSuite is the master tester for the dectest suite
 func TestFromSuite(t *testing.T) {
 	// require := require.New(t)
 	testVals := getInput("dectest/ddAdd.decTest")
