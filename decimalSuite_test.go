@@ -31,13 +31,18 @@ func TestFromSuite(t *testing.T) {
 	var TestFailed bool
 	for i := range testVals {
 		Dec64Vals := convertToDec64(testVals[i])
-		TestFailed, TestResult = doTest(Dec64Vals, testVals[i]) // do more here
+		TestFailed, TestResult = runTest(Dec64Vals, testVals[i]) // do more here
 
 		if TestFailed {
-			fmt.Printf("\n%s: \n %s\n", testVals[i].testName, TestResult)
+			// fmt.Printf("\n%s: \n %s\n", testVals[i].testName, TestResult)
+			fmt.Println(TestResult)
 		}
 		if Dec64Vals.val1.err != nil || Dec64Vals.val2.err != nil || Dec64Vals.expected.err != nil {
-			fmt.Printf("\nError parsing in test: %s: \n val 1:%s: \n Val2: %s\n val 3: %s \n", testVals[i].testName, Dec64Vals.val1.err, Dec64Vals.val1.err, Dec64Vals.expected.err)
+			fmt.Printf("\nError parsing in test: %s: \n val 1:%s: \n Val2: %s\n val 3: %s \n",
+				testVals[i].testName,
+				Dec64Vals.val1.err,
+				Dec64Vals.val1.err,
+				Dec64Vals.expected.err)
 
 		}
 	}
@@ -55,6 +60,7 @@ func TestFromSuite(t *testing.T) {
 //
 // }
 
+// TODO get regexto match with three inputs for functions like FMA
 // getInput gets the test file and extracts test using regex, then returns a map object and a list of test names
 func getInput(file string) (data []testCaseStrings) {
 	dat, _ := ioutil.ReadFile("dectest/ddAdd.decTest")
@@ -69,7 +75,7 @@ func getInput(file string) (data []testCaseStrings) {
 		`(?P<val2>\+?-?[^->]?[^\t\f\v\' ]*)` + //testvals2 same as 1 but specifically dont match with '->'
 		`(?:'?\s*->\s*'?)` + // matches the indicator to answer and surrounding whitespaces (?: non capturing group)
 		`(?P<expectedResult>\+?-?[^\r\n\t\f\v\' ]*)`)) // matches the answer that's anything that is plus minus but not quotations
-	// capturing gorups are testtestName, TestFunct, TestVals_1,  TestVals_2, and answer)
+	// capturing gorups are testName, testFunc, val1,  val2, and expectedResult)
 
 	ans := r.FindAllStringSubmatch(dataString, -1)
 	for _, a := range ans {
@@ -93,36 +99,44 @@ func convertToDec64(testvals testCaseStrings) (dec64Vals decValContainer) {
 	return
 }
 
-// doTest completes the tests and returns a boolean and string on if the test passes
-func doTest(testVals decValContainer, testValStrings testCaseStrings) (testFailed bool, testString string) {
-	switch testValStrings.testFunc {
-	case "add":
-		testString = fmt.Sprintf("%v + %v != %v \n(expected %v)", testValStrings.val1, testValStrings.val2, testVals.val1.d.Add(testVals.val2.d), testVals.expected.d)
-		if testVals.expected.d.Cmp(testVals.val1.d.Add(testVals.val2.d)) != 0 {
-			return true, testString
+// runTest completes the tests and returns a boolean and string on if the test passes
+func runTest(testVals decValContainer, testValStrings testCaseStrings) (testFailed bool, testString string) {
+	calcRestul := execOp(testVals.val1.d, testVals.val2.d, testValStrings.testFunc)
+	flavor1, _, _, _ := calcRestul.parts()
+	flavor2, _, _, _ := testVals.expected.d.parts()
+	if flavor1 == flSNaN || flavor2 == flSNaN {
+		if testVals.expected.d.Cmp(calcRestul) == -2 {
+			return false, ""
 		}
+		return true, fmt.Sprintf(
+			"\nFailed NaN %s \n %v %s %v == %v \n expected result: %v \n",
+			testValStrings.testName,
+			testValStrings.val1,
+			testValStrings.testFunc,
+			testValStrings.val2,
+			calcRestul,
+			testVals.expected.d)
 
-	// TODO: get doTest to run more functions
-	// 	return
-	// case "abs":
-	//
-	// 	// testStatus = testAns == testVal1.Abs()
-	// 	return
-	// case "divide":
-	//
-	// 	// testStatus = testAns == testVal1.Quo(testVal2)
-	// 	return
-	// case "minus":
-	//
-	// 	// testStatus = testAns == testVal1.Sub(testVal2)
-	// 	return
-	// case "multiply":
-	// 	// testString = fmt.Sprintf("%v * %v != %v (expected %v)", testVal1, testVal2, testVal1.Mul(testVal2), testAns)
-	// 	// testStatus = testAns == testVal1.Mul(testVal2)
-	// 	return
-	default:
-		testFailed = true
-		return
+	} else if testVals.expected.d.Cmp(calcRestul) != 0 {
+		return true, fmt.Sprintf(
+			"\nFailed %s \n %v %s %v == %v \n expected result: %v \n",
+			testValStrings.testName,
+			testValStrings.val1,
+			testValStrings.testFunc,
+			testValStrings.val2,
+			calcRestul,
+			testVals.expected.d)
 	}
-	return
+	return false, ""
+}
+
+// TODO: get runTest to run more functions
+// execOp returns the calculated answer to the operation as Decimal64
+func execOp(val1, val2 Decimal64, op string) Decimal64 {
+	switch op {
+	case "add":
+		return val1.Add(val2)
+	default:
+		panic("end of operation function")
+	}
 }
