@@ -22,7 +22,7 @@ type testCaseStrings struct {
 	expectedResult string
 }
 
-// //TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
+// TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
 // TestFromSuite is the master tester for the dectest suite
 func TestFromSuite(t *testing.T) {
 	// require := require.New(t)
@@ -51,12 +51,12 @@ func TestFromSuite(t *testing.T) {
 
 // TODO: any tests that are failing a particular test in the test suite will be turned into a unit test
 // func TestNew(t *testing.T) {
-// 	// require := require.New(t)
-// 	// // propper rounding
-// 	// require.Equal(MustParseDecimal64("4444444444444445"), MustParseDecimal64("4444444444444444").Add(MustParseDecimal64("0.5001")))
-// 	// require.Equal(MustParseDecimal64("0.23"), MustParseDecimal64("1.3").Add(MustParseDecimal64("-1.07")))
-// 	// fmt.Println("sjoidgf", MustParseDecimal64("4444444444444444").Add(MustParseDecimal64("1.5001")))
-// 	// // require.Equal(MustParseDecimal64("12345678901234.29"), MustParseDecimal64("12345678901234").Add(MustParseDecimal64("0.2951")))
+// require := require.New(t)
+// propper rounding
+// require.Equal(MustParseDecimal64("4444444444444445"), MustParseDecimal64("4444444444444444").Add(MustParseDecimal64("0.5001")))
+// require.Equal(MustParseDecimal64("0.23"), MustParseDecimal64("1.3").Add(MustParseDecimal64("-1.07")))
+// fmt.Println("sjoidgf", MustParseDecimal64("4444444444444444").Add(MustParseDecimal64("1.5001")))
+// require.Equal(MustParseDecimal64("12345678901234.29"), MustParseDecimal64("12345678901234").Add(MustParseDecimal64("0.2951")))
 //
 // }
 
