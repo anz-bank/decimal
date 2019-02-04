@@ -65,7 +65,7 @@ func TestFromSuite(t *testing.T) {
 func getInput(file string) (data []testCaseStrings) {
 	dat, _ := ioutil.ReadFile(file)
 	dataString := string(dat)
-	r := regexp.MustCompile((`(?:\n)` + // start with newline (?: non capturing group)
+	r := regexp.MustCompile(`(?:\n)` + // start with newline (?: non capturing group)
 		`(?P<testName>dd[\w]*)` + // first capturing group: testfunc made of anything that isn't a whitespace
 		`(?:\s*)` + // match any whitespace (?: non capturing group)
 		`(?P<testFunc>[\S]*)` + // testfunc made of anything that isn't a whitespace
@@ -74,7 +74,7 @@ func getInput(file string) (data []testCaseStrings) {
 		`(?:'?\s*'?)` + // match any quotation marks and any space (?: non capturing group)
 		`(?P<val2>\+?-?[^->]?[^\t\f\v\' ]*)` + //testvals2 same as 1 but specifically dont match with '->'
 		`(?:'?\s*->\s*'?)` + // matches the indicator to answer and surrounding whitespaces (?: non capturing group)
-		`(?P<expectedResult>\+?-?[^\r\n\t\f\v\' ]*)`)) // matches the answer that's anything that is plus minus but not quotations
+		`(?P<expectedResult>\+?-?[^\r\n\t\f\v\' ]*)`) // matches the answer that's anything that is plus minus but not quotations
 	// capturing gorups are testName, testFunc, val1,  val2, and expectedResult)
 
 	ans := r.FindAllStringSubmatch(dataString, -1)
