@@ -28,12 +28,11 @@ func TestFromSuite(t *testing.T) {
 	// require := require.New(t)
 	testVals := getInput("dectest/ddAdd.decTest")
 	var TestResult string
-	var TestFailed bool
+	var testPassed bool
 	for i := range testVals {
 		Dec64Vals := convertToDec64(testVals[i])
-		TestFailed, TestResult = runTest(Dec64Vals, testVals[i]) // do more here
-
-		if TestFailed {
+		testPassed, TestResult = runTest(Dec64Vals, testVals[i]) // do more here
+		if !testPassed {
 			// fmt.Printf("\n%s: \n %s\n", testVals[i].testName, TestResult)
 			fmt.Println(TestResult)
 		}
@@ -43,7 +42,6 @@ func TestFromSuite(t *testing.T) {
 				Dec64Vals.val1.err,
 				Dec64Vals.val1.err,
 				Dec64Vals.expected.err)
-
 		}
 	}
 
@@ -76,7 +74,6 @@ func getInput(file string) (data []testCaseStrings) {
 		`(?:'?\s*->\s*'?)` + // matches the indicator to answer and surrounding whitespaces (?: non capturing group)
 		`(?P<expectedResult>\+?-?[^\r\n\t\f\v\' ]*)`) // matches the answer that's anything that is plus minus but not quotations
 	// capturing gorups are testName, testFunc, val1,  val2, and expectedResult)
-
 	ans := r.FindAllStringSubmatch(dataString, -1)
 	for _, a := range ans {
 		data = append(data, testCaseStrings{
@@ -85,7 +82,6 @@ func getInput(file string) (data []testCaseStrings) {
 			val1:           a[3],
 			val2:           a[4],
 			expectedResult: a[5]})
-
 	}
 	return
 
@@ -100,15 +96,15 @@ func convertToDec64(testvals testCaseStrings) (dec64Vals decValContainer) {
 }
 
 // runTest completes the tests and returns a boolean and string on if the test passes
-func runTest(testVals decValContainer, testValStrings testCaseStrings) (testFailed bool, testString string) {
+func runTest(testVals decValContainer, testValStrings testCaseStrings) (testPassed bool, testString string) {
 	calcRestul := execOp(testVals.val1.d, testVals.val2.d, testValStrings.testFunc)
 	flavor1, _, _, _ := calcRestul.parts()
 	flavor2, _, _, _ := testVals.expected.d.parts()
 	if flavor1 == flSNaN || flavor2 == flSNaN {
 		if testVals.expected.d.Cmp(calcRestul) == -2 {
-			return false, ""
+			return true, ""
 		}
-		return true, fmt.Sprintf(
+		return false, fmt.Sprintf(
 			"\nFailed NaN %s \n %v %s %v == %v \n expected result: %v \n",
 			testValStrings.testName,
 			testValStrings.val1,
@@ -118,7 +114,7 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) (testFail
 			testVals.expected.d)
 
 	} else if testVals.expected.d.Cmp(calcRestul) != 0 {
-		return true, fmt.Sprintf(
+		return false, fmt.Sprintf(
 			"\nFailed %s \n %v %s %v == %v \n expected result: %v \n",
 			testValStrings.testName,
 			testValStrings.val1,
@@ -127,7 +123,7 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) (testFail
 			calcRestul,
 			testVals.expected.d)
 	}
-	return false, ""
+	return true, ""
 }
 
 // TODO: get runTest to run more functions
