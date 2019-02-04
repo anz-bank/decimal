@@ -63,7 +63,7 @@ func TestFromSuite(t *testing.T) {
 // TODO get regexto match with three inputs for functions like FMA
 // getInput gets the test file and extracts test using regex, then returns a map object and a list of test names
 func getInput(file string) (data []testCaseStrings) {
-	dat, _ := ioutil.ReadFile("dectest/ddAdd.decTest")
+	dat, _ := ioutil.ReadFile(file)
 	dataString := string(dat)
 	r := regexp.MustCompile((`(?:\n)` + // start with newline (?: non capturing group)
 		`(?P<testName>dd[\w]*)` + // first capturing group: testfunc made of anything that isn't a whitespace
