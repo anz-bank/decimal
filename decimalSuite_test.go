@@ -136,6 +136,12 @@ func execOp(val1, val2 Decimal64, op string) Decimal64 {
 	switch op {
 	case "add":
 		return val1.Add(val2)
+	case "multiply":
+		return val1.Mul(val2)
+	case "abs":
+		return val1.Abs()
+	case "divide":
+		return val1.Quo(val2)
 	default:
 		panic("end of operation function")
 	}
