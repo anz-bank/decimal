@@ -81,7 +81,7 @@ func getInput(file string) (data []testCaseStrings) {
 			testFunc:       a[2],
 			val1:           a[3],
 			val2:           a[4],
-			expectedResult: a[5]
+			expectedResult: a[5],
 		})
 	}
 	return
