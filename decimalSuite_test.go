@@ -33,7 +33,7 @@ func TestFromSuite(t *testing.T) {
 			fmt.Println(testErrors)
 		}
 		if dec64vals.val1.err != nil || dec64vals.val2.err != nil || dec64vals.expected.err != nil {
-			fmt.Printf("\nError parsing in test: %s: \n val 1:%s: \n Val2: %s\n val 3: %s \n",
+			fmt.Printf("\nError parsing in test: %s: \n val 1:%s: \n val 2: %s\n expected: %s \n",
 				testVals[i].testName,
 				dec64vals.val1.err,
 				dec64vals.val2.err,
