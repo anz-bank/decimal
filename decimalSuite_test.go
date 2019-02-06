@@ -27,20 +27,20 @@ type testCaseStrings struct {
 func TestFromSuite(t *testing.T) {
 	// require := require.New(t)
 	testVals := getInput("dectest/ddAdd.decTest")
-	var TestResult string
-	var testPassed bool
+	// var TestResult string
+	// var testPassed bool
 	for i := range testVals {
 		Dec64Vals := convertToDec64(testVals[i])
-		testPassed, TestResult = runTest(Dec64Vals, testVals[i]) // do more here
-		if !testPassed {
+		testErrors := runTest(Dec64Vals, testVals[i]) // do more here
+		if testErrors != nil {
 			// fmt.Printf("\n%s: \n %s\n", testVals[i].testName, TestResult)
-			fmt.Println(TestResult)
+			fmt.Println(testErrors)
 		}
 		if Dec64Vals.val1.err != nil || Dec64Vals.val2.err != nil || Dec64Vals.expected.err != nil {
 			fmt.Printf("\nError parsing in test: %s: \n val 1:%s: \n Val2: %s\n val 3: %s \n",
 				testVals[i].testName,
 				Dec64Vals.val1.err,
-				Dec64Vals.val1.err,
+				Dec64Vals.val2.err,
 				Dec64Vals.expected.err)
 		}
 	}
@@ -97,26 +97,35 @@ func convertToDec64(testvals testCaseStrings) (dec64Vals decValContainer) {
 }
 
 // runTest completes the tests and returns a boolean and string on if the test passes
-func runTest(testVals decValContainer, testValStrings testCaseStrings) (testPassed bool, testString string) {
+func runTest(testVals decValContainer, testValStrings testCaseStrings) (testErrors error) {
 	calcRestul := execOp(testVals.val1.d, testVals.val2.d, testValStrings.testFunc)
 	flavor1, _, _, _ := calcRestul.parts()
 	flavor2, _, _, _ := testVals.expected.d.parts()
 	if flavor1 == flSNaN || flavor2 == flSNaN {
 		if testVals.expected.d.Cmp(calcRestul) == -2 {
-			return true, ""
+			return nil
 		}
-		return false, fmt.Sprintf(
-			"\nFailed NaN %s \n %v %s %v == %v \n expected result: %v \n",
+
+		return fmt.Errorf(
+			"\nfailed NaN %s \n %v %s %v == %v \n expected result: %v \n",
 			testValStrings.testName,
 			testValStrings.val1,
 			testValStrings.testFunc,
 			testValStrings.val2,
 			calcRestul,
 			testVals.expected.d)
+		// return false, fmt.Sprintf(
+		// 	"\nFailed NaN %s \n %v %s %v == %v \n expected result: %v \n",
+		// 	testValStrings.testName,
+		// 	testValStrings.val1,
+		// 	testValStrings.testFunc,
+		// 	testValStrings.val2,
+		// 	calcRestul,
+		// 	testVals.expected.d)
 
 	} else if testVals.expected.d.Cmp(calcRestul) != 0 {
-		return false, fmt.Sprintf(
-			"\nFailed %s \n %v %s %v == %v \n expected result: %v \n",
+		return fmt.Errorf(
+			"\nfailed %s \n %v %s %v == %v \n expected result: %v \n",
 			testValStrings.testName,
 			testValStrings.val1,
 			testValStrings.testFunc,
@@ -124,7 +133,7 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) (testPass
 			calcRestul,
 			testVals.expected.d)
 	}
-	return true, ""
+	return nil
 }
 
 // TODO: get runTest to run more functions
