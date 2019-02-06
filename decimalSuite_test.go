@@ -85,7 +85,7 @@ func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
 	dec64vals.expected, expectedErr = ParseDecimal64(testvals.expectedResult)
 
 	if err1 != nil || err2 != nil || expectedErr != nil {
-		dec64vals.parseError = fmt.Errorf("\nError parsing in test: %s: \n val 1:%s: \n val 2: %s\n expected: %s \n",
+		dec64vals.parseError = fmt.Errorf("\nerror parsing in test: %s: \n val 1:%s: \n val 2: %s\n expected: %s ",
 			testvals.testName,
 			err1,
 			err2,
@@ -105,7 +105,7 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) (testErro
 		}
 
 		return fmt.Errorf(
-			"\nfailed NaN %s \n %v %s %v == %v \n expected result: %v \n",
+			"\nfailed NaN %s \n %v %s %v == %v \n expected result: %v ",
 			testValStrings.testName,
 			testValStrings.val1,
 			testValStrings.testFunc,
@@ -115,7 +115,7 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) (testErro
 
 	} else if testVals.expected.Cmp(calcRestul) != 0 {
 		return fmt.Errorf(
-			"\nfailed %s \n %v %s %v == %v \n expected result: %v \n",
+			"\nfailed %s \n %v %s %v == %v \n expected result: %v ",
 			testValStrings.testName,
 			testValStrings.val1,
 			testValStrings.testFunc,
