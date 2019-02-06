@@ -137,6 +137,6 @@ func execOp(val1, val2 Decimal64, op string) Decimal64 {
 	case "divide":
 		return val1.Quo(val2)
 	default:
-		panic("end of operation function")
+		panic("end of operation function no tests ran")
 	}
 }
