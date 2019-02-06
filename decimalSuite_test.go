@@ -25,23 +25,19 @@ type testCaseStrings struct {
 // TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
 // TestFromSuite is the master tester for the dectest suite
 func TestFromSuite(t *testing.T) {
-	// require := require.New(t)
 	testVals := getInput("dectest/ddAdd.decTest")
-	// var TestResult string
-	// var testPassed bool
 	for i := range testVals {
-		Dec64Vals := convertToDec64(testVals[i])
-		testErrors := runTest(Dec64Vals, testVals[i]) // do more here
+		dec64vals := convertToDec64(testVals[i])
+		testErrors := runTest(dec64vals, testVals[i])
 		if testErrors != nil {
-			// fmt.Printf("\n%s: \n %s\n", testVals[i].testName, TestResult)
 			fmt.Println(testErrors)
 		}
-		if Dec64Vals.val1.err != nil || Dec64Vals.val2.err != nil || Dec64Vals.expected.err != nil {
+		if dec64vals.val1.err != nil || dec64vals.val2.err != nil || dec64vals.expected.err != nil {
 			fmt.Printf("\nError parsing in test: %s: \n val 1:%s: \n Val2: %s\n val 3: %s \n",
 				testVals[i].testName,
-				Dec64Vals.val1.err,
-				Dec64Vals.val2.err,
-				Dec64Vals.expected.err)
+				dec64vals.val1.err,
+				dec64vals.val2.err,
+				dec64vals.expected.err)
 		}
 	}
 
@@ -89,10 +85,10 @@ func getInput(file string) (data []testCaseStrings) {
 }
 
 // convertToDec64 converts the map object strings to decimal64s
-func convertToDec64(testvals testCaseStrings) (dec64Vals decValContainer) {
-	dec64Vals.val1.d, dec64Vals.val1.err = ParseDecimal64(testvals.val1)
-	dec64Vals.expected.d, dec64Vals.expected.err = ParseDecimal64(testvals.expectedResult)
-	dec64Vals.val2.d, dec64Vals.val2.err = ParseDecimal64(testvals.val2)
+func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
+	dec64vals.val1.d, dec64vals.val1.err = ParseDecimal64(testvals.val1)
+	dec64vals.expected.d, dec64vals.expected.err = ParseDecimal64(testvals.expectedResult)
+	dec64vals.val2.d, dec64vals.val2.err = ParseDecimal64(testvals.val2)
 	return
 }
 
@@ -114,14 +110,6 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) (testErro
 			testValStrings.val2,
 			calcRestul,
 			testVals.expected.d)
-		// return false, fmt.Sprintf(
-		// 	"\nFailed NaN %s \n %v %s %v == %v \n expected result: %v \n",
-		// 	testValStrings.testName,
-		// 	testValStrings.val1,
-		// 	testValStrings.testFunc,
-		// 	testValStrings.val2,
-		// 	calcRestul,
-		// 	testVals.expected.d)
 
 	} else if testVals.expected.d.Cmp(calcRestul) != 0 {
 		return fmt.Errorf(
