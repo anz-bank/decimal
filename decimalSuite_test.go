@@ -7,12 +7,9 @@ import (
 	"testing"
 )
 
-type parseResult struct {
-	d   Decimal64
-	err error
-}
 type decValContainer struct {
-	val1, val2, expected parseResult
+	val1, val2, expected Decimal64
+	parseError           error
 }
 type testCaseStrings struct {
 	testName       string
@@ -32,12 +29,8 @@ func TestFromSuite(t *testing.T) {
 		if testErrors != nil {
 			fmt.Println(testErrors)
 		}
-		if dec64vals.val1.err != nil || dec64vals.val2.err != nil || dec64vals.expected.err != nil {
-			fmt.Printf("\nError parsing in test: %s: \n val 1:%s: \n val 2: %s\n expected: %s \n",
-				testVals[i].testName,
-				dec64vals.val1.err,
-				dec64vals.val2.err,
-				dec64vals.expected.err)
+		if dec64vals.parseError != nil {
+			fmt.Println(dec64vals.parseError)
 		}
 	}
 
@@ -86,19 +79,28 @@ func getInput(file string) (data []testCaseStrings) {
 
 // convertToDec64 converts the map object strings to decimal64s
 func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
-	dec64vals.val1.d, dec64vals.val1.err = ParseDecimal64(testvals.val1)
-	dec64vals.expected.d, dec64vals.expected.err = ParseDecimal64(testvals.expectedResult)
-	dec64vals.val2.d, dec64vals.val2.err = ParseDecimal64(testvals.val2)
+	var err1, err2, expectedErr error
+	dec64vals.val1, err1 = ParseDecimal64(testvals.val1)
+	dec64vals.val2, err2 = ParseDecimal64(testvals.val2)
+	dec64vals.expected, expectedErr = ParseDecimal64(testvals.expectedResult)
+
+	if err1 != nil || err2 != nil || expectedErr != nil {
+		dec64vals.parseError = fmt.Errorf("\nError parsing in test: %s: \n val 1:%s: \n val 2: %s\n expected: %s \n",
+			testvals.testName,
+			err1,
+			err2,
+			expectedErr)
+	}
 	return
 }
 
 // runTest completes the tests and returns a boolean and string on if the test passes
 func runTest(testVals decValContainer, testValStrings testCaseStrings) (testErrors error) {
-	calcRestul := execOp(testVals.val1.d, testVals.val2.d, testValStrings.testFunc)
+	calcRestul := execOp(testVals.val1, testVals.val2, testValStrings.testFunc)
 	flavor1, _, _, _ := calcRestul.parts()
-	flavor2, _, _, _ := testVals.expected.d.parts()
+	flavor2, _, _, _ := testVals.expected.parts()
 	if flavor1 == flSNaN || flavor2 == flSNaN {
-		if testVals.expected.d.Cmp(calcRestul) == -2 {
+		if testVals.expected.Cmp(calcRestul) == -2 {
 			return nil
 		}
 
@@ -109,9 +111,9 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) (testErro
 			testValStrings.testFunc,
 			testValStrings.val2,
 			calcRestul,
-			testVals.expected.d)
+			testVals.expected)
 
-	} else if testVals.expected.d.Cmp(calcRestul) != 0 {
+	} else if testVals.expected.Cmp(calcRestul) != 0 {
 		return fmt.Errorf(
 			"\nfailed %s \n %v %s %v == %v \n expected result: %v \n",
 			testValStrings.testName,
@@ -119,7 +121,7 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) (testErro
 			testValStrings.testFunc,
 			testValStrings.val2,
 			calcRestul,
-			testVals.expected.d)
+			testVals.expected)
 	}
 	return nil
 }
