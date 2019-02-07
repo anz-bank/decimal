@@ -22,9 +22,9 @@ type testCaseStrings struct {
 // TestFromSuite is the master tester for the dectest suite.
 // func TestFromSuite(t *testing.T) {
 // 	testVals := getInput("dectest/ddAdd.decTest")
-// 	for i := range testVals {
-// 		dec64vals := convertToDec64(testVals[i])
-// 		testErr := runTest(dec64vals, testVals[i])
+// 	for _, testVal := range testVals {
+// 		dec64vals := convertToDec64(testVal)
+// 		testErr := runTest(dec64vals, testVal)
 // 		if testErr != nil {
 // 			fmt.Println(testErr)
 // 		}
