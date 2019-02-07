@@ -19,7 +19,7 @@ type testCaseStrings struct {
 }
 
 // TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
-// TestFromSuite is the master tester for the dectest suite
+// TestFromSuite is the master tester for the dectest suite.
 // func TestFromSuite(t *testing.T) {
 // 	testVals := getInput("dectest/ddAdd.decTest")
 // 	for i := range testVals {
@@ -35,7 +35,7 @@ type testCaseStrings struct {
 //
 // }
 
-// TODO: any tests that are failing a particular test in the test suite will be turned into a unit test
+// TODO: any tests that are failing a particular test in the test suite will be turned into a unit test.
 // func TestNew(t *testing.T) {
 // require := require.New(t)
 // propper rounding
@@ -46,8 +46,8 @@ type testCaseStrings struct {
 //
 // }
 
-// TODO get regexto match with three inputs for functions like FMA
-// getInput gets the test file and extracts test using regex, then returns a map object and a list of test names
+// TODO get regexto match with three inputs for functions like FMA.
+// getInput gets the test file and extracts test using regex, then returns a map object and a list of test names.
 func getInput(file string) (data []testCaseStrings) {
 	dat, _ := ioutil.ReadFile(file)
 	dataString := string(dat)
@@ -76,7 +76,7 @@ func getInput(file string) (data []testCaseStrings) {
 
 }
 
-// convertToDec64 converts the map object strings to decimal64s
+// convertToDec64 converts the map object strings to decimal64s.
 func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
 	var err1, err2, expectedErr error
 	dec64vals.val1, err1 = ParseDecimal64(testvals.val1)
@@ -93,7 +93,7 @@ func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
 	return
 }
 
-// runTest completes the tests and returns a boolean and string on if the test passes
+// runTest completes the tests and returns a boolean and string on if the test passes.
 func runTest(testVals decValContainer, testValStrings testCaseStrings) (testErrors error) {
 	calcRestul := execOp(testVals.val1, testVals.val2, testValStrings.testFunc)
 	flavor1, _, _, _ := calcRestul.parts()
@@ -125,8 +125,8 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) (testErro
 	return nil
 }
 
-// TODO: get runTest to run more functions
-// execOp returns the calculated answer to the operation as Decimal64
+// TODO: get runTest to run more functions such as FMA.
+// execOp returns the calculated answer to the operation as Decimal64.
 func execOp(val1, val2 Decimal64, op string) Decimal64 {
 	switch op {
 	case "add":
