@@ -24,9 +24,9 @@ type testCaseStrings struct {
 // 	testVals := getInput("dectest/ddAdd.decTest")
 // 	for i := range testVals {
 // 		dec64vals := convertToDec64(testVals[i])
-// 		testErrors := runTest(dec64vals, testVals[i])
-// 		if testErrors != nil {
-// 			fmt.Println(testErrors)
+// 		testErr := runTest(dec64vals, testVals[i])
+// 		if testErr != nil {
+// 			fmt.Println(testErr)
 // 		}
 // 		if dec64vals.parseError != nil {
 // 			fmt.Println(dec64vals.parseError)
@@ -94,7 +94,7 @@ func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
 }
 
 // runTest completes the tests and returns a boolean and string on if the test passes.
-func runTest(testVals decValContainer, testValStrings testCaseStrings) (testErrors error) {
+func runTest(testVals decValContainer, testValStrings testCaseStrings) error {
 	calcRestul := execOp(testVals.val1, testVals.val2, testValStrings.testFunc)
 	flavor1, _, _, _ := calcRestul.parts()
 	flavor2, _, _, _ := testVals.expected.parts()
