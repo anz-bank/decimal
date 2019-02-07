@@ -45,7 +45,7 @@ const expMax = 369
 // Max64  is the maximum number representable with a Decimal64.
 var Max64 = newFromParts(0, expMax, maxSig)
 
-// NegMax64  is the minimum number (max negative number) possible with Decimal64 (negative).
+// NegMax64  is the minimum finite number (most negative) possible with Decimal64 (negative).
 var NegMax64 = newFromParts(1, expMax, maxSig)
 
 // Min64 is the smallest number that is subnormal possible with Decimal64.
