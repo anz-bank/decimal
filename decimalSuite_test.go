@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
-	"testing"
 )
 
 type decValContainer struct {
@@ -21,20 +20,20 @@ type testCaseStrings struct {
 
 // TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
 // TestFromSuite is the master tester for the dectest suite
-func TestFromSuite(t *testing.T) {
-	testVals := getInput("dectest/ddAdd.decTest")
-	for i := range testVals {
-		dec64vals := convertToDec64(testVals[i])
-		testErrors := runTest(dec64vals, testVals[i])
-		if testErrors != nil {
-			fmt.Println(testErrors)
-		}
-		if dec64vals.parseError != nil {
-			fmt.Println(dec64vals.parseError)
-		}
-	}
-
-}
+// func TestFromSuite(t *testing.T) {
+// 	testVals := getInput("dectest/ddAdd.decTest")
+// 	for i := range testVals {
+// 		dec64vals := convertToDec64(testVals[i])
+// 		testErrors := runTest(dec64vals, testVals[i])
+// 		if testErrors != nil {
+// 			fmt.Println(testErrors)
+// 		}
+// 		if dec64vals.parseError != nil {
+// 			fmt.Println(dec64vals.parseError)
+// 		}
+// 	}
+//
+// }
 
 // TODO: any tests that are failing a particular test in the test suite will be turned into a unit test
 // func TestNew(t *testing.T) {
