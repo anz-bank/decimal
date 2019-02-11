@@ -382,41 +382,28 @@ func BenchmarkDecimal64Sub(b *testing.B) {
 
 func TestAddOverflow(t *testing.T) {
 	require := require.New(t)
-
-	a := MustParseDecimal64("-9.999999999999999e384")
-	require.Equal(NegInfinity64, a.Sub(MustParseDecimal64("0.00000000000001e384")))
-	a = Max64
-	require.Equal(Infinity64, a.Add(MustParseDecimal64("0.000000000000001e384")))
-	require.Equal(a, a.Add(MustParseDecimal64("1")))
-	require.Equal(a, Zero64.Add(a))
+	require.Equal(NegInfinity64, NegMax64.Sub(MustParseDecimal64("0.00000000000001e384")))
+	require.Equal(Infinity64, Max64.Add(MustParseDecimal64("0.000000000000001e384")))
+	require.Equal(Max64, Max64.Add(MustParseDecimal64("1")))
+	require.Equal(Max64, Zero64.Add(Max64))
 }
 
 func TestQuoOverflow(t *testing.T) {
 	require := require.New(t)
-
-	a := MustParseDecimal64("1e384")
-	require.Equal(Infinity64, a.Quo(MustParseDecimal64(".01")))
-	a = MustParseDecimal64("1e384")
-	require.Equal(NegInfinity64, a.Quo(MustParseDecimal64("-.01")))
-	a = MustParseDecimal64("-1e384")
-	require.Equal(NegInfinity64, a.Quo(MustParseDecimal64(".01")))
-	a = MustParseDecimal64("-1e384")
-	require.Equal(NegInfinity64, a.Quo(MustParseDecimal64("0")))
+	require.Equal(Infinity64, MustParseDecimal64("1e384").Quo(MustParseDecimal64(".01")))
+	require.Equal(NegInfinity64, MustParseDecimal64("1e384").Quo(MustParseDecimal64("-.01")))
+	require.Equal(NegInfinity64, MustParseDecimal64("-1e384").Quo(MustParseDecimal64(".01")))
+	require.Equal(NegInfinity64, MustParseDecimal64("-1e384").Quo(MustParseDecimal64("0")))
 	require.Equal(QNaN64, Zero64.Quo(Zero64))
 	require.Equal(Zero64, Zero64.Quo(MustParseDecimal64("100")))
 }
 
 func TestMul(t *testing.T) {
 	require := require.New(t)
-
-	a := MustParseDecimal64("1e384")
-	require.Equal(Infinity64, a.Mul(MustParseDecimal64("10")))
-	a = MustParseDecimal64("1e384")
-	require.Equal(NegInfinity64, a.Mul(MustParseDecimal64("-10")))
-	a = MustParseDecimal64("-1e384")
-	require.Equal(NegInfinity64, a.Mul(MustParseDecimal64("10")))
-	a = MustParseDecimal64("-1e384")
-	require.Equal(NegZero64, a.Mul(Zero64))
+	require.Equal(Infinity64, MustParseDecimal64("1e384").Mul(MustParseDecimal64("10")))
+	require.Equal(NegInfinity64, MustParseDecimal64("1e384").Mul(MustParseDecimal64("-10")))
+	require.Equal(NegInfinity64, MustParseDecimal64("-1e384").Mul(MustParseDecimal64("10")))
+	require.Equal(NegZero64, MustParseDecimal64("-1e384").Mul(Zero64))
 	require.Equal(Zero64, Zero64.Mul(Zero64))
 	require.Equal(Zero64, Zero64.Mul(MustParseDecimal64("100")))
 }
