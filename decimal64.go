@@ -5,13 +5,16 @@ import (
 	"math/bits"
 )
 
-// Decimal64 represents an IEEE 754 64-bit floating point decimal number.
-// It uses the binary representation method.
-type Decimal64 struct {
-	bits uint64
-}
-
 type flavor int
+type roundingMode int
+type discardedDigit int
+
+const (
+	eq0 discardedDigit = iota
+	lt5
+	eq5
+	gt5
+)
 
 const (
 	flNormal flavor = iota
@@ -19,6 +22,55 @@ const (
 	flQNaN
 	flSNaN
 )
+
+const (
+	roundHalfUp roundingMode = iota
+	roundHalfEven
+)
+
+// Decimal64 represents an IEEE 754 64-bit floating point decimal number.
+// It uses the binary representation method.
+type Decimal64 struct {
+	bits uint64
+}
+
+// decParts stores the constituting decParts of a decimal64.
+type decParts struct {
+	fl          flavor
+	sign        int
+	exp         int
+	significand uint64
+	mag         int
+	dec         *Decimal64
+}
+
+type roundContext struct {
+	roundType roundingMode
+	rndStatus discardedDigit
+}
+
+var powersOf10 = []uint64{
+	1,
+	10,
+	100,
+	1000,
+	10000,
+	100000,
+	1000000,
+	10000000,
+	100000000,
+	1000000000,
+	10000000000,
+	100000000000,
+	1000000000000,
+	10000000000000,
+	100000000000000,
+	1000000000000000,
+	10000000000000000,
+	100000000000000000,
+	1000000000000000000,
+	10000000000000000000,
+}
 
 func signalNaN64() Decimal64 {
 	// TODO: What's the right behavior?
@@ -45,29 +97,6 @@ func NewDecimal64FromInt64(value int64) Decimal64 {
 	exp, significand := renormalize(0, uint64(value))
 	checkSignificandIsNormal(significand)
 	return newFromParts(sign, exp, significand)
-}
-
-var powersOf10 = []uint64{
-	1,
-	10,
-	100,
-	1000,
-	10000,
-	100000,
-	1000000,
-	10000000,
-	100000000,
-	1000000000,
-	10000000000,
-	100000000000,
-	1000000000000,
-	10000000000000,
-	100000000000000,
-	1000000000000000,
-	10000000000000000,
-	100000000000000000,
-	1000000000000000000,
-	10000000000000000000,
 }
 
 func renormalize(exp int, significand uint64) (int, uint64) {
