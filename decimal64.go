@@ -381,3 +381,62 @@ func (d *Decimal64) getParts() decParts {
 	}
 	return decParts{fl, sign, exp, significand, 0, d}
 }
+
+func (context roundContext) round(significand uint64) uint64 {
+	switch context.roundType {
+	case roundHalfUp:
+		if context.rndStatus == gt5 || context.rndStatus == eq5 {
+			return significand + 1
+		}
+	case roundHalfEven:
+		if (context.rndStatus == eq5 && significand%2 == 1) || context.rndStatus == gt5 {
+			return significand + 1
+		}
+		// case roundDown: // TODO: implement proper down behaviour
+		// 	return significand
+		// case roundFloor:// TODO: implement proper Floor behaviour
+		// 	return significand
+		// case roundCeiling: //TODO: fine tune ceiling,
+	}
+	return significand
+}
+
+// roundStatus gives info about the truncated part of the significand that can't be fully stored in 16 decimal digits.
+func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
+	expDiff := targetExp - exp
+	if expDiff > 19 && significand != 0 {
+		return lt5
+	}
+	divisor := powersOf10[expDiff]
+	resizedSig := significand / divisor
+	truncatedSig := significand - resizedSig*divisor
+	midpoint := 5 * powersOf10[expDiff-1]
+	if truncatedSig == 0 {
+		return eq0
+	} else if truncatedSig < midpoint {
+		return lt5
+	} else if truncatedSig == midpoint {
+		return eq5
+	}
+	return gt5
+
+}
+
+func newRoundContext(r roundingMode) roundContext {
+	return roundContext{r, 0}
+}
+
+// separation gets the separation in decimal places of the MSD's of two decimal 64s
+func (dec *decParts) separation(eDec decParts) int {
+	return dec.mag + dec.exp - eDec.mag - eDec.exp
+}
+
+// updateMag updates the magnitude of the dec object
+func (dec *decParts) updateMag() {
+	dec.mag = magDecimal(dec.significand)
+}
+
+// updateMag updates the magnitude of the dec object
+func (dec *decParts) isZero() bool {
+	return dec.significand == 0 && dec.fl == flNormal
+}
