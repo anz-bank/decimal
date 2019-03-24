@@ -316,6 +316,9 @@ func (d Decimal64) IsNaN() bool {
 	flavor, _, _, _ := d.parts()
 	return flavor == flQNaN || flavor == flSNaN
 }
+func (dec decParts) isNan() bool {
+	return dec.fl == flQNaN || dec.fl == flSNaN
+}
 
 // IsQNaN returns true iff d is a quiet NaN.
 func (d Decimal64) IsQNaN() bool {
@@ -458,4 +461,12 @@ func (dec *decParts) updateMag() {
 // updateMag updates the magnitude of the dec object
 func (dec *decParts) isZero() bool {
 	return dec.significand == 0 && dec.fl == flNormal
+}
+
+// propagateNan returns true if flavor1 should be propagated else false if flavor2 should be propagated
+func propagateNan(dp, ep *decParts) *Decimal64 {
+	if dp.fl == flSNaN || dp.fl == flQNaN {
+		return dp.dec
+	}
+	return ep.dec
 }
