@@ -167,6 +167,19 @@ func matchScales(exp1 int, significand1 uint64, exp2 int, significand2 uint64) (
 	return exp1, significand1, exp2, significand2
 }
 
+// match scales matches the exponents of d and e and uses context to get the rounding status
+// contexts rounding method must be set or panic will occur
+func (context *roundContext) matchScales(d, e *decParts) {
+	logicCheck(d.significand != 0, "d.significand (%d) != 0", d.significand)
+	logicCheck(e.significand != 0, "e.significand (%d) != 0", e.significand)
+
+	if d.exp < e.exp {
+		context.rndStatus = d.rescale(e.exp)
+	} else if e.exp < d.exp {
+		context.rndStatus = e.rescale(d.exp)
+	}
+}
+
 func newFromParts(sign int, exp int, significand uint64) Decimal64 {
 	s := uint64(sign) << 63
 
