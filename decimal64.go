@@ -131,21 +131,27 @@ func renormalize(exp int, significand uint64) (int, uint64) {
 }
 
 func rescale(exp int, significand uint64, targetExp int) (uint64, int) {
-	exp -= targetExp
-	var divisor uint64 = 1
-	for ; exp < -7 && divisor < significand; exp += 8 {
-		divisor *= 100000000
+	expDiff := targetExp - exp
+	mag := magDecimal(significand)
+	if expDiff > mag {
+		return 0, targetExp
 	}
-	for ; exp < -3 && divisor < significand; exp += 4 {
-		divisor *= 10000
-	}
-	for ; exp < -1 && divisor < significand; exp += 2 {
-		divisor *= 100
-	}
-	for ; exp < 0 && divisor < significand; exp++ {
-		divisor *= 10
-	}
+	divisor := powersOf10[expDiff]
 	return significand / divisor, targetExp
+}
+
+func (dec *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
+	expDiff := targetExp - dec.exp
+	mag := dec.mag
+	rndStatus = roundStatus(dec.significand, dec.exp, targetExp)
+	if expDiff > mag {
+		dec.significand, dec.exp = 0, targetExp
+		return
+	}
+	divisor := powersOf10[expDiff]
+	dec.significand = dec.significand / divisor
+	dec.exp = targetExp
+	return
 }
 
 func matchScales(exp1 int, significand1 uint64, exp2 int, significand2 uint64) (int, uint64, int, uint64) {
