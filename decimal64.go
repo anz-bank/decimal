@@ -334,3 +334,50 @@ func (d Decimal64) Sign() int {
 func (d Decimal64) Signbit() bool {
 	return d.bits>>63 == 1
 }
+
+//magDecimal returns the magnitude (number of digits) of a uint64.
+func magDecimal(n uint64) int {
+	numBits := 64 - bits.LeadingZeros64(n)
+	numDigits := numBits * 3 / 10
+	if n < powersOf10[numDigits] {
+		return numDigits
+	}
+	return numDigits + 1
+}
+
+// decParts gets the parts and returns in decParts stuct, doesn't get the magnitude due to performance issues\
+// TODO: rename this to parts when parts is depreciated
+func (d *Decimal64) getParts() decParts {
+	var fl flavor
+	var sign, exp int
+	var significand uint64
+	sign = int(d.bits >> 63)
+
+	switch (d.bits >> (63 - 4)) & 0xf {
+	case 15:
+		switch (d.bits >> (63 - 6)) & 3 {
+		case 0, 1:
+			fl = flInf
+		case 2:
+			fl = flQNaN
+		case 3:
+			fl = flSNaN
+		}
+	case 12, 13, 14:
+		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
+		//     EE ∈ {00, 01, 10}
+		fl = flNormal
+		exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
+		significand = d.bits&(1<<51-1) | (1 << 53)
+	default:
+		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
+		//   EE ∈ {00, 01, 10}
+		fl = flNormal
+		exp = int((d.bits>>(63-10))&(1<<10-1)) - expOffset
+		significand = d.bits & (1<<53 - 1)
+		if significand == 0 {
+			exp = 0
+		}
+	}
+	return decParts{fl, sign, exp, significand, 0, d}
+}
