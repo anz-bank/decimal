@@ -28,8 +28,15 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	}
 	ep.updateMag()
 	dp.updateMag()
+	sep := dp.separation(ep)
 	roundingMode := newRoundContext(roundHalfUp)
 	roundingMode.matchScales(&dp, &ep)
+	// if the seperation of the numbers are more than 16 then we just return the larger number
+	if sep > 16 { // TODO: return rounded significand (for round down/Ceiling)
+		return d
+	} else if sep < -16 {
+		return e
+	}
 	var ans decParts
 	if ep.sign != dp.sign {
 		if ep.significand == dp.significand {
