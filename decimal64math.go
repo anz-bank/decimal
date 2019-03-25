@@ -74,14 +74,12 @@ func (d Decimal64) Cmp(e Decimal64) int {
 func (d Decimal64) Mul(e Decimal64) Decimal64 {
 	flavor1, sign1, exp1, significand1 := d.parts()
 	flavor2, sign2, exp2, significand2 := e.parts()
-
 	if flavor1 == flSNaN || flavor2 == flSNaN {
-		return signalNaN64()
+		return SNaN64
 	}
 	if flavor1 == flQNaN || flavor2 == flQNaN {
 		return QNaN64
 	}
-
 	sign := sign1 ^ sign2
 	if d == Zero64 || d == NegZero64 || e == Zero64 || e == NegZero64 {
 		return zeroes[sign]
@@ -89,7 +87,6 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 	if flavor1 == flInf || flavor2 == flInf {
 		return infinities[sign]
 	}
-
 	exp := exp1 + exp2 + 15
 	significand := umul64(significand1, significand2).div64(decimal64Base)
 	exp, significand.lo = renormalize(exp, significand.lo)
@@ -108,14 +105,12 @@ func (d Decimal64) Neg() Decimal64 {
 func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	flavor1, sign1, exp1, significand1 := d.parts()
 	flavor2, sign2, exp2, significand2 := e.parts()
-
 	if flavor1 == flSNaN || flavor2 == flSNaN {
-		return signalNaN64()
+		return SNaN64
 	}
 	if flavor1 == flQNaN || flavor2 == flQNaN {
 		return QNaN64
 	}
-
 	sign := sign1 ^ sign2
 	if d == Zero64 || d == NegZero64 {
 		if e == Zero64 || e == NegZero64 {
@@ -132,11 +127,9 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	if flavor2 == flInf {
 		return zeroes[sign]
 	}
-
 	if e == Zero64 || e == NegZero64 {
 		return infinities[sign1]
 	}
-
 	exp := exp1 - exp2 - 16
 	significand := umul64(10*decimal64Base, significand1).div64(significand2)
 	exp, significand.lo = renormalize(exp, significand.lo)
@@ -159,10 +152,9 @@ func (d Decimal64) Sqrt() Decimal64 {
 	case flQNaN:
 		return d
 	case flSNaN:
-		return signalNaN64()
+		return SNaN64
 	case flNormal:
 	}
-
 	if significand == 0 {
 		return d
 	}

@@ -147,9 +147,6 @@ func TestDecimal64MulNaN(t *testing.T) {
 
 	require.Equal(QNaN64, fortyTwo.Mul(QNaN64))
 	require.Equal(QNaN64, QNaN64.Mul(fortyTwo))
-
-	require.Panics(func() { fortyTwo.Mul(SNaN64) })
-	require.Panics(func() { SNaN64.Mul(fortyTwo) })
 }
 
 func TestDecimal64MulInf(t *testing.T) {
@@ -219,8 +216,6 @@ func TestDecimal64QuoNaN(t *testing.T) {
 	require.Equal(QNaN64, fortyTwo.Quo(QNaN64))
 	require.Equal(QNaN64, QNaN64.Quo(fortyTwo))
 
-	require.Panics(func() { fortyTwo.Quo(SNaN64) })
-	require.Panics(func() { SNaN64.Quo(fortyTwo) })
 }
 
 func TestDecimal64QuoInf(t *testing.T) {
@@ -281,9 +276,7 @@ func TestDecimal64SqrtNeg(t *testing.T) {
 
 func TestDecimal64SqrtNaN(t *testing.T) {
 	require := require.New(t)
-
 	require.Equal(QNaN64, QNaN64.Sqrt())
-	require.Panics(func() { SNaN64.Sqrt() })
 }
 
 func TestDecimal64SqrtInf(t *testing.T) {
