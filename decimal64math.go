@@ -52,20 +52,16 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 //   +1 if d >  e
 //
 func (d Decimal64) Cmp(e Decimal64) int {
-	flavor1, _, _, _ := d.parts()
-	flavor2, _, _, _ := e.parts()
+	flavor1, _, _, significand1 := d.parts()
+	flavor2, _, _, significand2 := e.parts()
 	if flavor1 == flSNaN || flavor2 == flSNaN {
-		signalNaN64()
-		return 0
+		return -2
 	}
 	if flavor1 == flQNaN || flavor2 == flQNaN {
 		return -2
 	}
-	if d == NegZero64 {
-		d = Zero64
-	}
-	if e == NegZero64 {
-		e = Zero64
+	if significand1 == 0 && significand2 == 0 {
+		return 0
 	}
 	if d == e {
 		return 0

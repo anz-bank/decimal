@@ -105,12 +105,6 @@ func TestDecimal64CmpNaN(t *testing.T) {
 	require.Equal(-2, QNaN64.Cmp(QNaN64))
 	require.Equal(-2, Zero64.Cmp(QNaN64))
 	require.Equal(-2, QNaN64.Cmp(Zero64))
-
-	require.Panics(func() { SNaN64.Cmp(SNaN64) })
-	require.Panics(func() { SNaN64.Cmp(QNaN64) })
-	require.Panics(func() { QNaN64.Cmp(SNaN64) })
-	require.Panics(func() { SNaN64.Cmp(Zero64) })
-	require.Panics(func() { Zero64.Cmp(SNaN64) })
 }
 
 func TestDecimal64MulThreeByOneTenthByTen(t *testing.T) {
