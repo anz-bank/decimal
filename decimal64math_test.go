@@ -56,9 +56,6 @@ func TestDecimal64AddNaN(t *testing.T) {
 
 	require.Equal(QNaN64, fortyTwo.Add(QNaN64))
 	require.Equal(QNaN64, QNaN64.Add(fortyTwo))
-
-	require.Panics(func() { fortyTwo.Add(SNaN64) })
-	require.Panics(func() { SNaN64.Add(fortyTwo) })
 }
 
 func TestDecimal64AddInf(t *testing.T) {

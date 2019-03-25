@@ -10,7 +10,7 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	flavor1, sign1, exp1, significand1 := d.parts()
 	flavor2, sign2, exp2, significand2 := e.parts()
 	if flavor1 == flSNaN || flavor2 == flSNaN {
-		return signalNaN64()
+		return SNaN64
 	}
 	if flavor1 == flQNaN || flavor2 == flQNaN {
 		return QNaN64
