@@ -5,13 +5,16 @@ import (
 	"math/bits"
 )
 
-// Decimal64 represents an IEEE 754 64-bit floating point decimal number.
-// It uses the binary representation method.
-type Decimal64 struct {
-	bits uint64
-}
-
 type flavor int
+type roundingMode int
+type discardedDigit int
+
+const (
+	eq0 discardedDigit = iota
+	lt5
+	eq5
+	gt5
+)
 
 const (
 	flNormal flavor = iota
@@ -20,31 +23,30 @@ const (
 	flSNaN
 )
 
-func signalNaN64() Decimal64 {
-	// TODO: What's the right behavior?
-	panic("sNaN64")
+const (
+	roundHalfUp roundingMode = iota
+	roundHalfEven
+)
+
+// Decimal64 represents an IEEE 754 64-bit floating point decimal number.
+// It uses the binary representation method.
+type Decimal64 struct {
+	bits uint64
 }
 
-func checkSignificandIsNormal(significand uint64) {
-	logicCheck(decimal64Base <= significand, "%d <= %d", decimal64Base, significand)
-	logicCheck(significand < 10*decimal64Base, "%d < %d", significand, 10*decimal64Base)
+// decParts stores the constituting decParts of a decimal64.
+type decParts struct {
+	fl          flavor
+	sign        int
+	exp         int
+	significand uint64
+	mag         int
+	dec         *Decimal64
 }
 
-// NewDecimal64FromInt64 returns a new Decimal64 with the given value.
-func NewDecimal64FromInt64(value int64) Decimal64 {
-	if value == 0 {
-		return Zero64
-	}
-	sign := 0
-	if value < 0 {
-		sign = 1
-		value = -value
-	}
-	// TODO: handle abs(value) > 9 999 999 999 999 999
-	// lz := bits.LeadingZeros64(uint64(value))
-	exp, significand := renormalize(0, uint64(value))
-	checkSignificandIsNormal(significand)
-	return newFromParts(sign, exp, significand)
+type roundContext struct {
+	roundType roundingMode
+	rndStatus discardedDigit
 }
 
 var powersOf10 = []uint64{
@@ -68,6 +70,69 @@ var powersOf10 = []uint64{
 	100000000000000000,
 	1000000000000000000,
 	10000000000000000000,
+}
+
+func (context roundContext) round(significand uint64) uint64 {
+	switch context.roundType {
+	case roundHalfUp:
+		if context.rndStatus == gt5 || context.rndStatus == eq5 {
+			return significand + 1
+		}
+	case roundHalfEven:
+		if (context.rndStatus == eq5 && significand%2 == 1) || context.rndStatus == gt5 {
+			return significand + 1
+		}
+		// case roundDown: // TODO: implement proper down behaviour
+		// 	return significand
+		// case roundFloor:// TODO: implement proper Floor behaviour
+		// 	return significand
+		// case roundCeiling: //TODO: fine tune ceiling,
+	}
+	return significand
+}
+
+func newRoundContext(r roundingMode) roundContext {
+	return roundContext{r, 0}
+}
+
+// separation gets the separation in decimal places of the MSD's of two decimal 64s
+func (dec *decParts) separation(eDec decParts) int {
+	return dec.mag + dec.exp - eDec.mag - eDec.exp
+}
+
+// updateMag updates the magnitude of the dec object
+func (dec *decParts) updateMag() {
+	dec.mag = magDecimal(dec.significand)
+}
+
+// updateMag updates the magnitude of the dec object
+func (dec *decParts) isZero() bool {
+	return dec.significand == 0 && dec.fl == flNormal
+}
+func signalNaN64() {
+	panic("sNaN64")
+}
+
+func checkSignificandIsNormal(significand uint64) {
+	logicCheck(decimal64Base <= significand, "%d <= %d", decimal64Base, significand)
+	logicCheck(significand < 10*decimal64Base, "%d < %d", significand, 10*decimal64Base)
+}
+
+// NewDecimal64FromInt64 returns a new Decimal64 with the given value.
+func NewDecimal64FromInt64(value int64) Decimal64 {
+	if value == 0 {
+		return Zero64
+	}
+	sign := 0
+	if value < 0 {
+		sign = 1
+		value = -value
+	}
+	// TODO: handle abs(value) > 9 999 999 999 999 999
+	// lz := bits.LeadingZeros64(uint64(value))
+	exp, significand := renormalize(0, uint64(value))
+	checkSignificandIsNormal(significand)
+	return newFromParts(sign, exp, significand)
 }
 
 func renormalize(exp int, significand uint64) (int, uint64) {
@@ -102,34 +167,61 @@ func renormalize(exp int, significand uint64) (int, uint64) {
 }
 
 func rescale(exp int, significand uint64, targetExp int) (uint64, int) {
-	exp -= targetExp
-	var divisor uint64 = 1
-	for ; exp < -7 && divisor < significand; exp += 8 {
-		divisor *= 100000000
+	expDiff := targetExp - exp
+	mag := magDecimal(significand)
+	if expDiff > mag {
+		return 0, targetExp
 	}
-	for ; exp < -3 && divisor < significand; exp += 4 {
-		divisor *= 10000
-	}
-	for ; exp < -1 && divisor < significand; exp += 2 {
-		divisor *= 100
-	}
-	for ; exp < 0 && divisor < significand; exp++ {
-		divisor *= 10
-	}
+	divisor := powersOf10[expDiff]
 	return significand / divisor, targetExp
 }
 
-func matchScales(exp1 int, significand1 uint64, exp2 int, significand2 uint64) (int, uint64, int, uint64) {
-	if significand1 == 0 {
-		exp1 = exp2
-	} else if significand2 == 0 {
-		exp2 = exp1
-	} else if exp1 < exp2 {
-		significand1, exp1 = rescale(exp1, significand1, exp2)
-	} else if exp2 < exp1 {
-		significand2, exp2 = rescale(exp2, significand2, exp1)
+func (dec *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
+	expDiff := targetExp - dec.exp
+	mag := dec.mag
+	rndStatus = roundStatus(dec.significand, dec.exp, targetExp)
+	if expDiff > mag {
+		dec.significand, dec.exp = 0, targetExp
+		return
 	}
-	return exp1, significand1, exp2, significand2
+	divisor := powersOf10[expDiff]
+	dec.significand = dec.significand / divisor
+	dec.exp = targetExp
+	return
+}
+
+// roundStatus gives info about the truncated part of the significand that can't be fully stored in 16 decimal digits.
+func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
+	expDiff := targetExp - exp
+	if expDiff > 19 && significand != 0 {
+		return lt5
+	}
+	divisor := powersOf10[expDiff]
+	resizedSig := significand / divisor
+	truncatedSig := significand - resizedSig*divisor
+	midpoint := 5 * powersOf10[expDiff-1]
+	if truncatedSig == 0 {
+		return eq0
+	} else if truncatedSig < midpoint {
+		return lt5
+	} else if truncatedSig == midpoint {
+		return eq5
+	}
+	return gt5
+
+}
+
+// match scales matches the exponents of d and e and uses context to get the rounding status
+// contexts rounding method must be set or panic will occur
+func (context *roundContext) matchScales(d, e *decParts) {
+	logicCheck(d.significand != 0, "d.significand (%d) != 0", d.significand)
+	logicCheck(e.significand != 0, "e.significand (%d) != 0", e.significand)
+
+	if d.exp < e.exp {
+		context.rndStatus = d.rescale(e.exp)
+	} else if e.exp < d.exp {
+		context.rndStatus = e.rescale(d.exp)
+	}
 }
 
 func newFromParts(sign int, exp int, significand uint64) Decimal64 {
@@ -146,8 +238,51 @@ func newFromParts(sign int, exp int, significand uint64) Decimal64 {
 	return Decimal64{s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand}
 }
 
+// TODO: merge parts()/ implement version that uses decParts struct
 func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 	sign = int(d.bits >> 63)
+	switch (d.bits >> (63 - 4)) & 0xf {
+	case 15:
+		switch (d.bits >> (63 - 6)) & 3 {
+		case 0, 1:
+			fl = flInf
+		case 2:
+			fl = flQNaN
+			significand = d.bits & (1<<53 - 1)
+		case 3:
+			fl = flSNaN
+			significand = d.bits & (1<<53 - 1)
+		}
+	case 12, 13, 14:
+		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
+		//     EE ∈ {00, 01, 10}
+		fl = flNormal
+		exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
+		significand = d.bits&(1<<51-1) | (1 << 53)
+	default:
+		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
+		//   EE ∈ {00, 01, 10}
+		fl = flNormal
+		exp = int((d.bits>>(63-10))&(1<<10-1)) - expOffset
+		significand = d.bits & (1<<53 - 1)
+		if significand == 0 {
+			exp = 0
+		}
+	}
+	return
+}
+func (dec decParts) isNan() bool {
+	return dec.fl == flQNaN || dec.fl == flSNaN
+}
+
+// decParts gets the parts and returns in decParts stuct, doesn't get the magnitude due to performance issues\
+// TODO: rename this to parts when parts is depreciated
+func (d *Decimal64) getParts() decParts {
+	var fl flavor
+	var sign, exp int
+	var significand uint64
+	sign = int(d.bits >> 63)
+
 	switch (d.bits >> (63 - 4)) & 0xf {
 	case 15:
 		switch (d.bits >> (63 - 6)) & 3 {
@@ -174,7 +309,7 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 			exp = 0
 		}
 	}
-	return
+	return decParts{fl, sign, exp, significand, 0, d}
 }
 
 func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {
@@ -283,14 +418,18 @@ func (d Decimal64) IsSNaN() bool {
 
 // IsInt returns true iff d is an integer.
 func (d Decimal64) IsInt() bool {
-	flavor, _, exp, significand := d.parts()
-	switch flavor {
+	fl, _, exp, significand := d.parts()
+	switch fl {
 	case flNormal:
 		_, _, frac := expWholeFrac(exp, significand)
 		return frac == 0
 	default:
 		return false
 	}
+}
+func (d Decimal64) isZero() bool {
+	fl, _, _, significand := d.parts()
+	return significand == 0 && fl == flNormal
 }
 
 // Sign returns -1/0/1 depending on whether d is </=/> 0.
@@ -304,4 +443,22 @@ func (d Decimal64) Sign() int {
 // Signbit returns true iff d is negative or -0.
 func (d Decimal64) Signbit() bool {
 	return d.bits>>63 == 1
+}
+
+//magDecimal returns the magnitude (number of digits) of a uint64.
+func magDecimal(n uint64) int {
+	numBits := 64 - bits.LeadingZeros64(n)
+	numDigits := numBits * 3 / 10
+	if n < powersOf10[numDigits] {
+		return numDigits
+	}
+	return numDigits + 1
+}
+
+// propagateNan returns true if flavor1 should be propagated else false if flavor2 should be propagated
+func propagateNan(dp, ep *decParts) *Decimal64 {
+	if dp.fl == flSNaN || dp.fl == flQNaN {
+		return dp.dec
+	}
+	return ep.dec
 }

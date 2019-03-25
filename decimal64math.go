@@ -7,41 +7,63 @@ func (d Decimal64) Abs() Decimal64 {
 
 // Add computes d + e
 func (d Decimal64) Add(e Decimal64) Decimal64 {
-	flavor1, sign1, exp1, significand1 := d.parts()
-	flavor2, sign2, exp2, significand2 := e.parts()
-	if flavor1 == flSNaN || flavor2 == flSNaN {
-		return signalNaN64()
+	dp := d.getParts()
+	ep := e.getParts()
+	if dp.isNan() || ep.isNan() {
+		return *propagateNan(&dp, &ep)
 	}
-	if flavor1 == flQNaN || flavor2 == flQNaN {
-		return QNaN64
-	}
-	if flavor1 == flInf || flavor2 == flInf {
-		if flavor1 != flInf {
+	if dp.fl == flInf || ep.fl == flInf {
+		if dp.fl != flInf {
 			return e
 		}
-		if flavor2 != flInf || sign1 == sign2 {
+		if ep.fl != flInf || ep.sign == dp.sign {
 			return d
 		}
 		return QNaN64
 	}
-	if significand1 == 0 && significand2 == 0 {
-		return Zero64
+	if dp.significand == 0 {
+		return e
+	} else if ep.significand == 0 {
+		return d
 	}
-
-	exp1, significand1, exp2, significand2 = matchScales(exp1, significand1, exp2, significand2)
-
-	if sign1 == sign2 {
-		significand := significand1 + significand2
-		exp1, significand = renormalize(exp1, significand)
-		if significand > maxSig || exp1 > expMax {
-			return infinities[sign1]
+	ep.updateMag()
+	dp.updateMag()
+	sep := dp.separation(ep)
+	roundingMode := newRoundContext(roundHalfUp)
+	roundingMode.matchScales(&dp, &ep)
+	// if the seperation of the numbers are more than 16 then we just return the larger number
+	if sep > 16 { // TODO: return rounded significand (for round down/Ceiling)
+		return d
+	} else if sep < -16 {
+		return e
+	}
+	var ans decParts
+	if ep.sign != dp.sign {
+		if ep.significand == dp.significand {
+			return Zero64
 		}
-		return newFromParts(sign1, exp1, significand)
+		if dp.significand < ep.significand {
+			dp, ep = ep, dp
+		}
+		ans.sign = dp.sign
+		if dp.sign == 1 {
+			dp.sign, ep.sign = ep.sign, dp.sign
+		}
+	} else if dp.sign == 1 {
+		ans.sign = 1
+		dp.sign, ep.sign = 0, 0
+	} else {
+		ans.sign = 0
 	}
-	if significand1 > significand2 {
-		return newFromParts(sign1, exp1, significand1-significand2)
+
+	ans.significand = dp.significand + uint64(1-2*(ep.sign))*ep.significand
+	ans.exp = dp.exp
+	ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
+	ans.significand = roundingMode.round(ans.significand)
+	if ans.exp > expMax || ans.significand > maxSig {
+		return infinities[ans.sign]
 	}
-	return newFromParts(sign2, exp2, significand2-significand1)
+	return newFromParts(ans.sign, ans.exp, ans.significand)
 }
 
 // Cmp returns:
@@ -52,20 +74,16 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 //   +1 if d >  e
 //
 func (d Decimal64) Cmp(e Decimal64) int {
-	flavor1, _, _, _ := d.parts()
-	flavor2, _, _, _ := e.parts()
+	flavor1, _, _, significand1 := d.parts()
+	flavor2, _, _, significand2 := e.parts()
 	if flavor1 == flSNaN || flavor2 == flSNaN {
-		signalNaN64()
-		return 0
+		return -2
 	}
 	if flavor1 == flQNaN || flavor2 == flQNaN {
 		return -2
 	}
-	if d == NegZero64 {
-		d = Zero64
-	}
-	if e == NegZero64 {
-		e = Zero64
+	if significand1 == 0 && significand2 == 0 {
+		return 0
 	}
 	if d == e {
 		return 0
@@ -78,14 +96,12 @@ func (d Decimal64) Cmp(e Decimal64) int {
 func (d Decimal64) Mul(e Decimal64) Decimal64 {
 	flavor1, sign1, exp1, significand1 := d.parts()
 	flavor2, sign2, exp2, significand2 := e.parts()
-
 	if flavor1 == flSNaN || flavor2 == flSNaN {
-		return signalNaN64()
+		return SNaN64
 	}
 	if flavor1 == flQNaN || flavor2 == flQNaN {
 		return QNaN64
 	}
-
 	sign := sign1 ^ sign2
 	if d == Zero64 || d == NegZero64 || e == Zero64 || e == NegZero64 {
 		return zeroes[sign]
@@ -93,7 +109,6 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 	if flavor1 == flInf || flavor2 == flInf {
 		return infinities[sign]
 	}
-
 	exp := exp1 + exp2 + 15
 	significand := umul64(significand1, significand2).div64(decimal64Base)
 	exp, significand.lo = renormalize(exp, significand.lo)
@@ -112,14 +127,12 @@ func (d Decimal64) Neg() Decimal64 {
 func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	flavor1, sign1, exp1, significand1 := d.parts()
 	flavor2, sign2, exp2, significand2 := e.parts()
-
 	if flavor1 == flSNaN || flavor2 == flSNaN {
-		return signalNaN64()
+		return SNaN64
 	}
 	if flavor1 == flQNaN || flavor2 == flQNaN {
 		return QNaN64
 	}
-
 	sign := sign1 ^ sign2
 	if d == Zero64 || d == NegZero64 {
 		if e == Zero64 || e == NegZero64 {
@@ -136,11 +149,9 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	if flavor2 == flInf {
 		return zeroes[sign]
 	}
-
 	if e == Zero64 || e == NegZero64 {
 		return infinities[sign1]
 	}
-
 	exp := exp1 - exp2 - 16
 	significand := umul64(10*decimal64Base, significand1).div64(significand2)
 	exp, significand.lo = renormalize(exp, significand.lo)
@@ -163,10 +174,9 @@ func (d Decimal64) Sqrt() Decimal64 {
 	case flQNaN:
 		return d
 	case flSNaN:
-		return signalNaN64()
+		return SNaN64
 	case flNormal:
 	}
-
 	if significand == 0 {
 		return d
 	}
