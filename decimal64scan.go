@@ -41,7 +41,6 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 	if err != nil {
 		return err
 	}
-
 	// Word-number ([Ii]nf|∞|nan|NaN)
 	word, err := tokenString(state, isLetterOrInf)
 	if err != nil {
@@ -56,11 +55,15 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 			*d = NegInfinity64
 		}
 		return nil
-	case "nan", "NaN":
-		*d = QNaN64
+	case "nan", "NaN", "qNaN", "qnan", "Nan", "qNan":
+		payload, _ := tokenString(state, unicode.IsDigit)
+		payloadInt, _ := parseUint(payload)
+		*d = newPayloadNan(sign, flQNaN, uint64(payloadInt))
 		return nil
-	case "sNaN":
-		*d = SNaN64
+	case "sNaN", "snan", "sNan":
+		payload, _ := tokenString(state, unicode.IsDigit)
+		payloadInt, _ := parseUint(payload)
+		*d = newPayloadNan(sign, flSNaN, uint64(payloadInt))
 		return nil
 	default:
 		return notDecimal64()
@@ -180,4 +183,16 @@ func scanSign(state fmt.ScanState) (int, error) {
 		return 0, fmt.Errorf("Too many +/- characters: %s", string(s))
 	}
 	return 0, nil
+}
+
+func newPayloadNan(sign int, fl flavor, weight uint64) Decimal64 {
+	s := uint64(sign) << 63
+	switch fl {
+	case flQNaN:
+		return Decimal64{s | QNaN64.bits | weight}
+	case flSNaN:
+		return Decimal64{s | SNaN64.bits | weight}
+	default:
+		return QNaN64
+	}
 }
