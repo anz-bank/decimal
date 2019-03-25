@@ -1,9 +1,10 @@
 package decimal
 
 import (
-	"github.com/stretchr/testify/require"
 	"math"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestNew64FromInt64(t *testing.T) {
@@ -51,7 +52,6 @@ func TestDecimal64Float64(t *testing.T) {
 
 	require.True(math.IsNaN(QNaN64.Float64()))
 	require.Panics(func() { SNaN64.Float64() })
-
 	require.Equal(math.Inf(1), Infinity64.Float64())
 	require.Equal(math.Inf(-1), NegInfinity64.Float64())
 }
@@ -66,7 +66,6 @@ func TestDecimal64Int64(t *testing.T) {
 	require.EqualValues(10, NewDecimal64FromInt64(10).Int64())
 
 	require.EqualValues(0, QNaN64.Int64())
-	require.Panics(func() { SNaN64.Int64() })
 
 	require.EqualValues(math.MaxInt64, Infinity64.Int64())
 	require.EqualValues(math.MinInt64, NegInfinity64.Int64())
