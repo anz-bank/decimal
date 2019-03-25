@@ -31,18 +31,14 @@ func appendUint64(buf []byte, n, limit uint64) []byte {
 // Append appends the text representation of d to buf.
 func (d Decimal64) Append(buf []byte, format byte, prec int) []byte {
 	flavor, sign, exp, significand := d.parts()
-	switch flavor {
-	case flQNaN, flSNaN:
-		return append(buf, []byte("nan")...)
-	case flInf:
-		if sign == 0 {
-			return append(buf, []byte("inf")...)
-		}
-		return append(buf, []byte("-inf")...)
-	}
-
 	if sign == 1 {
 		buf = append(buf, '-')
+	}
+	switch flavor {
+	case flQNaN, flSNaN:
+		return appendUint64(append(buf, []byte("NaN")...), significand, 10000)
+	case flInf:
+		return append(buf, []byte("inf")...)
 	}
 
 formatBlock:
