@@ -102,7 +102,7 @@ func (dec *decParts) separation(eDec decParts) int {
 
 // updateMag updates the magnitude of the dec object
 func (dec *decParts) updateMag() {
-	dec.mag = magDecimal(dec.significand)
+	dec.mag = numDecimalDigits(dec.significand)
 }
 
 // updateMag updates the magnitude of the dec object
@@ -168,7 +168,7 @@ func renormalize(exp int, significand uint64) (int, uint64) {
 
 func rescale(exp int, significand uint64, targetExp int) (uint64, int) {
 	expDiff := targetExp - exp
-	mag := magDecimal(significand)
+	mag := numDecimalDigits(significand)
 	if expDiff > mag {
 		return 0, targetExp
 	}
@@ -445,8 +445,8 @@ func (d Decimal64) Signbit() bool {
 	return d.bits>>63 == 1
 }
 
-//magDecimal returns the magnitude (number of digits) of a uint64.
-func magDecimal(n uint64) int {
+//numDecimalDigits returns the magnitude (number of digits) of a uint64.
+func numDecimalDigits(n uint64) int {
 	numBits := 64 - bits.LeadingZeros64(n)
 	numDigits := numBits * 3 / 10
 	if n < powersOf10[numDigits] {
