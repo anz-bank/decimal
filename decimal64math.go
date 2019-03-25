@@ -7,41 +7,56 @@ func (d Decimal64) Abs() Decimal64 {
 
 // Add computes d + e
 func (d Decimal64) Add(e Decimal64) Decimal64 {
-	flavor1, sign1, exp1, significand1 := d.parts()
-	flavor2, sign2, exp2, significand2 := e.parts()
-	if flavor1 == flSNaN || flavor2 == flSNaN {
-		return SNaN64
+	dp := d.getParts()
+	ep := e.getParts()
+	if dp.isNan() || ep.isNan() {
+		return *propagateNan(&dp, &ep)
 	}
-	if flavor1 == flQNaN || flavor2 == flQNaN {
-		return QNaN64
-	}
-	if flavor1 == flInf || flavor2 == flInf {
-		if flavor1 != flInf {
+	if dp.fl == flInf || ep.fl == flInf {
+		if dp.fl != flInf {
 			return e
 		}
-		if flavor2 != flInf || sign1 == sign2 {
+		if ep.fl != flInf || ep.sign == dp.sign {
 			return d
 		}
 		return QNaN64
 	}
-	if significand1 == 0 && significand2 == 0 {
-		return Zero64
+	if dp.significand == 0 {
+		return e
+	} else if ep.significand == 0 {
+		return d
 	}
-
-	exp1, significand1, exp2, significand2 = matchScales(exp1, significand1, exp2, significand2)
-
-	if sign1 == sign2 {
-		significand := significand1 + significand2
-		exp1, significand = renormalize(exp1, significand)
-		if significand > maxSig || exp1 > expMax {
-			return infinities[sign1]
+	ep.updateMag()
+	dp.updateMag()
+	roundingMode := newRoundContext(roundHalfUp)
+	roundingMode.matchScales(&dp, &ep)
+	var ans decParts
+	if ep.sign != dp.sign {
+		if ep.significand == dp.significand {
+			return Zero64
 		}
-		return newFromParts(sign1, exp1, significand)
+		if dp.significand < ep.significand {
+			dp, ep = ep, dp
+		}
+		ans.sign = dp.sign
+		if dp.sign == 1 {
+			dp.sign, ep.sign = ep.sign, dp.sign
+		}
+	} else if dp.sign == 1 {
+		ans.sign = 1
+		dp.sign, ep.sign = 0, 0
+	} else {
+		ans.sign = 0
 	}
-	if significand1 > significand2 {
-		return newFromParts(sign1, exp1, significand1-significand2)
+
+	ans.significand = dp.significand + uint64(1-2*(ep.sign))*ep.significand
+	ans.exp = dp.exp
+	ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
+	ans.significand = roundingMode.round(ans.significand)
+	if ans.exp > expMax || ans.significand > maxSig {
+		return infinities[ans.sign]
 	}
-	return newFromParts(sign2, exp2, significand2-significand1)
+	return newFromParts(ans.sign, ans.exp, ans.significand)
 }
 
 // Cmp returns:
