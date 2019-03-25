@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"testing"
 )
 
 type decValContainer struct {
@@ -18,22 +19,47 @@ type testCaseStrings struct {
 	expectedResult string
 }
 
-// TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
-// TestFromSuite is the master tester for the dectest suite.
-// func TestFromSuite(t *testing.T) {
-// 	testVals := getInput("dectest/ddAdd.decTest")
-// 	for _, testVal := range testVals {
-// 		dec64vals := convertToDec64(testVal)
-// 		testErr := runTest(dec64vals, testVal)
-// 		if testErr != nil {
-// 			fmt.Println(testErr)
-// 		}
-// 		if dec64vals.parseError != nil {
-// 			fmt.Println(dec64vals.parseError)
-// 		}
-// 	}
-//
+const TESTDEBUG bool = true
+const RUNSUITES bool = true
+
+var tests = []string{"dectest/ddAdd.decTest"}
+
+// "dectest/ddFMA.decTest",
+// "dectest/ddMultiply.decTest"}
+
+// TODO: Implement following tests
+// "dectest/ddCompare.decTest"}
+// 	"dectest/ddAbs.decTest",
+// 	"dectest/ddClass.decTest",
+// 	"dectest/ddCopysign.decTest",
+// 	"dectest/ddDivide.decTest",
+// 	"dectest/ddLogB.decTest",
+// 	"dectest/ddMin.decTest",
+// 	"dectest/ddMinMag.decTest",
+// 	"dectest/ddMinus.decTest",
 // }
+
+func TestFromSuite(t *testing.T) {
+	if RUNSUITES {
+		for _, file := range tests {
+			if TESTDEBUG {
+				fmt.Println("starting test:", file)
+			}
+			testVals := getInput(file)
+			for _, testVal := range testVals {
+				dec64vals := convertToDec64(testVal)
+				testErr := runTest(dec64vals, testVal)
+				// fmt.Println("running test", testVal.testName)
+				if testErr != nil {
+					fmt.Println(testErr)
+					if dec64vals.parseError != nil {
+						fmt.Println(dec64vals.parseError)
+					}
+				}
+			}
+		}
+	}
+}
 
 // TODO: any tests that are failing a particular test in the test suite will be turned into a unit test.
 // func TestNew(t *testing.T) {
