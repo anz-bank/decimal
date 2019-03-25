@@ -36,6 +36,7 @@ func MustParseDecimal64(s string) Decimal64 {
 
 // Scan implements fmt.Scanner.
 func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
+	*d = SNaN64
 	sign, err := scanSign(state)
 	if err != nil {
 		return err
@@ -48,7 +49,7 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 	}
 	switch word {
 	case "":
-	case "inf", "Inf", "∞":
+	case "inf", "Inf", "infinity", "Infinity", "∞":
 		if sign == 0 {
 			*d = Infinity64
 		} else {
@@ -57,6 +58,9 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 		return nil
 	case "nan", "NaN":
 		*d = QNaN64
+		return nil
+	case "sNaN":
+		*d = SNaN64
 		return nil
 	default:
 		return notDecimal64()
