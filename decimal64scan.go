@@ -46,21 +46,21 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 	if err != nil {
 		return err
 	}
-	switch word {
+	switch strings.ToLower(word) {
 	case "":
-	case "inf", "Inf", "infinity", "Infinity", "∞":
+	case "inf", "infinity", "∞":
 		if sign == 0 {
 			*d = Infinity64
 		} else {
 			*d = NegInfinity64
 		}
 		return nil
-	case "nan", "NaN", "qNaN", "qnan", "Nan", "qNan":
+	case "nan", "qnan":
 		payload, _ := tokenString(state, unicode.IsDigit)
 		payloadInt, _ := parseUint(payload)
 		*d = newPayloadNan(sign, flQNaN, uint64(payloadInt))
 		return nil
-	case "sNaN", "snan", "sNan":
+	case "snan":
 		payload, _ := tokenString(state, unicode.IsDigit)
 		payloadInt, _ := parseUint(payload)
 		*d = newPayloadNan(sign, flSNaN, uint64(payloadInt))
