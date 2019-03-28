@@ -744,21 +744,21 @@ rounding: half_even
 # ddadd7867 add -1000    NaN8   ->  NaN8
 # ddadd7868 add  1000    NaN9   ->  NaN9
 # ddadd7869 add  Inf    +NaN10  ->  NaN10
-# ddadd7871 add  sNaN11  -Inf   ->  NaN11  Invalid_operation
-# ddadd7872 add  sNaN12  -1000  ->  NaN12  Invalid_operation
-# ddadd7873 add  sNaN13   1000  ->  NaN13  Invalid_operation
-# ddadd7874 add  sNaN14   NaN17 ->  NaN14  Invalid_operation
-# ddadd7875 add  sNaN15  sNaN18 ->  NaN15  Invalid_operation
-# ddadd7876 add  NaN16   sNaN19 ->  NaN19  Invalid_operation
-# ddadd7877 add -Inf    +sNaN20 ->  NaN20  Invalid_operation
-# ddadd7878 add -1000    sNaN21 ->  NaN21  Invalid_operation
-# ddadd7879 add  1000    sNaN22 ->  NaN22  Invalid_operation
-# ddadd7880 add  Inf     sNaN23 ->  NaN23  Invalid_operation
-# ddadd7881 add +NaN25  +sNaN24 ->  NaN24  Invalid_operation
-# ddadd7882 add -NaN26    NaN28 -> -NaN26
-# ddadd7883 add -sNaN27  sNaN29 -> -NaN27  Invalid_operation
-# ddadd7884 add  1000    -NaN30 -> -NaN30
-# ddadd7885 add  1000   -sNaN31 -> -NaN31  Invalid_operation
+ddadd7871 add  sNaN11  -Inf   ->  NaN11  Invalid_operation
+ddadd7872 add  sNaN12  -1000  ->  NaN12  Invalid_operation
+ddadd7873 add  sNaN13   1000  ->  NaN13  Invalid_operation
+ddadd7874 add  sNaN14   NaN17 ->  NaN14  Invalid_operation
+ddadd7875 add  sNaN15  sNaN18 ->  NaN15  Invalid_operation
+ddadd7876 add  NaN16   sNaN19 ->  NaN19  Invalid_operation
+ddadd7877 add -Inf    +sNaN20 ->  NaN20  Invalid_operation
+ddadd7878 add -1000    sNaN21 ->  NaN21  Invalid_operation
+ddadd7879 add  1000    sNaN22 ->  NaN22  Invalid_operation
+ddadd7880 add  Inf     sNaN23 ->  NaN23  Invalid_operation
+ddadd7881 add +NaN25  +sNaN24 ->  NaN24  Invalid_operation
+ddadd7882 add -NaN26    NaN28 -> -NaN26
+ddadd7883 add -sNaN27  sNaN29 -> -NaN27  Invalid_operation
+ddadd7884 add  1000    -NaN30 -> -NaN30
+ddadd7885 add  1000   -sNaN31 -> -NaN31  Invalid_operation
 #
 # -- Here we explore near the boundary of rounding a subnormal to Nmin
 # ddadd7575 add  1E-383 -1E-398 ->  9.99999999999999E-384  Subnormal

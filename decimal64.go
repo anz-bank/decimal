@@ -455,9 +455,15 @@ func numDecimalDigits(n uint64) int {
 	return numDigits + 1
 }
 
-// propagateNan returns true if flavor1 should be propagated else false if flavor2 should be propagated
+// propagateNan returns the decimal pointer to the NaN that is to be propogated
 func propagateNan(dp, ep *decParts) *Decimal64 {
-	if dp.fl == flSNaN || dp.fl == flQNaN {
+	if dp.fl == flSNaN {
+		return dp.dec
+	}
+	if ep.fl == flSNaN {
+		return ep.dec
+	}
+	if dp.fl == flQNaN {
 		return dp.dec
 	}
 	return ep.dec
