@@ -71,17 +71,22 @@ func TestDecimal64Append(t *testing.T) {
 		require.Equal(expected, string(d.Append([]byte{}, format, prec)))
 	}
 
-	// for i := int64(-1000); i <= 1000; i++ {
-	// 	require.Equal(
-	// 		strconv.FormatInt(i, 10),
-	// 		string(NewDecimal64FromInt64(i).Append([]byte{}, 'g', 0)),
-	// 	)
-	// }
+	for i := int64(-1000); i <= 1000; i++ {
+		require.Equal(
+			strconv.FormatInt(i, 10),
+			string(NewDecimal64FromInt64(i).Append([]byte{}, 'g', 0)),
+		)
+	}
 
-	// requireAppend("NaN", QNaN64, 'g', 0)
-	// requireAppend("inf", Infinity64, 'g', 0)
-	// requireAppend("-inf", NegInfinity64, 'g', 0)
-	// requireAppend("-0", NegZero64, 'g', 0)
+	requireAppend("NaN", QNaN64, 'g', 0)
+	requireAppend("inf", Infinity64, 'g', 0)
+	requireAppend("-inf", NegInfinity64, 'g', 0)
+	requireAppend("-0", NegZero64, 'g', 0)
+	requireAppend("NaN", QNaN64, 'f', 0)
+	requireAppend("NaN", SNaN64, 'f', 0)
+	requireAppend("inf", Infinity64, 'f', 0)
+	requireAppend("-inf", NegInfinity64, 'f', 0)
+	requireAppend("%w", Zero64, 'w', 0)
 
 	requireAppend("1.23456789e+8", MustParseDecimal64("123456789"), 'e', 0)
 	requireAppend("1.23456789e+18", MustParseDecimal64("123456789e10"), 'e', 0)
@@ -93,13 +98,6 @@ func TestDecimal64Append(t *testing.T) {
 	requireAppend("1.23456789e-18", MustParseDecimal64("123456789e-26"), 'g', 0)
 	requireAppend("1.23456789e+18", MustParseDecimal64("123456789e10"), 'g', 0)
 
-	requireAppend("nan", QNaN64, 'f', 0)
-	requireAppend("nan", SNaN64, 'f', 0)
-
-	requireAppend("inf", Infinity64, 'f', 0)
-	requireAppend("-inf", NegInfinity64, 'f', 0)
-
-	requireAppend("%w", Zero64, 'w', 0)
 }
 
 func BenchmarkDecimal64Append(b *testing.B) {
