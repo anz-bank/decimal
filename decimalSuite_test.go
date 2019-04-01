@@ -23,22 +23,21 @@ type testCaseStrings struct {
 const TESTDEBUG bool = true
 const RUNSUITES bool = true
 
-var tests = []string{"dectest/ddAdd.decTest"}
-
-// "dectest/ddFMA.decTest",
-// "dectest/ddMultiply.decTest"}
-
-// TODO: Implement following tests
-// "dectest/ddCompare.decTest"}
-// 	"dectest/ddAbs.decTest",
-// 	"dectest/ddClass.decTest",
-// 	"dectest/ddCopysign.decTest",
-// 	"dectest/ddDivide.decTest",
-// 	"dectest/ddLogB.decTest",
-// 	"dectest/ddMin.decTest",
-// 	"dectest/ddMinMag.decTest",
-// 	"dectest/ddMinus.decTest",
-// }
+var tests = []string{"",
+	"dectest/ddAdd.decTest",
+	"dectest/ddMultiply.decTest",
+	// TODO: Implement following tests
+	// "dectest/ddFMA.decTest",
+	// "dectest/ddCompare.decTest"}
+	// 	"dectest/ddAbs.decTest",
+	// 	"dectest/ddClass.decTest",
+	// 	"dectest/ddCopysign.decTest",
+	// 	"dectest/ddDivide.decTest",
+	// 	"dectest/ddLogB.decTest",
+	// 	"dectest/ddMin.decTest",
+	// 	"dectest/ddMinMag.decTest",
+	// 	"dectest/ddMinus.decTest",
+}
 
 // TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
 // TestFromSuite is the master tester for the dectest suite.
@@ -49,16 +48,21 @@ func TestFromSuite(t *testing.T) {
 				fmt.Println("starting test:", file)
 			}
 			testVals := getInput(file)
+			numTests := len(testVals)
+			failedTests := 0
 			for _, testVal := range testVals {
 				dec64vals := convertToDec64(testVal)
 				testErr := runTest(dec64vals, testVal)
-				// fmt.Println("running test", testVal.testName)
 				if testErr != nil {
+					failedTests++
 					fmt.Println(testErr)
 					if dec64vals.parseError != nil {
 						fmt.Println(dec64vals.parseError)
 					}
 				}
+			}
+			if TESTDEBUG {
+				fmt.Println("Number of tests ran:", numTests, "Number of failed tests:", failedTests)
 			}
 		}
 	}
