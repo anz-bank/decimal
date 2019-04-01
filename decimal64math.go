@@ -92,30 +92,42 @@ func (d Decimal64) Cmp(e Decimal64) int {
 	return 1 - 2*int(d.bits>>63)
 }
 
-// Mul computes d * e.
+// Mul computes d * e
 func (d Decimal64) Mul(e Decimal64) Decimal64 {
-	flavor1, sign1, exp1, significand1 := d.parts()
-	flavor2, sign2, exp2, significand2 := e.parts()
-	if flavor1 == flSNaN || flavor2 == flSNaN {
-		return SNaN64
+	dp := d.getParts()
+	ep := e.getParts()
+	if ep.fl == flQNaN || ep.fl == flSNaN || dp.fl == flQNaN || dp.fl == flSNaN {
+		return *propagateNan(&dp, &ep)
 	}
-	if flavor1 == flQNaN || flavor2 == flQNaN {
-		return QNaN64
+	var ans decParts
+	ans.sign = dp.sign ^ ep.sign
+	if dp.fl == flInf || ep.fl == flInf {
+		if ep.isZero() || dp.isZero() {
+			return QNaN64
+		}
+		return infinities[ans.sign]
 	}
-	sign := sign1 ^ sign2
-	if d == Zero64 || d == NegZero64 || e == Zero64 || e == NegZero64 {
-		return zeroes[sign]
+	if ep.significand == 0 || dp.significand == 0 {
+		return zeroes[ans.sign]
 	}
-	if flavor1 == flInf || flavor2 == flInf {
-		return infinities[sign]
+	ep.updateMag()
+	dp.updateMag()
+	roundingMode := newRoundContext(roundHalfEven)
+	significand := umul64(dp.significand, ep.significand)
+	ans.exp = dp.exp + ep.exp + 15
+	significand = significand.div64(decimal64Base)
+	ans.significand = significand.lo
+	ans.updateMag()
+	if ans.exp >= -expOffset {
+		ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
+	} else if ans.exp < 1-expMax {
+		roundingMode.rndStatus = ans.rescale(-expOffset)
 	}
-	exp := exp1 + exp2 + 15
-	significand := umul64(significand1, significand2).div64(decimal64Base)
-	exp, significand.lo = renormalize(exp, significand.lo)
-	if significand.lo > maxSig || exp > expMax {
-		return infinities[sign]
+	ans.significand = roundingMode.round(ans.significand)
+	if ans.significand > maxSig || ans.exp > expMax {
+		return infinities[ans.sign]
 	}
-	return newFromParts(sign, exp, significand.lo)
+	return newFromParts(ans.sign, ans.exp, ans.significand)
 }
 
 // Neg computes -d.
