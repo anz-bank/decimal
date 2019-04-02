@@ -29,8 +29,8 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	ep.updateMag()
 	dp.updateMag()
 	sep := dp.separation(ep)
-	roundingMode := newRoundContext(roundHalfUp)
-	roundingMode.matchScales(&dp, &ep)
+	var roundStatus discardedDigit
+	roundStatus = matchScales(&dp, &ep)
 	// if the seperation of the numbers are more than 16 then we just return the larger number
 	if sep > 16 { // TODO: return rounded significand (for round down/Ceiling)
 		return d
@@ -55,11 +55,10 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	} else {
 		ans.sign = 0
 	}
-
 	ans.significand = dp.significand + uint64(1-2*(ep.sign))*ep.significand
 	ans.exp = dp.exp
 	ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
-	ans.significand = roundingMode.round(ans.significand)
+	ans.significand = roundHalfUp.round(ans.significand, roundStatus)
 	if ans.exp > expMax || ans.significand > maxSig {
 		return infinities[ans.sign]
 	}
@@ -112,7 +111,7 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 	}
 	ep.updateMag()
 	dp.updateMag()
-	roundingMode := newRoundContext(roundHalfEven)
+	var roundStatus discardedDigit
 	significand := umul64(dp.significand, ep.significand)
 	ans.exp = dp.exp + ep.exp + 15
 	significand = significand.div64(decimal64Base)
@@ -121,9 +120,9 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 	if ans.exp >= -expOffset {
 		ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
 	} else if ans.exp < 1-expMax {
-		roundingMode.rndStatus = ans.rescale(-expOffset)
+		roundStatus = ans.rescale(-expOffset)
 	}
-	ans.significand = roundingMode.round(ans.significand)
+	ans.significand = roundHalfEven.round(ans.significand, roundStatus)
 	if ans.significand > maxSig || ans.exp > expMax {
 		return infinities[ans.sign]
 	}
