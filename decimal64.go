@@ -10,7 +10,7 @@ type roundingMode int
 type discardedDigit int
 
 const (
-	eq0 discardedDigit = iota
+	eq0 discardedDigit = 1 << iota
 	lt5
 	eq5
 	gt5
@@ -70,7 +70,7 @@ var powersOf10 = []uint64{
 func (context roundingMode) round(significand uint64, rndStatus discardedDigit) uint64 {
 	switch context {
 	case roundHalfUp:
-		if rndStatus == gt5 || rndStatus == eq5 {
+		if rndStatus&(gt5|eq5) != 0 {
 			return significand + 1
 		}
 	case roundHalfEven:
@@ -202,11 +202,11 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 }
 
 // match scales matches the exponents of d and e and returns the info about the discarded digit
-func matchScales(d, e *decParts)(discardedDigit) {
+func matchScales(d, e *decParts) discardedDigit {
 	logicCheck(d.significand != 0, "d.significand (%d) != 0", d.significand)
 	logicCheck(e.significand != 0, "e.significand (%d) != 0", e.significand)
-	if d.exp == e.exp{
-	return eq0
+	if d.exp == e.exp {
+		return eq0
 	}
 	if d.exp < e.exp {
 		return d.rescale(e.exp)
