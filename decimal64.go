@@ -10,7 +10,7 @@ type roundingMode int
 type discardedDigit int
 
 const (
-	eq0 discardedDigit = iota
+	eq0 discardedDigit = 1 << iota
 	lt5
 	eq5
 	gt5
@@ -44,11 +44,6 @@ type decParts struct {
 	dec         *Decimal64
 }
 
-type roundContext struct {
-	roundType roundingMode
-	rndStatus discardedDigit
-}
-
 var powersOf10 = []uint64{
 	1,
 	10,
@@ -72,14 +67,14 @@ var powersOf10 = []uint64{
 	10000000000000000000,
 }
 
-func (context roundContext) round(significand uint64) uint64 {
-	switch context.roundType {
+func (context roundingMode) round(significand uint64, rndStatus discardedDigit) uint64 {
+	switch context {
 	case roundHalfUp:
-		if context.rndStatus == gt5 || context.rndStatus == eq5 {
+		if rndStatus&(gt5|eq5) != 0 {
 			return significand + 1
 		}
 	case roundHalfEven:
-		if (context.rndStatus == eq5 && significand%2 == 1) || context.rndStatus == gt5 {
+		if (rndStatus == eq5 && significand%2 == 1) || rndStatus == gt5 {
 			return significand + 1
 		}
 		// case roundDown: // TODO: implement proper down behaviour
@@ -89,10 +84,6 @@ func (context roundContext) round(significand uint64) uint64 {
 		// case roundCeiling: //TODO: fine tune ceiling,
 	}
 	return significand
-}
-
-func newRoundContext(r roundingMode) roundContext {
-	return roundContext{r, 0}
 }
 
 // separation gets the separation in decimal places of the MSD's of two decimal 64s
@@ -208,20 +199,19 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 		return eq5
 	}
 	return gt5
-
 }
 
-// match scales matches the exponents of d and e and uses context to get the rounding status
-// contexts rounding method must be set or panic will occur
-func (context *roundContext) matchScales(d, e *decParts) {
+// match scales matches the exponents of d and e and returns the info about the discarded digit
+func matchScales(d, e *decParts) discardedDigit {
 	logicCheck(d.significand != 0, "d.significand (%d) != 0", d.significand)
 	logicCheck(e.significand != 0, "e.significand (%d) != 0", e.significand)
-
-	if d.exp < e.exp {
-		context.rndStatus = d.rescale(e.exp)
-	} else if e.exp < d.exp {
-		context.rndStatus = e.rescale(d.exp)
+	if d.exp == e.exp {
+		return eq0
 	}
+	if d.exp < e.exp {
+		return d.rescale(e.exp)
+	}
+	return e.rescale(d.exp)
 }
 
 func newFromParts(sign int, exp int, significand uint64) Decimal64 {
