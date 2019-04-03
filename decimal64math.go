@@ -1,5 +1,7 @@
 package decimal
 
+import "fmt"
+
 // Abs computes ||d||.
 func (d Decimal64) Abs() Decimal64 {
 	return Decimal64{^neg64 & uint64(d.bits)}
@@ -89,6 +91,112 @@ func (d Decimal64) Cmp(e Decimal64) int {
 	}
 	d = d.Sub(e)
 	return 1 - 2*int(d.bits>>63)
+}
+
+func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
+	dp := d.getParts()
+	ep := e.getParts()
+	fp := f.getParts()
+
+	if dp.fl == flSNaN {
+		return d
+	}
+	if ep.fl == flSNaN {
+		return e
+	}
+	if fp.fl == flSNaN {
+		return f
+	}
+	if dp.fl == flQNaN {
+		return d
+	}
+	if ep.fl == flQNaN {
+		return e
+	}
+	if fp.fl == flQNaN {
+		return f
+	}
+	ep.updateMag()
+	dp.updateMag()
+	fp.updateMag()
+	var ans, ans2 decParts
+	ans.sign = dp.sign ^ ep.sign
+	var roundStatus discardedDigit
+	if dp.fl == flInf || ep.fl == flInf {
+		if fp.fl == flInf && ans.sign != fp.sign {
+			return QNaN64
+		}
+		if ep.isZero() || dp.isZero() {
+			return QNaN64
+		}
+		return infinities[ans.sign]
+	}
+	if ep.significand == 0 || dp.significand == 0 {
+		return f
+	}
+	if fp.fl == flInf {
+		return infinities[fp.sign]
+	}
+	significand := umul64(dp.significand, ep.significand)
+	// ans.updateMag()
+	ans.mag = numDecimalDigits(significand.lo) + numDecimalDigits(significand.hi)
+	sep := ans.separation(fp)
+	fmt.Println("significand.div64(decimal64Base)", significand.div64(decimal64Base), fp.significand)
+	fmt.Println(sep, "sep", numDecimalDigits(significand.lo), numDecimalDigits(significand.hi))
+	// if ans.exp+ans.mag > fp.exp+fp.mag {
+	fmt.Println("asa", ans.exp-fp.exp)
+	significand = umul64(fp.significand, powersOf10[sep+1]).sub(significand)
+	// significand = significand.sub(umul64(fp.significand, powersOf10[sep+1])) //.sub(significand)
+
+	ans.exp = dp.exp + ep.exp + numDecimalDigits(significand.hi)
+	significand = significand.div64(powersOf10[numDecimalDigits(significand.hi)])
+	ans.updateMag()
+	ans.significand = significand.lo
+	fmt.Println(sep, "significand.lo", significand.lo, significand.hi)
+	ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
+	return newFromParts(ans.sign, ans.exp, ans.significand)
+	// }
+	if ans.exp >= -expOffset {
+		ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
+	} else if ans.exp < 1-expMax {
+		roundStatus = ans.rescale(-expOffset)
+	}
+	// 0.999999999999e-383
+	// 0.999999999998999e-383
+	if ans.isZero() {
+		return f
+	}
+	if fp.isZero() {
+		return newFromParts(ans.sign, ans.exp, ans.significand)
+	}
+	roundStatus = matchScales(&ans, &fp)
+	if ans.sign != fp.sign {
+		if ans.significand == fp.significand {
+			return Zero64
+		}
+		if fp.significand < ans.significand {
+			fp, ans = ans, fp
+		}
+		ans2.sign = fp.sign
+		if fp.sign == 1 {
+			fp.sign, ans.sign = ans.sign, fp.sign
+		}
+	} else if fp.sign == 1 {
+		ans2.sign = 1
+		fp.sign, ans.sign = 0, 0
+	} else {
+		ans2.sign = 0
+	}
+	ans2.significand = fp.significand + uint64(1-2*(ans.sign))*roundHalfUp.round(ans.significand, roundStatus)
+	ans2.exp = fp.exp
+	if ans2.isZero() {
+		return Zero64
+	}
+	ans2.exp, ans2.significand = renormalize(ans2.exp, ans2.significand)
+	if ans2.exp > expMax || ans2.significand > maxSig {
+		return infinities[ans2.sign]
+	}
+	return newFromParts(ans2.sign, ans2.exp, ans2.significand)
 }
 
 // Mul computes d * e

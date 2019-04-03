@@ -21,13 +21,14 @@ type testCaseStrings struct {
 }
 
 const TESTDEBUG bool = true
+const PRINTTESTS bool = true
 const RUNSUITES bool = true
 
 var tests = []string{"",
 	"dectest/ddAdd.decTest",
 	"dectest/ddMultiply.decTest",
 	// TODO: Implement following tests
-	// "dectest/ddFMA.decTest",
+	"dectest/ddFMA.decTest",
 	// "dectest/ddCompare.decTest"}
 	// 	"dectest/ddAbs.decTest",
 	// 	"dectest/ddClass.decTest",
@@ -47,15 +48,22 @@ func TestFromSuite(t *testing.T) {
 			if TESTDEBUG {
 				fmt.Println("starting test:", file)
 			}
-			testVals := getInput(file)
+			dat, _ := ioutil.ReadFile(file)
+			dataString := string(dat)
+			testVals := getInput(dataString)
 			numTests := len(testVals)
 			failedTests := 0
 			for _, testVal := range testVals {
 				dec64vals := convertToDec64(testVal)
 				testErr := runTest(dec64vals, testVal)
+				if PRINTTESTS {
+					fmt.Printf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
+
+				}
 				if testErr != nil {
 					failedTests++
 					fmt.Println(testErr)
+					fmt.Printf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
 					if dec64vals.parseError != nil {
 						fmt.Println(dec64vals.parseError)
 					}
@@ -71,8 +79,6 @@ func TestFromSuite(t *testing.T) {
 // TODO get regexto match with three inputs for functions like FMA.
 // getInput gets the test file and extracts test using regex, then returns a map object and a list of test names.
 func getInput(file string) (data []testCaseStrings) {
-	dat, _ := ioutil.ReadFile(file)
-	dataString := string(dat)
 	r := regexp.MustCompile(`(?:\n)` + // start with newline (?: non capturing group)
 		`(?P<testName>dd[\w]*)` + // first capturing group: testfunc made of anything that isn't a whitespace
 		`(?:\s*)` + // match any whitespace (?: non capturing group)
@@ -86,7 +92,7 @@ func getInput(file string) (data []testCaseStrings) {
 		`(?:'?\s*->\s*'?)` + // matches the indicator to answer and surrounding whitespaces (?: non capturing group)
 		`(?P<expectedResult>\+?-?[^\r\n\t\f\v\' ]*)`) // matches the answer that's anything that is plus minus but not quotations
 	// capturing gorups are testName, testFunc, val1,  val2, and expectedResult)
-	ans := r.FindAllStringSubmatch(dataString, -1)
+	ans := r.FindAllStringSubmatch(file, -1)
 	for _, a := range ans {
 		data = append(data, testCaseStrings{
 			testName:       a[1],
@@ -126,23 +132,24 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) error {
 	if calcRestul.IsNaN() || testVals.expected.IsNaN() {
 		if testVals.expected.String() != calcRestul.String() {
 			return fmt.Errorf(
-				"\n failed NaN TEST %s \n %v %s %v == %v \n expected result: %v ",
+				"\n failed NaN TEST %s \n %v %s %v %v== %v \n expected result: %v ",
 				testValStrings.testName,
 				testValStrings.val1,
 				testValStrings.testFunc,
 				testValStrings.val2,
+				testValStrings.val3,
 				calcRestul,
 				testValStrings.expectedResult)
 		}
 		return nil
-
 	} else if testVals.expected.Cmp(calcRestul) != 0 {
 		return fmt.Errorf(
-			"\nfailed %s \n %v %s %v == %v \n expected result: %v ",
+			"\nfailed %s \n %v %s %v %v== %v \n expected result: %v ",
 			testValStrings.testName,
 			testValStrings.val1,
 			testValStrings.testFunc,
 			testValStrings.val2,
+			testValStrings.val3,
 			calcRestul,
 			testValStrings.expectedResult)
 	}
@@ -161,8 +168,8 @@ func execOp(val1, val2, val3 Decimal64, op string) Decimal64 {
 		return val1.Abs()
 	case "divide":
 		return val1.Quo(val2)
-	case "fma": // TODO: Add FMA function
-		//return val1.FMA(val2, val3)
+	case "fma":
+		return val1.FMA(val2, val3)
 	default:
 		fmt.Println("end of execOp, no tests ran", op)
 	}
