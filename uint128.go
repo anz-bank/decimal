@@ -7,7 +7,31 @@ import (
 type uint128T struct {
 	lo, hi uint64
 }
+type uint128TDebug struct {
+	old, new uint128T
+}
 
+func split(a uint64) uint128T {
+	t := ((1 << 12) + 1) * a
+	hi := t - (t - a)
+	lo := a - hi
+	return uint128T{hi, lo}
+}
+func (a *uint128TDebug) goToLow(b uint128T) {
+	if a.old.hi == 0 && a.old.lo == 0 {
+		a.old = b.div64(powersOf10[numDecimalDigits(b.hi)])
+		return
+	}
+	a.new = b.div64(powersOf10[numDecimalDigits(b.hi)])
+
+}
+func (a *uint128TDebug) reset() {
+	a.old.lo = 0
+	a.old.hi = 0
+	a.new.lo = 0
+	a.new.hi = 0
+
+}
 func umul64(a, b uint64) uint128T {
 	a0 := a & 0xffffffff
 	a1 := a >> 32
@@ -90,9 +114,13 @@ func (a uint128T) divBy10() uint128T {
 // 	return !a.lt(b)
 // }
 
-// func (a uint128T) gt(b uint128T) bool {
-// 	return b.lt(a)
-// }
+func (a uint128T) gt(b uint128T) bool {
+	return b.lt(a)
+}
+
+func (a uint128T) eq(b uint128T) bool {
+	return b.lo == a.lo && b.hi == a.hi
+}
 
 // func (a uint128T) le(b uint128T) bool {
 // 	return !b.lt(a)
@@ -105,12 +133,12 @@ func (a uint128T) leadingZeros() uint {
 	return uint(64 + bits.LeadingZeros64(a.lo))
 }
 
-// func (a uint128T) lt(b uint128T) bool {
-// 	if a.hi != b.hi {
-// 		return a.hi < b.hi
-// 	}
-// 	return a.lo < b.lo
-// }
+func (a uint128T) lt(b uint128T) bool {
+	if a.hi != b.hi {
+		return a.hi < b.hi
+	}
+	return a.lo < b.lo
+}
 
 func (a uint128T) mulBy10() uint128T {
 	// a*10 = a*8 + a*2
@@ -170,9 +198,16 @@ func (a uint128T) sqrt() uint64 {
 	}
 }
 
-// func (a uint128T) trailingZeros() uint {
-// 	if a.lo > 0 {
-// 		return uint(bits.TrailingZeros64(a.lo))
-// 	}
-// 	return uint(bits.TrailingZeros64(a.hi) + 64)
-// }
+func (a uint128T) trailingZeros() int {
+	if a.lo > 0 {
+		return int(bits.TrailingZeros64(a.lo))
+	}
+	return int(bits.TrailingZeros64(a.hi) + 64)
+}
+
+func (a uint128T) trailingDecimalZeros() int {
+	if a.lo > 0 {
+		return countTrailingZeros(a.lo)
+	}
+	return countTrailingZeros(a.lo) + 20
+}

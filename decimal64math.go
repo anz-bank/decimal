@@ -1,7 +1,5 @@
 package decimal
 
-import "fmt"
-
 // Abs computes ||d||.
 func (d Decimal64) Abs() Decimal64 {
 	return Decimal64{^neg64 & uint64(d.bits)}
@@ -97,7 +95,6 @@ func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
 	fp := f.getParts()
-
 	if dp.fl == flSNaN {
 		return d
 	}
@@ -116,10 +113,7 @@ func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
 	if fp.fl == flQNaN {
 		return f
 	}
-	ep.updateMag()
-	dp.updateMag()
-	fp.updateMag()
-	var ans, ans2 decParts
+	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
 	var roundStatus discardedDigit
 	if dp.fl == flInf || ep.fl == flInf {
@@ -137,66 +131,86 @@ func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
 	if fp.fl == flInf {
 		return infinities[fp.sign]
 	}
+	ep.updateMag()
+	dp.updateMag()
+	fp.updateMag()
+	ep.removeZeros()
+	dp.removeZeros()
+
+	// ans = dp*ep
 	significand := umul64(dp.significand, ep.significand)
-	// ans.updateMag()
+	var targetExp int
+	var fpSig uint128T
+	ans.exp = dp.exp + ep.exp
 	ans.mag = numDecimalDigits(significand.lo) + numDecimalDigits(significand.hi)
 	sep := ans.separation(fp)
-	fmt.Println("significand.div64(decimal64Base)", significand.div64(decimal64Base), fp.significand)
-	fmt.Println(sep, "sep", numDecimalDigits(significand.lo), numDecimalDigits(significand.hi))
-	// if ans.exp+ans.mag > fp.exp+fp.mag {
-	fmt.Println("asa", ans.exp-fp.exp)
-	significand = umul64(fp.significand, powersOf10[sep+1]).sub(significand)
-	// significand = significand.sub(umul64(fp.significand, powersOf10[sep+1])) //.sub(significand)
 
-	ans.exp = dp.exp + ep.exp + numDecimalDigits(significand.hi)
-	significand = significand.div64(powersOf10[numDecimalDigits(significand.hi)])
-	ans.updateMag()
+	// ans += f
+	if fp.isZero() == false {
+		if sep < -16 {
+			return f
+		} else if sep < 32 {
+			fp.removeZeros()
+			fpSig = uint128T{fp.significand, 0}
+			targetExp = fp.exp - (ans.exp)
+			if fp.isZero() == false {
+				targetExp1, targetExp2 := splitNum(targetExp, 19)
+				if targetExp < 0 {
+					significand = significand.mul64(powersOf10[targetExp2]).mul64(powersOf10[targetExp1])
+					ans.exp -= (-targetExp)
+				} else if targetExp > 0 {
+					fpSig = fpSig.mul64(powersOf10[targetExp1]).mul64(powersOf10[targetExp2])
+					fp.exp -= (targetExp)
+				}
+				if ans.sign == fp.sign {
+					significand = significand.add(fpSig)
+				} else {
+					if fpSig.gt(significand) {
+						ans.sign = fp.sign
+						significand = fpSig.sub(significand)
+					} else if fpSig.lt(significand) {
+						significand = significand.sub(fpSig)
+					} else {
+						return zeroes[ans.sign]
+					}
+				}
+			}
+		}
+	}
+
+	// truncate
+	if significand.hi != 0 || numDecimalDigits(significand.lo) > 16 {
+		fullSig := significand
+		var remainder uint64
+		bitSize := 128 - significand.leadingZeros()
+		numDigits := bitSize * 3 / 10
+		a, b := splitNum(int(numDigits), 19)
+		if !significand.lt(umul64(powersOf10[a], powersOf10[b])) {
+			numDigits++
+		}
+		o := numDigits - 16
+		ans.exp += int(o)
+		significand, remainder = fullSig.divrem64(powersOf10[o])
+		if remainder >= powersOf10[o-1]*5 {
+			roundStatus = gt5
+
+		}
+
+	}
 	ans.significand = significand.lo
-	fmt.Println(sep, "significand.lo", significand.lo, significand.hi)
-	ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
-	return newFromParts(ans.sign, ans.exp, ans.significand)
-	// }
-	if ans.exp >= -expOffset {
-		ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
-	} else if ans.exp < 1-expMax {
+	ans.updateMag()
+	if ans.exp < -expOffset {
 		roundStatus = ans.rescale(-expOffset)
 	}
-	// 0.999999999999e-383
-	// 0.999999999998999e-383
-	if ans.isZero() {
-		return f
+	ans.significand = roundHalfUp.round(ans.significand, roundStatus)
+	if ans.exp >= -expOffset && ans.significand != 0 {
+		ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
 	}
-	if fp.isZero() {
-		return newFromParts(ans.sign, ans.exp, ans.significand)
+
+	if ans.exp > expMax || ans.significand > maxSig {
+		return infinities[ans.sign]
 	}
-	roundStatus = matchScales(&ans, &fp)
-	if ans.sign != fp.sign {
-		if ans.significand == fp.significand {
-			return Zero64
-		}
-		if fp.significand < ans.significand {
-			fp, ans = ans, fp
-		}
-		ans2.sign = fp.sign
-		if fp.sign == 1 {
-			fp.sign, ans.sign = ans.sign, fp.sign
-		}
-	} else if fp.sign == 1 {
-		ans2.sign = 1
-		fp.sign, ans.sign = 0, 0
-	} else {
-		ans2.sign = 0
-	}
-	ans2.significand = fp.significand + uint64(1-2*(ans.sign))*roundHalfUp.round(ans.significand, roundStatus)
-	ans2.exp = fp.exp
-	if ans2.isZero() {
-		return Zero64
-	}
-	ans2.exp, ans2.significand = renormalize(ans2.exp, ans2.significand)
-	if ans2.exp > expMax || ans2.significand > maxSig {
-		return infinities[ans2.sign]
-	}
-	return newFromParts(ans2.sign, ans2.exp, ans2.significand)
+	return newFromParts(ans.sign, ans.exp, ans.significand)
 }
 
 // Mul computes d * e

@@ -91,6 +91,13 @@ func (dec *decParts) separation(eDec decParts) int {
 	return dec.mag + dec.exp - eDec.mag - eDec.exp
 }
 
+// separation gets the separation in decimal places of the MSD's of two decimal 64s
+func (dec *decParts) removeZeros() {
+	zeros := countTrailingZeros(dec.significand)
+	dec.significand = dec.significand / powersOf10[zeros]
+	dec.exp += zeros
+}
+
 // updateMag updates the magnitude of the dec object
 func (dec *decParts) updateMag() {
 	dec.mag = numDecimalDigits(dec.significand)
@@ -199,6 +206,41 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 		return eq5
 	}
 	return gt5
+}
+
+//Helper function for handling with uint128T's
+func splitNum(n int, base int) (int, int) {
+	if n < 0 {
+		n = -n
+	}
+	num1 := (n / base) * base
+	num2 := n % base
+	return num1, num2
+}
+
+//func from stack overflow
+func countTrailingZeros(n uint64) int {
+	zeros := 0
+	if (n % 10000000000000000) == 0 {
+		zeros += 16
+		n /= 10000000000000000
+	}
+	if (n % 100000000) == 0 {
+		zeros += 8
+		n /= 100000000
+	}
+	if (n % 10000) == 0 {
+		zeros += 4
+		n /= 10000
+	}
+	if (n % 100) == 0 {
+		zeros += 2
+		n /= 100
+	}
+	if (n % 10) == 0 {
+		zeros++
+	}
+	return zeros
 }
 
 // match scales matches the exponents of d and e and returns the info about the discarded digit

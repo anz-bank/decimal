@@ -21,15 +21,19 @@ type testCaseStrings struct {
 }
 
 const TESTDEBUG bool = true
-const PRINTTESTS bool = true
+const PRINTTESTS bool = false
 const RUNSUITES bool = true
+const NOPANIC bool = false
 
 var tests = []string{"",
 	"dectest/ddAdd.decTest",
 	"dectest/ddMultiply.decTest",
 	// TODO: Implement following tests
+
 	"dectest/ddFMA.decTest",
-	// "dectest/ddCompare.decTest"}
+	// "output.txt",
+	//
+	// "dectest/ddCompare.decTest",
 	// 	"dectest/ddAbs.decTest",
 	// 	"dectest/ddClass.decTest",
 	// 	"dectest/ddCopysign.decTest",
@@ -43,6 +47,13 @@ var tests = []string{"",
 // TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
 // TestFromSuite is the master tester for the dectest suite.
 func TestFromSuite(t *testing.T) {
+	// fi, err := os.Open("input.txt")
+	// fi, _ := os.Create("output.txt")
+	// defer func() {
+	// 	if err := fi.Close(); err != nil {
+	// 		panic(err)
+	// 	}
+	// }()
 	if RUNSUITES {
 		for _, file := range tests {
 			if TESTDEBUG {
@@ -55,14 +66,26 @@ func TestFromSuite(t *testing.T) {
 			failedTests := 0
 			for _, testVal := range testVals {
 				dec64vals := convertToDec64(testVal)
-				testErr := runTest(dec64vals, testVal)
+				testErr, calcRestul := runTest(dec64vals, testVal)
 				if PRINTTESTS {
 					fmt.Printf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
 
 				}
-				if testErr != nil {
-					failedTests++
+				_, _, exp, sig := calcRestul.parts()
+				_, _, expex, sigex := dec64vals.expected.parts()
+				exponentOneOff := expex-exp == 1 || expex-exp == -1
+				expEqual := expex == exp
+				SigOneOff := sig-sigex == 1 || sigex-sig == 1
+				roundingError := SigOneOff && exponentOneOff || expEqual && SigOneOff
+				roundingError = false
+				if testErr != nil && roundingError == false {
 					fmt.Println(testErr)
+					failedTests++
+					// fmt.Print(calcRestul.parts())
+					// fmt.Println("")
+					// fmt.Print(dec64vals.expected.parts())
+					// fmt.Println("")
+					// fi.WriteString(fmt.Sprintf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult))
 					fmt.Printf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
 					if dec64vals.parseError != nil {
 						fmt.Println(dec64vals.parseError)
@@ -127,7 +150,7 @@ func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
 }
 
 // runTest completes the tests and returns a boolean and string on if the test passes.
-func runTest(testVals decValContainer, testValStrings testCaseStrings) error {
+func runTest(testVals decValContainer, testValStrings testCaseStrings) (error, Decimal64) {
 	calcRestul := execOp(testVals.val1, testVals.val2, testVals.val3, testValStrings.testFunc)
 	if calcRestul.IsNaN() || testVals.expected.IsNaN() {
 		if testVals.expected.String() != calcRestul.String() {
@@ -139,9 +162,9 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) error {
 				testValStrings.val2,
 				testValStrings.val3,
 				calcRestul,
-				testValStrings.expectedResult)
+				testValStrings.expectedResult), calcRestul
 		}
-		return nil
+		return nil, calcRestul
 	} else if testVals.expected.Cmp(calcRestul) != 0 {
 		return fmt.Errorf(
 			"\nfailed %s \n %v %s %v %v== %v \n expected result: %v ",
@@ -151,14 +174,21 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) error {
 			testValStrings.val2,
 			testValStrings.val3,
 			calcRestul,
-			testValStrings.expectedResult)
+			testValStrings.expectedResult), calcRestul
 	}
-	return nil
+	return nil, calcRestul
 }
 
 // TODO: get runTest to run more functions such as FMA.
 // execOp returns the calculated answer to the operation as Decimal64.
 func execOp(val1, val2, val3 Decimal64, op string) Decimal64 {
+	if NOPANIC {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("failed", r, val1, val2)
+			}
+		}()
+	}
 	switch op {
 	case "add":
 		return val1.Add(val2)
@@ -170,6 +200,8 @@ func execOp(val1, val2, val3 Decimal64, op string) Decimal64 {
 		return val1.Quo(val2)
 	case "fma":
 		return val1.FMA(val2, val3)
+	case "compare":
+		return NewDecimal64FromInt64(int64(val1.Cmp(val2)))
 	default:
 		fmt.Println("end of execOp, no tests ran", op)
 	}
