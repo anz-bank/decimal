@@ -7,31 +7,31 @@ import (
 type uint128T struct {
 	lo, hi uint64
 }
-type uint128TDebug struct {
-	old, new uint128T
-}
 
-func split(a uint64) uint128T {
-	t := ((1 << 12) + 1) * a
-	hi := t - (t - a)
-	lo := a - hi
-	return uint128T{hi, lo}
-}
-func (a *uint128TDebug) goToLow(b uint128T) {
-	if a.old.hi == 0 && a.old.lo == 0 {
-		a.old = b.div64(powersOf10[numDecimalDigits(b.hi)])
-		return
+func (a uint128T) numDecimalDigits() int {
+	bitSize := 128 - a.leadingZeros()
+	numDigits := int(bitSize * 3 / 10)
+	if a.lt(powerOfTen128(numDigits)) {
+		return numDigits
 	}
-	a.new = b.div64(powersOf10[numDecimalDigits(b.hi)])
-
+	return numDigits + 1
 }
-func (a *uint128TDebug) reset() {
-	a.old.lo = 0
-	a.old.hi = 0
-	a.new.lo = 0
-	a.new.hi = 0
 
+func powerOfTen128(n int) uint128T {
+	a, b := splitNum(n, 19)
+	return umul64(powersOf10[a], powersOf10[b])
 }
+
+//Helper function for handling with uint128T's
+func splitNum(n int, base int) (int, int) {
+	if n < 0 {
+		n = -n
+	}
+	num1 := (n / base) * base
+	num2 := n % base
+	return num1, num2
+}
+
 func umul64(a, b uint64) uint128T {
 	a0 := a & 0xffffffff
 	a1 := a >> 32
@@ -147,9 +147,9 @@ func (a uint128T) mulBy10() uint128T {
 	return a8.add(a2)
 }
 
-// func (a uint128T) mul(b uint128T) uint128T {
-// 	return umul64(a.hi, b.lo).add(umul64(a.lo, b.hi)).shl(64).add(umul64(a.lo, b.lo))
-// }
+func (a uint128T) mul(b uint128T) uint128T {
+	return umul64(a.hi, b.lo).add(umul64(a.lo, b.hi)).shl(64).add(umul64(a.lo, b.lo))
+}
 
 func (a uint128T) mul64(b uint64) uint128T {
 	return uint128T{0, umul64(a.hi, b).lo}.add(umul64(a.lo, b))
@@ -198,16 +198,16 @@ func (a uint128T) sqrt() uint64 {
 	}
 }
 
-func (a uint128T) trailingZeros() int {
-	if a.lo > 0 {
-		return int(bits.TrailingZeros64(a.lo))
-	}
-	return int(bits.TrailingZeros64(a.hi) + 64)
-}
+// func (a uint128T) trailingZeros() int {
+// 	if a.lo > 0 {
+// 		return int(bits.TrailingZeros64(a.lo))
+// 	}
+// 	return int(bits.TrailingZeros64(a.hi) + 64)
+// }
 
-func (a uint128T) trailingDecimalZeros() int {
-	if a.lo > 0 {
-		return countTrailingZeros(a.lo)
-	}
-	return countTrailingZeros(a.lo) + 20
-}
+// func (a uint128T) trailingDecimalZeros() int {
+// 	if a.lo > 0 {
+// 		return countTrailingZeros(a.lo)
+// 	}
+// 	return countTrailingZeros(a.lo) + 20
+// }

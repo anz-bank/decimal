@@ -208,17 +208,8 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 	return gt5
 }
 
-//Helper function for handling with uint128T's
-func splitNum(n int, base int) (int, int) {
-	if n < 0 {
-		n = -n
-	}
-	num1 := (n / base) * base
-	num2 := n % base
-	return num1, num2
-}
-
-//func from stack overflow
+//func from stack overflow: samgak
+// TODO: make this more efficent
 func countTrailingZeros(n uint64) int {
 	zeros := 0
 	if (n % 10000000000000000) == 0 {

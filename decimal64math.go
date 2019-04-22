@@ -115,7 +115,6 @@ func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
-	var roundStatus discardedDigit
 	if dp.fl == flInf || ep.fl == flInf {
 		if fp.fl == flInf && ans.sign != fp.sign {
 			return QNaN64
@@ -131,35 +130,30 @@ func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
 	if fp.fl == flInf {
 		return infinities[fp.sign]
 	}
+	var rndStatus discardedDigit
 	ep.updateMag()
 	dp.updateMag()
 	fp.updateMag()
 	ep.removeZeros()
 	dp.removeZeros()
-
-	// ans = dp*ep
 	significand := umul64(dp.significand, ep.significand)
-	var targetExp int
-	var fpSig uint128T
 	ans.exp = dp.exp + ep.exp
-	ans.mag = numDecimalDigits(significand.lo) + numDecimalDigits(significand.hi)
+	ans.mag = significand.numDecimalDigits()
 	sep := ans.separation(fp)
 
-	// ans += f
-	if fp.isZero() == false {
+	if fp.significand != 0 {
 		if sep < -16 {
 			return f
-		} else if sep < 32 {
+		} else if sep <= 16 {
 			fp.removeZeros()
-			fpSig = uint128T{fp.significand, 0}
-			targetExp = fp.exp - (ans.exp)
-			if fp.isZero() == false {
-				targetExp1, targetExp2 := splitNum(targetExp, 19)
+			fpSig := uint128T{fp.significand, 0}
+			targetExp := fp.exp - ans.exp
+			if fp.significand != 0 {
 				if targetExp < 0 {
-					significand = significand.mul64(powersOf10[targetExp2]).mul64(powersOf10[targetExp1])
-					ans.exp -= (-targetExp)
+					significand = significand.mul(powerOfTen128(targetExp))
+					ans.exp += targetExp
 				} else if targetExp > 0 {
-					fpSig = fpSig.mul64(powersOf10[targetExp1]).mul64(powersOf10[targetExp2])
+					fpSig = fpSig.mul(powerOfTen128(targetExp))
 					fp.exp -= (targetExp)
 				}
 				if ans.sign == fp.sign {
@@ -177,36 +171,22 @@ func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
 			}
 		}
 	}
-
-	// truncate
-	if significand.hi != 0 || numDecimalDigits(significand.lo) > 16 {
-		fullSig := significand
+	if significand.numDecimalDigits() > 16 {
 		var remainder uint64
-		bitSize := 128 - significand.leadingZeros()
-		numDigits := bitSize * 3 / 10
-		a, b := splitNum(int(numDigits), 19)
-		if !significand.lt(umul64(powersOf10[a], powersOf10[b])) {
-			numDigits++
-		}
-		o := numDigits - 16
-		ans.exp += int(o)
-		significand, remainder = fullSig.divrem64(powersOf10[o])
-		if remainder >= powersOf10[o-1]*5 {
-			roundStatus = gt5
-
-		}
-
+		expDiff := significand.numDecimalDigits() - 16
+		ans.exp += expDiff
+		significand, remainder = significand.divrem64(powersOf10[expDiff])
+		rndStatus = roundStatus(remainder, 0, expDiff)
 	}
 	ans.significand = significand.lo
 	ans.updateMag()
 	if ans.exp < -expOffset {
-		roundStatus = ans.rescale(-expOffset)
+		rndStatus = ans.rescale(-expOffset)
 	}
-	ans.significand = roundHalfUp.round(ans.significand, roundStatus)
+	ans.significand = roundHalfUp.round(ans.significand, rndStatus)
 	if ans.exp >= -expOffset && ans.significand != 0 {
 		ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
 	}
-
 	if ans.exp > expMax || ans.significand > maxSig {
 		return infinities[ans.sign]
 	}
