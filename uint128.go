@@ -204,10 +204,3 @@ func (a uint128T) sqrt() uint64 {
 // 	}
 // 	return int(bits.TrailingZeros64(a.hi) + 64)
 // }
-
-// func (a uint128T) trailingDecimalZeros() int {
-// 	if a.lo > 0 {
-// 		return countTrailingZeros(a.lo)
-// 	}
-// 	return countTrailingZeros(a.lo) + 20
-// }

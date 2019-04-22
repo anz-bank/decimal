@@ -194,15 +194,13 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 	if expDiff > 19 && significand != 0 {
 		return lt5
 	}
-	divisor := powersOf10[expDiff]
-	resizedSig := significand / divisor
-	truncatedSig := significand - resizedSig*divisor
+	remainder := significand % powersOf10[expDiff]
 	midpoint := 5 * powersOf10[expDiff-1]
-	if truncatedSig == 0 {
+	if remainder == 0 {
 		return eq0
-	} else if truncatedSig < midpoint {
+	} else if remainder < midpoint {
 		return lt5
-	} else if truncatedSig == midpoint {
+	} else if remainder == midpoint {
 		return eq5
 	}
 	return gt5

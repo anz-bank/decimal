@@ -91,6 +91,7 @@ func (d Decimal64) Cmp(e Decimal64) int {
 	return 1 - 2*int(d.bits>>63)
 }
 
+// FMA computes d*e + f
 func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
