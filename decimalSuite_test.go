@@ -23,16 +23,14 @@ type testCaseStrings struct {
 const TESTDEBUG bool = true
 const PRINTTESTS bool = false
 const RUNSUITES bool = true
-const NOPANIC bool = false
+const IGNOREPANICS bool = false
+const IGNOREROUNDING bool = false
 
 var tests = []string{"",
 	"dectest/ddAdd.decTest",
 	"dectest/ddMultiply.decTest",
-	// TODO: Implement following tests
-
 	"dectest/ddFMA.decTest",
-	// "output.txt",
-	//
+	// TODO: Implement following tests
 	// "dectest/ddCompare.decTest",
 	// 	"dectest/ddAbs.decTest",
 	// 	"dectest/ddClass.decTest",
@@ -47,13 +45,6 @@ var tests = []string{"",
 // TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
 // TestFromSuite is the master tester for the dectest suite.
 func TestFromSuite(t *testing.T) {
-	// fi, err := os.Open("input.txt")
-	// fi, _ := os.Create("output.txt")
-	// defer func() {
-	// 	if err := fi.Close(); err != nil {
-	// 		panic(err)
-	// 	}
-	// }()
 	if RUNSUITES {
 		for _, file := range tests {
 			if TESTDEBUG {
@@ -66,26 +57,13 @@ func TestFromSuite(t *testing.T) {
 			failedTests := 0
 			for _, testVal := range testVals {
 				dec64vals := convertToDec64(testVal)
-				testErr, calcRestul := runTest(dec64vals, testVal)
+				calcRestul, testErr := runTest(dec64vals, testVal)
 				if PRINTTESTS {
 					fmt.Printf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
-
 				}
-				_, _, exp, sig := calcRestul.parts()
-				_, _, expex, sigex := dec64vals.expected.parts()
-				exponentOneOff := expex-exp == 1 || expex-exp == -1
-				expEqual := expex == exp
-				SigOneOff := sig-sigex == 1 || sigex-sig == 1
-				roundingError := SigOneOff && exponentOneOff || expEqual && SigOneOff
-				roundingError = false
-				if testErr != nil && roundingError == false {
+				if testErr != nil && !(isRoundingErr(calcRestul, dec64vals.expected) && IGNOREROUNDING) {
 					fmt.Println(testErr)
 					failedTests++
-					// fmt.Print(calcRestul.parts())
-					// fmt.Println("")
-					// fmt.Print(dec64vals.expected.parts())
-					// fmt.Println("")
-					// fi.WriteString(fmt.Sprintf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult))
 					fmt.Printf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
 					if dec64vals.parseError != nil {
 						fmt.Println(dec64vals.parseError)
@@ -96,10 +74,24 @@ func TestFromSuite(t *testing.T) {
 				fmt.Println("Number of tests ran:", numTests, "Number of failed tests:", failedTests)
 			}
 		}
+		fmt.Printf("decimalSuite_test settings (These should only be true for debug):\n Ignore Rounding errors: %v\n Ignore Panics: %v\n", IGNOREROUNDING, IGNOREPANICS)
 	}
 }
 
-// TODO get regexto match with three inputs for functions like FMA.
+func isRoundingErr(res, expected Decimal64) bool {
+	resP := res.getParts()
+	expectedP := expected.getParts()
+	sigDiff := int64(resP.significand - expectedP.significand)
+	expDiff := resP.exp - expectedP.exp
+	if (sigDiff == 1 || sigDiff == -1) && (expDiff == 1 || expDiff == -1 || expDiff == 0) {
+		return true
+	}
+	if resP.significand == maxSig && resP.exp == expMax && expectedP.fl == flInf {
+		return true
+	}
+	return false
+}
+
 // getInput gets the test file and extracts test using regex, then returns a map object and a list of test names.
 func getInput(file string) (data []testCaseStrings) {
 	r := regexp.MustCompile(`(?:\n)` + // start with newline (?: non capturing group)
@@ -150,11 +142,11 @@ func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
 }
 
 // runTest completes the tests and returns a boolean and string on if the test passes.
-func runTest(testVals decValContainer, testValStrings testCaseStrings) (error, Decimal64) {
+func runTest(testVals decValContainer, testValStrings testCaseStrings) (Decimal64, error) {
 	calcRestul := execOp(testVals.val1, testVals.val2, testVals.val3, testValStrings.testFunc)
 	if calcRestul.IsNaN() || testVals.expected.IsNaN() {
 		if testVals.expected.String() != calcRestul.String() {
-			return fmt.Errorf(
+			return calcRestul, fmt.Errorf(
 				"\n failed NaN TEST %s \n %v %s %v %v== %v \n expected result: %v ",
 				testValStrings.testName,
 				testValStrings.val1,
@@ -162,11 +154,11 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) (error, D
 				testValStrings.val2,
 				testValStrings.val3,
 				calcRestul,
-				testValStrings.expectedResult), calcRestul
+				testValStrings.expectedResult)
 		}
-		return nil, calcRestul
+		return calcRestul, nil
 	} else if testVals.expected.Cmp(calcRestul) != 0 {
-		return fmt.Errorf(
+		return calcRestul, fmt.Errorf(
 			"\nfailed %s \n %v %s %v %v== %v \n expected result: %v ",
 			testValStrings.testName,
 			testValStrings.val1,
@@ -174,15 +166,15 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) (error, D
 			testValStrings.val2,
 			testValStrings.val3,
 			calcRestul,
-			testValStrings.expectedResult), calcRestul
+			testValStrings.expectedResult)
 	}
-	return nil, calcRestul
+	return calcRestul, nil
 }
 
 // TODO: get runTest to run more functions such as FMA.
 // execOp returns the calculated answer to the operation as Decimal64.
 func execOp(val1, val2, val3 Decimal64, op string) Decimal64 {
-	if NOPANIC {
+	if IGNOREPANICS {
 		defer func() {
 			if r := recover(); r != nil {
 				fmt.Println("failed", r, val1, val2)
