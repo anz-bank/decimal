@@ -17,19 +17,14 @@ func (a uint128T) numDecimalDigits() int {
 	return numDigits + 1
 }
 
+// powerOfTen128 returns 10^n in the form of a uint128T which might usually overflow a uint64
 func powerOfTen128(n int) uint128T {
-	a, b := splitNum(n, 19)
-	return umul64(powersOf10[a], powersOf10[b])
-}
-
-//Helper function for handling with uint128T's
-func splitNum(n int, base int) (int, int) {
 	if n < 0 {
 		n = -n
 	}
-	num1 := (n / base) * base
-	num2 := n % base
-	return num1, num2
+	b := n % 19
+	a := n - b
+	return umul64(powersOf10[a], powersOf10[b])
 }
 
 func umul64(a, b uint64) uint128T {
@@ -118,10 +113,6 @@ func (a uint128T) gt(b uint128T) bool {
 	return b.lt(a)
 }
 
-func (a uint128T) eq(b uint128T) bool {
-	return b.lo == a.lo && b.hi == a.hi
-}
-
 // func (a uint128T) le(b uint128T) bool {
 // 	return !b.lt(a)
 // }
@@ -198,9 +189,9 @@ func (a uint128T) sqrt() uint64 {
 	}
 }
 
-// func (a uint128T) trailingZeros() int {
+// func (a uint128T) trailingZeros() uint {
 // 	if a.lo > 0 {
-// 		return int(bits.TrailingZeros64(a.lo))
+// 		return uint(bits.TrailingZeros64(a.lo))
 // 	}
-// 	return int(bits.TrailingZeros64(a.hi) + 64)
+// 	return uint(bits.TrailingZeros64(a.hi) + 64)
 // }

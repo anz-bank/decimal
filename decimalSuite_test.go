@@ -20,11 +20,11 @@ type testCaseStrings struct {
 	expectedResult string
 }
 
-const TESTDEBUG bool = true
-const PRINTTESTS bool = false
-const RUNSUITES bool = true
-const IGNOREPANICS bool = false
-const IGNOREROUNDING bool = false
+const PrintFiles bool = true
+const PrintTests bool = false
+const RunTests bool = true
+const IgnorePanics bool = false
+const IgnoreRounding bool = false
 
 var tests = []string{"",
 	"dectest/ddAdd.decTest",
@@ -45,9 +45,9 @@ var tests = []string{"",
 // TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
 // TestFromSuite is the master tester for the dectest suite.
 func TestFromSuite(t *testing.T) {
-	if RUNSUITES {
+	if RunTests {
 		for _, file := range tests {
-			if TESTDEBUG {
+			if PrintFiles {
 				fmt.Println("starting test:", file)
 			}
 			dat, _ := ioutil.ReadFile(file)
@@ -58,10 +58,10 @@ func TestFromSuite(t *testing.T) {
 			for _, testVal := range testVals {
 				dec64vals := convertToDec64(testVal)
 				calcRestul, testErr := runTest(dec64vals, testVal)
-				if PRINTTESTS {
+				if PrintTests {
 					fmt.Printf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
 				}
-				if testErr != nil && !(isRoundingErr(calcRestul, dec64vals.expected) && IGNOREROUNDING) {
+				if testErr != nil && !(isRoundingErr(calcRestul, dec64vals.expected) && IgnoreRounding) {
 					fmt.Println(testErr)
 					failedTests++
 					fmt.Printf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
@@ -70,11 +70,11 @@ func TestFromSuite(t *testing.T) {
 					}
 				}
 			}
-			if TESTDEBUG {
+			if PrintFiles {
 				fmt.Println("Number of tests ran:", numTests, "Number of failed tests:", failedTests)
 			}
 		}
-		fmt.Printf("decimalSuite_test settings (These should only be true for debug):\n Ignore Rounding errors: %v\n Ignore Panics: %v\n", IGNOREROUNDING, IGNOREPANICS)
+		fmt.Printf("decimalSuite_test settings (These should only be true for debug):\n Ignore Rounding errors: %v\n Ignore Panics: %v\n", IgnoreRounding, IgnorePanics)
 	}
 }
 
@@ -174,7 +174,7 @@ func runTest(testVals decValContainer, testValStrings testCaseStrings) (Decimal6
 // TODO: get runTest to run more functions such as FMA.
 // execOp returns the calculated answer to the operation as Decimal64.
 func execOp(val1, val2, val3 Decimal64, op string) Decimal64 {
-	if IGNOREPANICS {
+	if IgnorePanics {
 		defer func() {
 			if r := recover(); r != nil {
 				fmt.Println("failed", r, val1, val2)

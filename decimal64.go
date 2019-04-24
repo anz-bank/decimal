@@ -91,10 +91,10 @@ func (dec *decParts) separation(eDec decParts) int {
 	return dec.mag + dec.exp - eDec.mag - eDec.exp
 }
 
-// separation gets the separation in decimal places of the MSD's of two decimal 64s
+// removeZeros removes zeros and increments the exponent to match.
 func (dec *decParts) removeZeros() {
 	zeros := countTrailingZeros(dec.significand)
-	dec.significand = dec.significand / powersOf10[zeros]
+	dec.significand /= powersOf10[zeros]
 	dec.exp += zeros
 }
 
@@ -210,23 +210,23 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 // TODO: make this more efficent
 func countTrailingZeros(n uint64) int {
 	zeros := 0
-	if (n % 10000000000000000) == 0 {
+	if n%10000000000000000 == 0 {
 		zeros += 16
 		n /= 10000000000000000
 	}
-	if (n % 100000000) == 0 {
+	if n%100000000 == 0 {
 		zeros += 8
 		n /= 100000000
 	}
-	if (n % 10000) == 0 {
+	if n%10000 == 0 {
 		zeros += 4
 		n /= 10000
 	}
-	if (n % 100) == 0 {
+	if n%100 == 0 {
 		zeros += 2
 		n /= 100
 	}
-	if (n % 10) == 0 {
+	if n%10 == 0 {
 		zeros++
 	}
 	return zeros
