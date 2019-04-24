@@ -91,6 +91,109 @@ func (d Decimal64) Cmp(e Decimal64) int {
 	return 1 - 2*int(d.bits>>63)
 }
 
+// FMA computes d*e + f
+func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
+	dp := d.getParts()
+	ep := e.getParts()
+	fp := f.getParts()
+	if dp.fl == flSNaN {
+		return d
+	}
+	if ep.fl == flSNaN {
+		return e
+	}
+	if fp.fl == flSNaN {
+		return f
+	}
+	if dp.fl == flQNaN {
+		return d
+	}
+	if ep.fl == flQNaN {
+		return e
+	}
+	if fp.fl == flQNaN {
+		return f
+	}
+	var ans decParts
+	ans.sign = dp.sign ^ ep.sign
+	if dp.fl == flInf || ep.fl == flInf {
+		if fp.fl == flInf && ans.sign != fp.sign {
+			return QNaN64
+		}
+		if ep.isZero() || dp.isZero() {
+			return QNaN64
+		}
+		return infinities[ans.sign]
+	}
+	if ep.significand == 0 || dp.significand == 0 {
+		return f
+	}
+	if fp.fl == flInf {
+		return infinities[fp.sign]
+	}
+	var rndStatus discardedDigit
+	ep.updateMag()
+	dp.updateMag()
+	fp.updateMag()
+	ep.removeZeros()
+	dp.removeZeros()
+	significand := umul64(dp.significand, ep.significand)
+	ans.exp = dp.exp + ep.exp
+	ans.mag = significand.numDecimalDigits()
+	sep := ans.separation(fp)
+
+	if fp.significand != 0 {
+		if sep < -16 {
+			return f
+		} else if sep <= 16 {
+			fp.removeZeros()
+			fpSig := uint128T{fp.significand, 0}
+			targetExp := fp.exp - ans.exp
+			if fp.significand != 0 {
+				if targetExp < 0 {
+					significand = significand.mul(powerOfTen128(targetExp))
+					ans.exp += targetExp
+				} else if targetExp > 0 {
+					fpSig = fpSig.mul(powerOfTen128(targetExp))
+					fp.exp -= (targetExp)
+				}
+				if ans.sign == fp.sign {
+					significand = significand.add(fpSig)
+				} else {
+					if fpSig.gt(significand) {
+						ans.sign = fp.sign
+						significand = fpSig.sub(significand)
+					} else if fpSig.lt(significand) {
+						significand = significand.sub(fpSig)
+					} else {
+						return zeroes[ans.sign]
+					}
+				}
+			}
+		}
+	}
+	if significand.numDecimalDigits() > 16 {
+		var remainder uint64
+		expDiff := significand.numDecimalDigits() - 16
+		ans.exp += expDiff
+		significand, remainder = significand.divrem64(powersOf10[expDiff])
+		rndStatus = roundStatus(remainder, 0, expDiff)
+	}
+	ans.significand = significand.lo
+	ans.updateMag()
+	if ans.exp < -expOffset {
+		rndStatus = ans.rescale(-expOffset)
+	}
+	ans.significand = roundHalfUp.round(ans.significand, rndStatus)
+	if ans.exp >= -expOffset && ans.significand != 0 {
+		ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
+	}
+	if ans.exp > expMax || ans.significand > maxSig {
+		return infinities[ans.sign]
+	}
+	return newFromParts(ans.sign, ans.exp, ans.significand)
+}
+
 // Mul computes d * e
 func (d Decimal64) Mul(e Decimal64) Decimal64 {
 	dp := d.getParts()

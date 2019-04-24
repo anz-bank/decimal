@@ -20,15 +20,18 @@ type testCaseStrings struct {
 	expectedResult string
 }
 
-const TESTDEBUG bool = true
-const RUNSUITES bool = true
+const PrintFiles bool = true
+const PrintTests bool = false
+const RunTests bool = true
+const IgnorePanics bool = false
+const IgnoreRounding bool = false
 
 var tests = []string{"",
 	"dectest/ddAdd.decTest",
 	"dectest/ddMultiply.decTest",
+	"dectest/ddFMA.decTest",
 	// TODO: Implement following tests
-	// "dectest/ddFMA.decTest",
-	// "dectest/ddCompare.decTest"}
+	// "dectest/ddCompare.decTest",
 	// 	"dectest/ddAbs.decTest",
 	// 	"dectest/ddClass.decTest",
 	// 	"dectest/ddCopysign.decTest",
@@ -42,37 +45,55 @@ var tests = []string{"",
 // TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
 // TestFromSuite is the master tester for the dectest suite.
 func TestFromSuite(t *testing.T) {
-	if RUNSUITES {
+	if RunTests {
 		for _, file := range tests {
-			if TESTDEBUG {
+			if PrintFiles {
 				fmt.Println("starting test:", file)
 			}
-			testVals := getInput(file)
+			dat, _ := ioutil.ReadFile(file)
+			dataString := string(dat)
+			testVals := getInput(dataString)
 			numTests := len(testVals)
 			failedTests := 0
 			for _, testVal := range testVals {
 				dec64vals := convertToDec64(testVal)
-				testErr := runTest(dec64vals, testVal)
-				if testErr != nil {
-					failedTests++
+				calcRestul, testErr := runTest(dec64vals, testVal)
+				if PrintTests {
+					fmt.Printf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
+				}
+				if testErr != nil && !(isRoundingErr(calcRestul, dec64vals.expected) && IgnoreRounding) {
 					fmt.Println(testErr)
+					failedTests++
+					fmt.Printf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
 					if dec64vals.parseError != nil {
 						fmt.Println(dec64vals.parseError)
 					}
 				}
 			}
-			if TESTDEBUG {
+			if PrintFiles {
 				fmt.Println("Number of tests ran:", numTests, "Number of failed tests:", failedTests)
 			}
 		}
+		fmt.Printf("decimalSuite_test settings (These should only be true for debug):\n Ignore Rounding errors: %v\n Ignore Panics: %v\n", IgnoreRounding, IgnorePanics)
 	}
 }
 
-// TODO get regexto match with three inputs for functions like FMA.
+func isRoundingErr(res, expected Decimal64) bool {
+	resP := res.getParts()
+	expectedP := expected.getParts()
+	sigDiff := int64(resP.significand - expectedP.significand)
+	expDiff := resP.exp - expectedP.exp
+	if (sigDiff == 1 || sigDiff == -1) && (expDiff == 1 || expDiff == -1 || expDiff == 0) {
+		return true
+	}
+	if resP.significand == maxSig && resP.exp == expMax && expectedP.fl == flInf {
+		return true
+	}
+	return false
+}
+
 // getInput gets the test file and extracts test using regex, then returns a map object and a list of test names.
 func getInput(file string) (data []testCaseStrings) {
-	dat, _ := ioutil.ReadFile(file)
-	dataString := string(dat)
 	r := regexp.MustCompile(`(?:\n)` + // start with newline (?: non capturing group)
 		`(?P<testName>dd[\w]*)` + // first capturing group: testfunc made of anything that isn't a whitespace
 		`(?:\s*)` + // match any whitespace (?: non capturing group)
@@ -86,7 +107,7 @@ func getInput(file string) (data []testCaseStrings) {
 		`(?:'?\s*->\s*'?)` + // matches the indicator to answer and surrounding whitespaces (?: non capturing group)
 		`(?P<expectedResult>\+?-?[^\r\n\t\f\v\' ]*)`) // matches the answer that's anything that is plus minus but not quotations
 	// capturing gorups are testName, testFunc, val1,  val2, and expectedResult)
-	ans := r.FindAllStringSubmatch(dataString, -1)
+	ans := r.FindAllStringSubmatch(file, -1)
 	for _, a := range ans {
 		data = append(data, testCaseStrings{
 			testName:       a[1],
@@ -121,37 +142,45 @@ func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
 }
 
 // runTest completes the tests and returns a boolean and string on if the test passes.
-func runTest(testVals decValContainer, testValStrings testCaseStrings) error {
+func runTest(testVals decValContainer, testValStrings testCaseStrings) (Decimal64, error) {
 	calcRestul := execOp(testVals.val1, testVals.val2, testVals.val3, testValStrings.testFunc)
 	if calcRestul.IsNaN() || testVals.expected.IsNaN() {
 		if testVals.expected.String() != calcRestul.String() {
-			return fmt.Errorf(
-				"\n failed NaN TEST %s \n %v %s %v == %v \n expected result: %v ",
+			return calcRestul, fmt.Errorf(
+				"\n failed NaN TEST %s \n %v %s %v %v== %v \n expected result: %v ",
 				testValStrings.testName,
 				testValStrings.val1,
 				testValStrings.testFunc,
 				testValStrings.val2,
+				testValStrings.val3,
 				calcRestul,
 				testValStrings.expectedResult)
 		}
-		return nil
-
+		return calcRestul, nil
 	} else if testVals.expected.Cmp(calcRestul) != 0 {
-		return fmt.Errorf(
-			"\nfailed %s \n %v %s %v == %v \n expected result: %v ",
+		return calcRestul, fmt.Errorf(
+			"\nfailed %s \n %v %s %v %v== %v \n expected result: %v ",
 			testValStrings.testName,
 			testValStrings.val1,
 			testValStrings.testFunc,
 			testValStrings.val2,
+			testValStrings.val3,
 			calcRestul,
 			testValStrings.expectedResult)
 	}
-	return nil
+	return calcRestul, nil
 }
 
 // TODO: get runTest to run more functions such as FMA.
 // execOp returns the calculated answer to the operation as Decimal64.
 func execOp(val1, val2, val3 Decimal64, op string) Decimal64 {
+	if IgnorePanics {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("failed", r, val1, val2)
+			}
+		}()
+	}
 	switch op {
 	case "add":
 		return val1.Add(val2)
@@ -161,8 +190,10 @@ func execOp(val1, val2, val3 Decimal64, op string) Decimal64 {
 		return val1.Abs()
 	case "divide":
 		return val1.Quo(val2)
-	case "fma": // TODO: Add FMA function
-		//return val1.FMA(val2, val3)
+	case "fma":
+		return val1.FMA(val2, val3)
+	case "compare":
+		return NewDecimal64FromInt64(int64(val1.Cmp(val2)))
 	default:
 		fmt.Println("end of execOp, no tests ran", op)
 	}

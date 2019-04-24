@@ -8,6 +8,25 @@ type uint128T struct {
 	lo, hi uint64
 }
 
+func (a uint128T) numDecimalDigits() int {
+	bitSize := 128 - a.leadingZeros()
+	numDigits := int(bitSize * 3 / 10)
+	if a.lt(powerOfTen128(numDigits)) {
+		return numDigits
+	}
+	return numDigits + 1
+}
+
+// powerOfTen128 returns 10^n in the form of a uint128T which might usually overflow a uint64
+func powerOfTen128(n int) uint128T {
+	if n < 0 {
+		n = -n
+	}
+	b := n % 19
+	a := n - b
+	return umul64(powersOf10[a], powersOf10[b])
+}
+
 func umul64(a, b uint64) uint128T {
 	a0 := a & 0xffffffff
 	a1 := a >> 32
@@ -90,9 +109,9 @@ func (a uint128T) divBy10() uint128T {
 // 	return !a.lt(b)
 // }
 
-// func (a uint128T) gt(b uint128T) bool {
-// 	return b.lt(a)
-// }
+func (a uint128T) gt(b uint128T) bool {
+	return b.lt(a)
+}
 
 // func (a uint128T) le(b uint128T) bool {
 // 	return !b.lt(a)
@@ -105,12 +124,12 @@ func (a uint128T) leadingZeros() uint {
 	return uint(64 + bits.LeadingZeros64(a.lo))
 }
 
-// func (a uint128T) lt(b uint128T) bool {
-// 	if a.hi != b.hi {
-// 		return a.hi < b.hi
-// 	}
-// 	return a.lo < b.lo
-// }
+func (a uint128T) lt(b uint128T) bool {
+	if a.hi != b.hi {
+		return a.hi < b.hi
+	}
+	return a.lo < b.lo
+}
 
 func (a uint128T) mulBy10() uint128T {
 	// a*10 = a*8 + a*2
@@ -119,9 +138,9 @@ func (a uint128T) mulBy10() uint128T {
 	return a8.add(a2)
 }
 
-// func (a uint128T) mul(b uint128T) uint128T {
-// 	return umul64(a.hi, b.lo).add(umul64(a.lo, b.hi)).shl(64).add(umul64(a.lo, b.lo))
-// }
+func (a uint128T) mul(b uint128T) uint128T {
+	return umul64(a.hi, b.lo).add(umul64(a.lo, b.hi)).shl(64).add(umul64(a.lo, b.lo))
+}
 
 func (a uint128T) mul64(b uint64) uint128T {
 	return uint128T{0, umul64(a.hi, b).lo}.add(umul64(a.lo, b))

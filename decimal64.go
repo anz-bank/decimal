@@ -91,6 +91,13 @@ func (dec *decParts) separation(eDec decParts) int {
 	return dec.mag + dec.exp - eDec.mag - eDec.exp
 }
 
+// removeZeros removes zeros and increments the exponent to match.
+func (dec *decParts) removeZeros() {
+	zeros := countTrailingZeros(dec.significand)
+	dec.significand /= powersOf10[zeros]
+	dec.exp += zeros
+}
+
 // updateMag updates the magnitude of the dec object
 func (dec *decParts) updateMag() {
 	dec.mag = numDecimalDigits(dec.significand)
@@ -187,18 +194,42 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 	if expDiff > 19 && significand != 0 {
 		return lt5
 	}
-	divisor := powersOf10[expDiff]
-	resizedSig := significand / divisor
-	truncatedSig := significand - resizedSig*divisor
+	remainder := significand % powersOf10[expDiff]
 	midpoint := 5 * powersOf10[expDiff-1]
-	if truncatedSig == 0 {
+	if remainder == 0 {
 		return eq0
-	} else if truncatedSig < midpoint {
+	} else if remainder < midpoint {
 		return lt5
-	} else if truncatedSig == midpoint {
+	} else if remainder == midpoint {
 		return eq5
 	}
 	return gt5
+}
+
+//func from stack overflow: samgak
+// TODO: make this more efficent
+func countTrailingZeros(n uint64) int {
+	zeros := 0
+	if n%10000000000000000 == 0 {
+		zeros += 16
+		n /= 10000000000000000
+	}
+	if n%100000000 == 0 {
+		zeros += 8
+		n /= 100000000
+	}
+	if n%10000 == 0 {
+		zeros += 4
+		n /= 10000
+	}
+	if n%100 == 0 {
+		zeros += 2
+		n /= 100
+	}
+	if n%10 == 0 {
+		zeros++
+	}
+	return zeros
 }
 
 // match scales matches the exponents of d and e and returns the info about the discarded digit
