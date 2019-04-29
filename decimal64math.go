@@ -5,8 +5,13 @@ func (d Decimal64) Abs() Decimal64 {
 	return Decimal64{^neg64 & uint64(d.bits)}
 }
 
-// Add computes d + e
+// Add computes d + e with default rounding set to half_up
 func (d Decimal64) Add(e Decimal64) Decimal64 {
+	return defaultContext.Add(d, e)
+}
+
+// Add computes d + e
+func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
 	if dp.isNan() || ep.isNan() {
@@ -29,8 +34,7 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	ep.updateMag()
 	dp.updateMag()
 	sep := dp.separation(ep)
-	var roundStatus discardedDigit
-	roundStatus = matchScales(&dp, &ep)
+	roundStatus := matchScales(&dp, &ep)
 	// if the seperation of the numbers are more than 16 then we just return the larger number
 	if sep > 16 { // TODO: return rounded significand (for round down/Ceiling)
 		return d
@@ -58,7 +62,7 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	ans.significand = dp.significand + uint64(1-2*(ep.sign))*ep.significand
 	ans.exp = dp.exp
 	ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
-	ans.significand = roundHalfUp.round(ans.significand, roundStatus)
+	ans.significand = ctx.roundingMode.round(ans.significand, roundStatus)
 	if ans.exp > expMax || ans.significand > maxSig {
 		return infinities[ans.sign]
 	}
@@ -91,8 +95,13 @@ func (d Decimal64) Cmp(e Decimal64) int {
 	return 1 - 2*int(d.bits>>63)
 }
 
-// FMA computes d*e + f
+// FMA computes d*e + f with default rounding set to half_up
 func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
+	return defaultContext.FMA(d, e, f)
+}
+
+// FMA computes d*e + f
+func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
 	fp := f.getParts()
@@ -184,7 +193,7 @@ func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
 	}
-	ans.significand = roundHalfUp.round(ans.significand, rndStatus)
+	ans.significand = ctx.roundingMode.round(ans.significand, rndStatus)
 	if ans.exp >= -expOffset && ans.significand != 0 {
 		ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
 	}
@@ -194,8 +203,13 @@ func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
 	return newFromParts(ans.sign, ans.exp, ans.significand)
 }
 
-// Mul computes d * e
+// Mul computes d * e with default rounding set to half_even
 func (d Decimal64) Mul(e Decimal64) Decimal64 {
+	return Context64{roundHalfEven}.Mul(d, e)
+}
+
+// Mul computes d * e
+func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
 	if ep.fl == flQNaN || ep.fl == flSNaN || dp.fl == flQNaN || dp.fl == flSNaN {
@@ -225,7 +239,7 @@ func (d Decimal64) Mul(e Decimal64) Decimal64 {
 	} else if ans.exp < 1-expMax {
 		roundStatus = ans.rescale(-expOffset)
 	}
-	ans.significand = roundHalfEven.round(ans.significand, roundStatus)
+	ans.significand = ctx.roundingMode.round(ans.significand, roundStatus)
 	if ans.significand > maxSig || ans.exp > expMax {
 		return infinities[ans.sign]
 	}

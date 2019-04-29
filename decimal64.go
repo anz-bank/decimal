@@ -8,6 +8,7 @@ import (
 type flavor int
 type roundingMode int
 type discardedDigit int
+type decErr int
 
 const (
 	eq0 discardedDigit = 1 << iota
@@ -26,7 +27,18 @@ const (
 const (
 	roundHalfUp roundingMode = iota
 	roundHalfEven
+	roundDown
 )
+
+// // TODO: implement returns of these error types
+// const (
+// 	noError decErr = iota
+// 	invalidOperation
+// 	divisionByzero
+// 	inexact
+// 	overflow
+// 	underflow
+// )
 
 // Decimal64 represents an IEEE 754 64-bit floating point decimal number.
 // It uses the binary representation method.
@@ -42,6 +54,13 @@ type decParts struct {
 	significand uint64
 	mag         int
 	dec         *Decimal64
+}
+
+// Context64 stores the rounding type and and exceptions needed to be signalled
+type Context64 struct {
+	roundingMode roundingMode
+	// TODO:use exceptions in order to report errors to calling fucntion
+	// exceptions decErr
 }
 
 var powersOf10 = []uint64{
@@ -77,8 +96,8 @@ func (context roundingMode) round(significand uint64, rndStatus discardedDigit) 
 		if (rndStatus == eq5 && significand%2 == 1) || rndStatus == gt5 {
 			return significand + 1
 		}
-		// case roundDown: // TODO: implement proper down behaviour
-		// 	return significand
+	case roundDown: // TODO: implement proper down behaviour
+		return significand
 		// case roundFloor:// TODO: implement proper Floor behaviour
 		// 	return significand
 		// case roundCeiling: //TODO: fine tune ceiling,
