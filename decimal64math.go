@@ -5,19 +5,19 @@ func (d Decimal64) Abs() Decimal64 {
 	return Decimal64{^neg64 & uint64(d.bits)}
 }
 
-// Add computes d + e with default rounding set to half_up
+// Add computes d + e with default rounding
 func (d Decimal64) Add(e Decimal64) Decimal64 {
-	return defaultContext.Add(d, e)
+	return DefaultContext.Add(d, e)
 }
 
-// FMA computes d*e + f with default rounding set to half_up
+// FMA computes d*e + f with default rounding
 func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
-	return defaultContext.FMA(d, e, f)
+	return DefaultContext.FMA(d, e, f)
 }
 
-// Mul computes d * e with default rounding set to half_even
+// Mul computes d * e with default rounding
 func (d Decimal64) Mul(e Decimal64) Decimal64 {
-	return Context64{roundHalfEven}.Mul(d, e)
+	return DefaultContext.Mul(d, e)
 }
 
 // Sub returns d - e.
@@ -53,7 +53,7 @@ func (d Decimal64) Cmp(e Decimal64) int {
 
 // Neg computes -d.
 func (d Decimal64) Neg() Decimal64 {
-	return Decimal64{neg64 ^ uint64(d.bits)}
+	return Decimal64{neg64 ^ d.bits}
 }
 
 // Quo computes d / e.

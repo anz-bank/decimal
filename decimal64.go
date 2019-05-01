@@ -8,7 +8,6 @@ import (
 type flavor int
 type roundingMode int
 type discardedDigit int
-type decErr int
 
 const (
 	eq0 discardedDigit = 1 << iota
@@ -30,16 +29,6 @@ const (
 	roundDown
 )
 
-// // TODO: implement returns of these error types
-// const (
-// 	noError decErr = iota
-// 	invalidOperation
-// 	divisionByzero
-// 	inexact
-// 	overflow
-// 	underflow
-// )
-
 // Decimal64 represents an IEEE 754 64-bit floating point decimal number.
 // It uses the binary representation method.
 type Decimal64 struct {
@@ -56,11 +45,9 @@ type decParts struct {
 	dec         *Decimal64
 }
 
-// Context64 stores the rounding type and and exceptions needed to be signalled
+// Context64 stores the rounding type
 type Context64 struct {
 	roundingMode roundingMode
-	// TODO:use exceptions in order to report errors to calling fucntion
-	// exceptions decErr
 }
 
 var powersOf10 = []uint64{
