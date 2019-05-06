@@ -37,12 +37,13 @@ type Decimal64 struct {
 
 // decParts stores the constituting decParts of a decimal64.
 type decParts struct {
-	fl          flavor
-	sign        int
-	exp         int
-	significand uint64
-	mag         int
-	dec         *Decimal64
+	fl             flavor
+	sign           int
+	exp            int
+	significand    uint64
+	significand128 uint128T
+	mag            int
+	dec            *Decimal64
 }
 
 // Context64 stores the rounding type
@@ -96,6 +97,23 @@ func (context roundingMode) round(significand uint64, rndStatus discardedDigit) 
 func (dec *decParts) separation(eDec decParts) int {
 	return dec.mag + dec.exp - eDec.mag - eDec.exp
 }
+
+// func (dec *decParts) cmp(eDec decParts) int {
+// 	if dec.fl == flSNaN || eDec.fl == flSNaN {
+// 		return -2
+// 	}
+// 	if dec.fl == flQNaN || eDec.fl == flQNaN {
+// 		return -2
+// 	}
+// 	if dec.significand == 0 && eDec.significand == 0 {
+// 		return 0
+// 	}
+// 	if d.dec == e.dec {
+// 		return 0
+// 	}
+// 	d = d.significand
+// 	return 1 - 2*int(d.bits>>63)
+// }
 
 // removeZeros removes zeros and increments the exponent to match.
 func (dec *decParts) removeZeros() {
@@ -336,7 +354,7 @@ func (d *Decimal64) getParts() decParts {
 			exp = 0
 		}
 	}
-	return decParts{fl, sign, exp, significand, 0, d}
+	return decParts{fl, sign, exp, significand, uint128T{0, 0}, 0, d}
 }
 
 func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {

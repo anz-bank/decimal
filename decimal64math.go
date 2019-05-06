@@ -146,38 +146,73 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	} else if ep.significand == 0 {
 		return d
 	}
+
+	//Start here
+	ep.removeZeros()
+	dp.removeZeros()
 	ep.updateMag()
 	dp.updateMag()
+	dp.significand128.lo = dp.significand
+	ep.significand128.lo = ep.significand
 	sep := dp.separation(ep)
-	roundStatus := matchScales(&dp, &ep)
-	// if the seperation of the numbers are more than 16 then we just return the larger number
-	if sep > 16 { // TODO: return rounded significand (for round down/Ceiling)
-		return d
-	} else if sep < -16 {
-		return e
+
+	if sep < 0 {
+		dp, ep = ep, dp
+		sep = -sep
 	}
+	significand := uint128T{dp.significand, 0}
 	var ans decParts
-	if ep.sign != dp.sign {
-		if ep.significand == dp.significand {
-			return Zero64
-		}
-		if dp.significand < ep.significand {
-			dp, ep = ep, dp
-		}
-		ans.sign = dp.sign
-		if dp.sign == 1 {
-			dp.sign, ep.sign = ep.sign, dp.sign
-		}
-	} else if dp.sign == 1 {
-		ans.sign = 1
-		dp.sign, ep.sign = 0, 0
+	var rndStatus discardedDigit
+	if sep > 17 {
+		return *dp.dec
 	} else {
-		ans.sign = 0
+		ep.removeZeros()
+		epSig := uint128T{ep.significand, 0}
+		targetExp := ep.exp - dp.exp
+		if ep.significand != 0 {
+			if targetExp < 0 {
+				significand = significand.mul(powerOfTen128(targetExp))
+				dp.exp += targetExp
+			} else if targetExp > 0 {
+				epSig = epSig.mul(powerOfTen128(targetExp))
+				ep.exp -= (targetExp)
+			}
+			if dp.sign == ep.sign {
+				ans.sign = dp.sign
+
+				significand = significand.add(epSig)
+			} else {
+				if epSig.gt(significand) {
+					ans.sign = ep.sign
+					dp.sign = ep.sign
+					significand = epSig.sub(significand)
+				} else if epSig.lt(significand) {
+					ans.sign = dp.sign
+
+					significand = significand.sub(epSig)
+				} else {
+					return zeroes[dp.sign]
+				}
+			}
+		}
 	}
-	ans.significand = dp.significand + uint64(1-2*(ep.sign))*ep.significand
-	ans.exp = dp.exp
-	ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
-	ans.significand = ctx.roundingMode.round(ans.significand, roundStatus)
+	if significand.numDecimalDigits() > 16 {
+		var remainder uint64
+		expDiff := significand.numDecimalDigits() - 16
+		ans.exp += expDiff
+		significand, remainder = significand.divrem64(powersOf10[expDiff])
+		rndStatus = roundStatus(remainder, 0, expDiff)
+	}
+	ans.exp += dp.exp
+	ans.significand = significand.lo
+	ans.updateMag()
+	if ans.exp < -expOffset {
+		rndStatus = ans.rescale(-expOffset)
+	}
+	ans.significand = ctx.roundingMode.round(ans.significand, rndStatus)
+	if ans.exp >= -expOffset && ans.significand != 0 {
+		ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
+	}
 	if ans.exp > expMax || ans.significand > maxSig {
 		return infinities[ans.sign]
 	}
@@ -224,6 +259,8 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	if fp.fl == flInf {
 		return infinities[fp.sign]
 	}
+
+	//Start here
 	var rndStatus discardedDigit
 	ep.updateMag()
 	dp.updateMag()
