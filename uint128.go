@@ -22,9 +22,26 @@ func powerOfTen128(n int) uint128T {
 	if n < 0 {
 		n = -n
 	}
-	b := n % 19
-	a := n - b
+	a := n
+	b := 0
+	if n > 19 {
+		a = 19
+		b = n - 19
+	}
+
 	return umul64(powersOf10[a], powersOf10[b])
+}
+func splitnuminto19(n int) (int, int) {
+	if n < 0 {
+		n = -n
+	}
+	a := n
+	b := 0
+	if n > 19 {
+		a = 19
+		b = n - 19
+	}
+	return a, b
 }
 
 func umul64(a, b uint64) uint128T {

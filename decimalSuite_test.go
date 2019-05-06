@@ -32,7 +32,7 @@ const IgnoreRounding bool = false
 
 var tests = []string{"",
 	"dectest/ddAdd.decTest",
-	"dectest/ddMultiply.decTest",
+	// "dectest/ddMultiply.decTest",
 	"dectest/ddFMA.decTest",
 	// TODO: Implement following tests
 	// "dectest/ddCompare.decTest",
