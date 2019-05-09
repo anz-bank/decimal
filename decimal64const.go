@@ -53,3 +53,6 @@ var Min64 = newFromParts(0, -398, 1)
 
 var zeroes = []Decimal64{Zero64, NegZero64}
 var infinities = []Decimal64{Infinity64, NegInfinity64}
+
+// DefaultContext is the context that Arithmetic functions will use in order to do calculations
+var DefaultContext = Context64{roundHalfUp}

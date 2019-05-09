@@ -26,6 +26,7 @@ const (
 const (
 	roundHalfUp roundingMode = iota
 	roundHalfEven
+	roundDown
 )
 
 // Decimal64 represents an IEEE 754 64-bit floating point decimal number.
@@ -42,6 +43,11 @@ type decParts struct {
 	significand uint64
 	mag         int
 	dec         *Decimal64
+}
+
+// Context64 stores the rounding type
+type Context64 struct {
+	roundingMode roundingMode
 }
 
 var powersOf10 = []uint64{
@@ -77,8 +83,8 @@ func (context roundingMode) round(significand uint64, rndStatus discardedDigit) 
 		if (rndStatus == eq5 && significand%2 == 1) || rndStatus == gt5 {
 			return significand + 1
 		}
-		// case roundDown: // TODO: implement proper down behaviour
-		// 	return significand
+	case roundDown: // TODO: implement proper down behaviour
+		return significand
 		// case roundFloor:// TODO: implement proper Floor behaviour
 		// 	return significand
 		// case roundCeiling: //TODO: fine tune ceiling,
