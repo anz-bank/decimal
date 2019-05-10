@@ -277,9 +277,9 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	ans.mag = ans.significand128.numDecimalDigits()
 	sep := ans.separation(fp)
 	if fp.significand != 0 {
-		if sep < -16 {
+		if sep < -17 {
 			return f
-		} else if sep <= 16 {
+		} else if sep <= 17 {
 			ans = ans.Add128(&fp)
 		}
 	}
