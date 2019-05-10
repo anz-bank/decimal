@@ -40,8 +40,7 @@ type decParts struct {
 	fl             flavor
 	sign           int
 	exp            int
-	significand    uint64
-	significand128 uint128T
+	significand uint128T
 	mag            int
 	dec            *Decimal64
 }
@@ -98,38 +97,21 @@ func (dec *decParts) separation(eDec decParts) int {
 	return dec.mag + dec.exp - eDec.mag - eDec.exp
 }
 
-// func (dec *decParts) cmp(eDec decParts) int {
-// 	if dec.fl == flSNaN || eDec.fl == flSNaN {
-// 		return -2
-// 	}
-// 	if dec.fl == flQNaN || eDec.fl == flQNaN {
-// 		return -2
-// 	}
-// 	if dec.significand == 0 && eDec.significand == 0 {
-// 		return 0
-// 	}
-// 	if d.dec == e.dec {
-// 		return 0
-// 	}
-// 	d = d.significand
-// 	return 1 - 2*int(d.bits>>63)
-// }
-
 // removeZeros removes zeros and increments the exponent to match.
 func (dec *decParts) removeZeros() {
-	zeros := countTrailingZeros(dec.significand)
-	dec.significand /= powersOf10[zeros]
+	zeros := countTrailingZeros(dec.significand.lo)
+	dec.significand.lo /= powersOf10[zeros]
 	dec.exp += zeros
 }
 
 // updateMag updates the magnitude of the dec object
 func (dec *decParts) updateMag() {
-	dec.mag = numDecimalDigits(dec.significand)
+	dec.mag = numDecimalDigits(dec.significand.lo)
 }
 
 // updateMag updates the magnitude of the dec object
 func (dec *decParts) isZero() bool {
-	return dec.significand == 0 && dec.fl == flNormal
+	return dec.significand.lo == 0 && dec.fl == flNormal
 }
 func signalNaN64() {
 	panic("sNaN64")
@@ -201,13 +183,13 @@ func rescale(exp int, significand uint64, targetExp int) (uint64, int) {
 func (dec *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
 	expDiff := targetExp - dec.exp
 	mag := dec.mag
-	rndStatus = roundStatus(dec.significand, dec.exp, targetExp)
+	rndStatus = roundStatus(dec.significand.lo, dec.exp, targetExp)
 	if expDiff > mag {
-		dec.significand, dec.exp = 0, targetExp
+		dec.significand.lo, dec.exp = 0, targetExp
 		return
 	}
 	divisor := powersOf10[expDiff]
-	dec.significand = dec.significand / divisor
+	dec.significand.lo = dec.significand.lo / divisor
 	dec.exp = targetExp
 	return
 }
@@ -258,8 +240,8 @@ func countTrailingZeros(n uint64) int {
 
 // match scales matches the exponents of d and e and returns the info about the discarded digit
 func matchScales(d, e *decParts) discardedDigit {
-	logicCheck(d.significand != 0, "d.significand (%d) != 0", d.significand)
-	logicCheck(e.significand != 0, "e.significand (%d) != 0", e.significand)
+	logicCheck(d.significand.lo != 0, "d.significand (%d) != 0", d.significand.lo)
+	logicCheck(e.significand.lo != 0, "e.significand (%d) != 0", e.significand.lo)
 	if d.exp == e.exp {
 		return eq0
 	}
@@ -354,7 +336,7 @@ func (d *Decimal64) getParts() decParts {
 			exp = 0
 		}
 	}
-	return decParts{fl, sign, exp, significand, uint128T{0, 0}, 0, d}
+	return decParts{fl, sign, exp, uint128T{significand, 0}, 0, d}
 }
 
 func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {

@@ -126,47 +126,47 @@ func (d Decimal64) Sqrt() Decimal64 {
 }
 func (dp *decParts) round128to64() discardedDigit {
 	var rndStatus discardedDigit
-	if dp.significand128.numDecimalDigits() > 16 {
+	if dp.significand.numDecimalDigits() > 16 {
 		var remainder uint64
-		expDiff := dp.significand128.numDecimalDigits() - 16
+		expDiff := dp.significand.numDecimalDigits() - 16
 		dp.exp += expDiff
-		dp.significand128, remainder = dp.significand128.divrem64(powersOf10[expDiff])
+		dp.significand, remainder = dp.significand.divrem64(powersOf10[expDiff])
 		rndStatus = roundStatus(remainder, 0, expDiff)
 	}
-	dp.significand = dp.significand128.lo
+	// dp.significand.lo = dp.significand.lo
 	return rndStatus
 }
 
 func (dp *decParts) Add128(ep *decParts) decParts {
 	targetExp := ep.exp - dp.exp
 	var ans decParts
-	if (ep.significand128 != uint128T{0, 0}) {
+	if (ep.significand != uint128T{0, 0}) {
 		if targetExp < 0 {
-			dp.significand128 = dp.significand128.mul(powerOfTen128(targetExp))
+			dp.significand = dp.significand.mul(powerOfTen128(targetExp))
 			dp.exp += targetExp
 		} else if targetExp > 0 {
-			ep.significand128 = ep.significand128.mul(powerOfTen128(targetExp))
+			ep.significand = ep.significand.mul(powerOfTen128(targetExp))
 			ep.exp -= (targetExp)
 		}
 		if dp.sign == ep.sign {
 			ans.sign = dp.sign
-			dp.significand128 = dp.significand128.add(ep.significand128)
+			dp.significand = dp.significand.add(ep.significand)
 		} else {
-			if ep.significand128.gt(dp.significand128) {
+			if ep.significand.gt(dp.significand) {
 				ans.sign = ep.sign
 				dp.sign = ep.sign
-				dp.significand128 = ep.significand128.sub(dp.significand128)
-			} else if ep.significand128.lt(dp.significand128) {
+				dp.significand = ep.significand.sub(dp.significand)
+			} else if ep.significand.lt(dp.significand) {
 				ans.sign = dp.sign
-				dp.significand128 = dp.significand128.sub(ep.significand128)
+				dp.significand = dp.significand.sub(ep.significand)
 			} else {
-				ans.significand = 0
+				ans.significand.lo = 0
 				ans.exp = 0
 				return ans
 			}
 		}
 	}
-	ans.significand128 = dp.significand128
+	ans.significand = dp.significand
 	ans.exp += dp.exp
 	return ans
 }
@@ -187,17 +187,17 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 		}
 		return QNaN64
 	}
-	if dp.significand == 0 {
+	if dp.significand.lo == 0 {
 		return e
-	} else if ep.significand == 0 {
+	} else if ep.significand.lo == 0 {
 		return d
 	}
 	ep.removeZeros()
 	dp.removeZeros()
 	ep.updateMag()
 	dp.updateMag()
-	dp.significand128.lo = dp.significand
-	ep.significand128.lo = ep.significand
+	// dp.significand.lo = dp.significand.lo
+	// ep.significand.lo = ep.significand.lo
 	sep := dp.separation(ep)
 
 	if sep < 0 {
@@ -214,14 +214,14 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
 	}
-	ans.significand = ctx.roundingMode.round(ans.significand, rndStatus)
-	if ans.exp >= -expOffset && ans.significand != 0 {
-		ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
+	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
+	if ans.exp >= -expOffset && ans.significand.lo != 0 {
+		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	}
-	if ans.exp > expMax || ans.significand > maxSig {
+	if ans.exp > expMax || ans.significand.lo > maxSig {
 		return infinities[ans.sign]
 	}
-	return newFromParts(ans.sign, ans.exp, ans.significand)
+	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
 }
 
 // FMA computes d*e + f
@@ -258,7 +258,7 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 		}
 		return infinities[ans.sign]
 	}
-	if ep.significand == 0 || dp.significand == 0 {
+	if ep.significand.lo == 0 || dp.significand.lo == 0 {
 		return f
 	}
 	if fp.fl == flInf {
@@ -272,11 +272,11 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	ep.removeZeros()
 	dp.removeZeros()
 	ans.exp = dp.exp + ep.exp
-	ans.significand128 = umul64(dp.significand, ep.significand)
-	fp.significand128 = uint128T{fp.significand, 0}
-	ans.mag = ans.significand128.numDecimalDigits()
+	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
+	// REMOVE: fp.significand = uint128T{fp.significand.lo, 0}
+	ans.mag = ans.significand.numDecimalDigits()
 	sep := ans.separation(fp)
-	if fp.significand != 0 {
+	if fp.significand.lo != 0 {
 		if sep < -17 {
 			return f
 		} else if sep <= 17 {
@@ -288,14 +288,14 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 		rndStatus = ans.rescale(-expOffset)
 	}
 	ans.updateMag()
-	ans.significand = ctx.roundingMode.round(ans.significand, rndStatus)
-	if ans.exp >= -expOffset && ans.significand != 0 {
-		ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
+	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
+	if ans.exp >= -expOffset && ans.significand.lo != 0 {
+		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	}
-	if ans.exp > expMax || ans.significand > maxSig {
+	if ans.exp > expMax || ans.significand.lo > maxSig {
 		return infinities[ans.sign]
 	}
-	return newFromParts(ans.sign, ans.exp, ans.significand)
+	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
 }
 
 // Mul computes d * e
@@ -313,25 +313,25 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 		}
 		return infinities[ans.sign]
 	}
-	if ep.significand == 0 || dp.significand == 0 {
+	if ep.significand.lo == 0 || dp.significand.lo == 0 {
 		return zeroes[ans.sign]
 	}
 	ep.updateMag()
 	dp.updateMag()
 	var roundStatus discardedDigit
-	significand := umul64(dp.significand, ep.significand)
+	significand := umul64(dp.significand.lo, ep.significand.lo)
 	ans.exp = dp.exp + ep.exp + 15
 	significand = significand.div64(decimal64Base)
-	ans.significand = significand.lo
+	ans.significand.lo = significand.lo
 	ans.updateMag()
 	if ans.exp >= -expOffset {
-		ans.exp, ans.significand = renormalize(ans.exp, ans.significand)
+		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	} else if ans.exp < 1-expMax {
 		roundStatus = ans.rescale(-expOffset)
 	}
-	ans.significand = ctx.roundingMode.round(ans.significand, roundStatus)
-	if ans.significand > maxSig || ans.exp > expMax {
+	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, roundStatus)
+	if ans.significand.lo > maxSig || ans.exp > expMax {
 		return infinities[ans.sign]
 	}
-	return newFromParts(ans.sign, ans.exp, ans.significand)
+	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
 }

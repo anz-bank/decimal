@@ -125,12 +125,12 @@ func setRoundingFromString(s string) Context64 {
 func isRoundingErr(res, expected Decimal64) bool {
 	resP := res.getParts()
 	expectedP := expected.getParts()
-	sigDiff := int64(resP.significand - expectedP.significand)
+	sigDiff := int64(resP.significand.lo - expectedP.significand.lo)
 	expDiff := resP.exp - expectedP.exp
 	if (sigDiff == 1 || sigDiff == -1) && (expDiff == 1 || expDiff == -1 || expDiff == 0) {
 		return true
 	}
-	if resP.significand == maxSig && resP.exp == expMax && expectedP.fl == flInf {
+	if resP.significand.lo == maxSig && resP.exp == expMax && expectedP.fl == flInf {
 		return true
 	}
 	return false
