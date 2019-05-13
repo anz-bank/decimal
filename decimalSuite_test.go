@@ -43,8 +43,12 @@ var tests = []string{"",
 	// 	"dectest/ddMinMag.decTest",
 	// 	"dectest/ddMinus.decTest",
 }
-var supportedRounding = []string{"half_up",
-	"half_even"}
+
+func (testVal testCaseStrings) String() string {
+	return fmt.Sprintf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
+}
+
+var supportedRounding = []string{"half_up", "half_even"}
 var ignoredFunctions = []string{"apply"}
 
 // TODO(joshcarp): This test cannot fail. Proper assertions will be added once the whole suite passes
@@ -61,25 +65,23 @@ func TestFromSuite(t *testing.T) {
 			failedTests := 0
 			var roundingSupported bool
 			var scannedContext Context64
-
 			for scanner.Scan() {
-				testVal, err := getInput(scanner.Text())
+				testVal := getInput(scanner.Text())
 				if testVal.rounding != "" {
 					roundingSupported = isInList(testVal.rounding, supportedRounding)
 					scannedContext = setRoundingFromString(testVal.rounding)
 				}
-				if err == nil && roundingSupported {
+				if testVal.testFunc != "" && roundingSupported {
 					numTests++
 					dec64vals := convertToDec64(testVal)
 					calcRestul, testErr := runTest(scannedContext, dec64vals, testVal)
 					if PrintTests {
-						fmt.Printf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
+						fmt.Printf("%s\n", testVal)
 					}
 					if testErr != nil && !(isRoundingErr(calcRestul, dec64vals.expected) && IgnoreRounding) {
 						fmt.Println(testErr)
 						fmt.Println("Rounding mode:", supportedRounding[scannedContext.roundingMode])
 						failedTests++
-						fmt.Printf("%s %s %v %v %v -> %v\n", testVal.testName, testVal.testFunc, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
 						if dec64vals.parseError != nil {
 							fmt.Println(dec64vals.parseError)
 						}
@@ -129,7 +131,7 @@ func isRoundingErr(res, expected Decimal64) bool {
 }
 
 // getInput gets the test file and extracts test using regex, then returns a map object and a list of test names.
-func getInput(line string) (testCaseStrings, error) {
+func getInput(line string) testCaseStrings {
 	testRegex := regexp.MustCompile(
 		`(?P<testName>dd[\w]*)` + // first capturing group: testfunc made of anything that isn't a whitespace
 			`(?:\s*)` + // match any whitespace (?: non capturing group)
@@ -152,12 +154,12 @@ func getInput(line string) (testCaseStrings, error) {
 		roundingRegex := regexp.MustCompile(`(?:rounding:[\s]*)(?P<rounding>[\S]*)`)
 		ans = roundingRegex.FindStringSubmatch(line)
 		if len(ans) == 0 {
-			return testCaseStrings{}, fmt.Errorf("No test cases")
+			return testCaseStrings{}
 		}
-		return testCaseStrings{rounding: ans[1]}, fmt.Errorf("No test cases or rounding")
+		return testCaseStrings{rounding: ans[1]}
 	}
 	if isInList(ans[2], ignoredFunctions) {
-		return testCaseStrings{}, fmt.Errorf("No test cases")
+		return testCaseStrings{}
 	}
 	data := testCaseStrings{
 		testName:       ans[1],
@@ -167,7 +169,7 @@ func getInput(line string) (testCaseStrings, error) {
 		val3:           ans[5],
 		expectedResult: ans[6],
 	}
-	return data, nil
+	return data
 }
 
 // convertToDec64 converts the map object strings to decimal64s.
@@ -179,7 +181,7 @@ func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
 	dec64vals.expected, expectedErr = ParseDecimal64(testvals.expectedResult)
 
 	if err1 != nil || err2 != nil || expectedErr != nil {
-		dec64vals.parseError = fmt.Errorf("\nerror parsing in test: %s: \n val 1:%s: \n val 2: %s  \n val 3: %s\n expected: %s ",
+		dec64vals.parseError = fmt.Errorf("error parsing in test: %s: \nval 1:%s: \nval 2: %s  \nval 3: %s\nexpected: %s ",
 			testvals.testName,
 			err1,
 			err2,
@@ -191,57 +193,47 @@ func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
 
 // runTest completes the tests and returns a boolean and string on if the test passes.
 func runTest(context Context64, testVals decValContainer, testValStrings testCaseStrings) (Decimal64, error) {
-	calcRestul := execOp(context, testVals, testValStrings.testFunc)
+	calcRestul := execOp(context, testVals.val1, testVals.val2, testVals.val3, testValStrings.testFunc)
 	if calcRestul.IsNaN() || testVals.expected.IsNaN() {
 		if testVals.expected.String() != calcRestul.String() {
 			return calcRestul, fmt.Errorf(
-				"\n failed NaN TEST %s \n %v %s %v %v== %v \n expected result: %v ",
-				testValStrings.testName,
-				testValStrings.val1,
-				testValStrings.testFunc,
-				testValStrings.val2,
-				testValStrings.val3,
-				calcRestul,
-				testValStrings.expectedResult)
+				"failed NaN TEST:\n%scalculated result: %v",
+				testValStrings,
+				calcRestul)
 		}
 		return calcRestul, nil
 	} else if testVals.expected.Cmp(calcRestul) != 0 {
 		return calcRestul, fmt.Errorf(
-			"\nfailed %s \n %v %s %v %v== %v \n expected result: %v ",
-			testValStrings.testName,
-			testValStrings.val1,
-			testValStrings.testFunc,
-			testValStrings.val2,
-			testValStrings.val3,
-			calcRestul,
-			testValStrings.expectedResult)
+			"failed:\n%scalculated result: %v",
+			testValStrings,
+			calcRestul)
 	}
 	return calcRestul, nil
 }
 
 // TODO: get runTest to run more functions such as FMA.
 // execOp returns the calculated answer to the operation as Decimal64.
-func execOp(context Context64, testVals decValContainer, op string) Decimal64 {
+func execOp(context Context64, a, b, c Decimal64, op string) Decimal64 {
 	if IgnorePanics {
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Println("failed", r, testVals.val1, testVals.val2)
+				fmt.Println("failed", r, a, b)
 			}
 		}()
 	}
 	switch op {
 	case "add":
-		return context.Add(testVals.val1, testVals.val2)
+		return context.Add(a, b)
 	case "multiply":
-		return context.Mul(testVals.val1, testVals.val2)
+		return context.Mul(a, b)
 	case "abs":
-		return testVals.val1.Abs()
+		return a.Abs()
 	case "divide":
-		return testVals.val1.Quo(testVals.val2)
+		return a.Quo(b)
 	case "fma":
-		return context.FMA(testVals.val1, testVals.val2, testVals.val3)
+		return context.FMA(a, b, c)
 	case "compare":
-		return NewDecimal64FromInt64(int64(testVals.val1.Cmp(testVals.val2)))
+		return NewDecimal64FromInt64(int64(a.Cmp(b)))
 	default:
 		fmt.Println("end of execOp, no tests ran", op)
 	}
