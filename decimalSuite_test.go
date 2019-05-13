@@ -112,7 +112,7 @@ func setRoundingFromString(s string) Context64 {
 	case "half_up":
 		return Context64{roundHalfUp}
 	default:
-		return DefaultContext
+		panic("Rounding not supported")
 	}
 
 }
