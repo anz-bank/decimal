@@ -9,9 +9,11 @@ import (
 )
 
 type decValContainer struct {
-	val1, val2, val3, expected Decimal64
-	parseError                 error
+	val1, val2, val3, expected, calculated Decimal64
+	calculatedString                       string
+	parseError                             error
 }
+
 type testCaseStrings struct {
 	testName       string
 	testFunc       string
@@ -69,16 +71,18 @@ func TestFromSuite(t *testing.T) {
 				testVal := getInput(scanner.Text())
 				if testVal.rounding != "" {
 					roundingSupported = isInList(testVal.rounding, supportedRounding)
-					scannedContext = setRoundingFromString(testVal.rounding)
+					if roundingSupported {
+						scannedContext = setRoundingFromString(testVal.rounding)
+					}
 				}
 				if testVal.testFunc != "" && roundingSupported {
 					numTests++
 					dec64vals := convertToDec64(testVal)
-					calcRestul, testErr := runTest(scannedContext, dec64vals, testVal)
+					testErr := runTest(scannedContext, dec64vals, testVal)
 					if PrintTests {
 						fmt.Printf("%s\n", testVal)
 					}
-					if testErr != nil && !(isRoundingErr(calcRestul, dec64vals.expected) && IgnoreRounding) {
+					if testErr != nil {
 						fmt.Println(testErr)
 						fmt.Println("Rounding mode:", supportedRounding[scannedContext.roundingMode])
 						failedTests++
@@ -112,7 +116,7 @@ func setRoundingFromString(s string) Context64 {
 	case "half_up":
 		return Context64{roundHalfUp}
 	default:
-		panic("Rounding not supported")
+		panic("Rounding not supported" + s)
 	}
 
 }
@@ -192,28 +196,38 @@ func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
 }
 
 // runTest completes the tests and returns a boolean and string on if the test passes.
-func runTest(context Context64, testVals decValContainer, testValStrings testCaseStrings) (Decimal64, error) {
-	calcRestul := execOp(context, testVals.val1, testVals.val2, testVals.val3, testValStrings.testFunc)
-	if calcRestul.IsNaN() || testVals.expected.IsNaN() {
+func runTest(context Context64, testVals decValContainer, testValStrings testCaseStrings) error {
+	calculatedContainer := execOp(context, testVals.val1, testVals.val2, testVals.val3, testValStrings.testFunc)
+	calcRestul := calculatedContainer.calculated
+
+	if calculatedContainer.calculatedString != "" {
+		if calculatedContainer.calculatedString != testValStrings.expectedResult {
+			return fmt.Errorf(
+				"failed:\n%scalculated result: %s",
+				testValStrings,
+				calculatedContainer.calculatedString)
+		}
+
+	} else if calcRestul.IsNaN() || testVals.expected.IsNaN() {
 		if testVals.expected.String() != calcRestul.String() {
-			return calcRestul, fmt.Errorf(
+			return fmt.Errorf(
 				"failed NaN TEST:\n%scalculated result: %v",
 				testValStrings,
 				calcRestul)
 		}
-		return calcRestul, nil
-	} else if testVals.expected.Cmp(calcRestul) != 0 {
-		return calcRestul, fmt.Errorf(
+		return nil
+	} else if testVals.expected.Cmp(calcRestul) != 0 && !(isRoundingErr(calcRestul, testVals.expected) && IgnoreRounding) {
+		return fmt.Errorf(
 			"failed:\n%scalculated result: %v",
 			testValStrings,
 			calcRestul)
 	}
-	return calcRestul, nil
+	return nil
 }
 
 // TODO: get runTest to run more functions such as FMA.
 // execOp returns the calculated answer to the operation as Decimal64.
-func execOp(context Context64, a, b, c Decimal64, op string) Decimal64 {
+func execOp(context Context64, a, b, c Decimal64, op string) decValContainer {
 	if IgnorePanics {
 		defer func() {
 			if r := recover(); r != nil {
@@ -223,19 +237,19 @@ func execOp(context Context64, a, b, c Decimal64, op string) Decimal64 {
 	}
 	switch op {
 	case "add":
-		return context.Add(a, b)
+		return decValContainer{calculated: context.Add(a, b)}
 	case "multiply":
-		return context.Mul(a, b)
+		return decValContainer{calculated: context.Mul(a, b)}
 	case "abs":
-		return a.Abs()
+		return decValContainer{calculated: a.Abs()}
 	case "divide":
-		return a.Quo(b)
+		return decValContainer{calculated: a.Quo(b)}
 	case "fma":
-		return context.FMA(a, b, c)
+		return decValContainer{calculated: context.FMA(a, b, c)}
 	case "compare":
-		return NewDecimal64FromInt64(int64(a.Cmp(b)))
+		return decValContainer{calculatedString: fmt.Sprintf("%d", int64(a.Cmp(b)))}
 	default:
 		fmt.Println("end of execOp, no tests ran", op)
 	}
-	return Zero64
+	return decValContainer{calculated: Zero64}
 }
