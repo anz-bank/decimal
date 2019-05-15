@@ -124,52 +124,6 @@ func (d Decimal64) Sqrt() Decimal64 {
 	exp, significand = renormalize(exp/2-8, sqrt)
 	return newFromParts(sign, exp, significand)
 }
-func (dp *decParts) round128to64() discardedDigit {
-	var rndStatus discardedDigit
-	if dp.significand.numDecimalDigits() > 16 {
-		var remainder uint64
-		expDiff := dp.significand.numDecimalDigits() - 16
-		dp.exp += expDiff
-		dp.significand, remainder = dp.significand.divrem64(powersOf10[expDiff])
-		rndStatus = roundStatus(remainder, 0, expDiff)
-	}
-	// dp.significand.lo = dp.significand.lo
-	return rndStatus
-}
-
-func (dp *decParts) Add128(ep *decParts) decParts {
-	targetExp := ep.exp - dp.exp
-	var ans decParts
-	if (ep.significand != uint128T{0, 0}) {
-		if targetExp < 0 {
-			dp.significand = dp.significand.mul(powerOfTen128(targetExp))
-			dp.exp += targetExp
-		} else if targetExp > 0 {
-			ep.significand = ep.significand.mul(powerOfTen128(targetExp))
-			ep.exp -= (targetExp)
-		}
-		if dp.sign == ep.sign {
-			ans.sign = dp.sign
-			dp.significand = dp.significand.add(ep.significand)
-		} else {
-			if ep.significand.gt(dp.significand) {
-				ans.sign = ep.sign
-				dp.sign = ep.sign
-				dp.significand = ep.significand.sub(dp.significand)
-			} else if ep.significand.lt(dp.significand) {
-				ans.sign = dp.sign
-				dp.significand = dp.significand.sub(ep.significand)
-			} else {
-				ans.significand.lo = 0
-				ans.exp = 0
-				return ans
-			}
-		}
-	}
-	ans.significand = dp.significand
-	ans.exp += dp.exp
-	return ans
-}
 
 // Add computes d + e
 func (ctx Context64) Add(d, e Decimal64) Decimal64 {
@@ -196,8 +150,6 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	dp.removeZeros()
 	ep.updateMag()
 	dp.updateMag()
-	// dp.significand.lo = dp.significand.lo
-	// ep.significand.lo = ep.significand.lo
 	sep := dp.separation(ep)
 
 	if sep < 0 {
@@ -208,8 +160,9 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 		return *dp.dec
 	}
 	var rndStatus discardedDigit
-	ans := dp.Add128(&ep)
-	rndStatus = ans.round128to64()
+	dp.matchScales128(&ep)
+	ans := dp.add128(&ep)
+	rndStatus = ans.roundToLo()
 	ans.updateMag()
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
@@ -273,17 +226,17 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	dp.removeZeros()
 	ans.exp = dp.exp + ep.exp
 	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
-	// REMOVE: fp.significand = uint128T{fp.significand.lo, 0}
 	ans.mag = ans.significand.numDecimalDigits()
 	sep := ans.separation(fp)
 	if fp.significand.lo != 0 {
 		if sep < -17 {
 			return f
 		} else if sep <= 17 {
-			ans = ans.Add128(&fp)
+			ans.matchScales128(&fp)
+			ans = ans.add128(&fp)
 		}
 	}
-	rndStatus = ans.round128to64()
+	rndStatus = ans.roundToLo()
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
 	}
@@ -334,4 +287,52 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 		return infinities[ans.sign]
 	}
 	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
+}
+
+func (dp *decParts) roundToLo() discardedDigit {
+	var rndStatus discardedDigit
+	if dp.significand.numDecimalDigits() > 16 {
+		var remainder uint64
+		expDiff := dp.significand.numDecimalDigits() - 16
+		dp.exp += expDiff
+		dp.significand, remainder = dp.significand.divrem64(powersOf10[expDiff])
+		rndStatus = roundStatus(remainder, 0, expDiff)
+	}
+	return rndStatus
+}
+
+func (dp *decParts) matchScales128(ep *decParts) {
+	targetExp := ep.exp - dp.exp
+	if (ep.significand != uint128T{0, 0}) {
+		if targetExp < 0 {
+			dp.significand = dp.significand.mul(powerOfTen128(targetExp))
+			dp.exp += targetExp
+		} else if targetExp > 0 {
+			ep.significand = ep.significand.mul(powerOfTen128(targetExp))
+			ep.exp -= (targetExp)
+		}
+	}
+	return
+}
+
+// add128 adds two decParts with full precision in 128 bits of significand
+func (dp *decParts) add128(ep *decParts) decParts {
+	logicCheck(ep.exp == dp.exp, "ep.exp == dp.exp")
+	var ans decParts
+	ans.exp = dp.exp
+	if dp.sign == ep.sign {
+		ans.sign = dp.sign
+		ans.significand = dp.significand.add(ep.significand)
+	} else {
+		if ep.significand.gt(dp.significand) {
+			ans.sign = ep.sign
+			ans.significand = ep.significand.sub(dp.significand)
+		} else if ep.significand.lt(dp.significand) {
+			ans.sign = dp.sign
+			ans.significand = dp.significand.sub(ep.significand)
+		} else {
+			ans.significand = uint128T{0, 0}
+		}
+	}
+	return ans
 }

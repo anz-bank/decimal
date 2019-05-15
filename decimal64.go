@@ -37,12 +37,12 @@ type Decimal64 struct {
 
 // decParts stores the constituting decParts of a decimal64.
 type decParts struct {
-	fl             flavor
-	sign           int
-	exp            int
+	fl          flavor
+	sign        int
+	exp         int
 	significand uint128T
-	mag            int
-	dec            *Decimal64
+	mag         int
+	dec         *Decimal64
 }
 
 // Context64 stores the rounding type
@@ -106,7 +106,7 @@ func (dec *decParts) removeZeros() {
 
 // updateMag updates the magnitude of the dec object
 func (dec *decParts) updateMag() {
-	dec.mag = numDecimalDigits(dec.significand.lo)
+	dec.mag = dec.significand.numDecimalDigits()
 }
 
 // updateMag updates the magnitude of the dec object
