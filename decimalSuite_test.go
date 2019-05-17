@@ -27,13 +27,13 @@ const IgnorePanics bool = false
 const IgnoreRounding bool = false
 
 var tests = []string{"",
-	"dectest/ddAdd.decTest",
-	"dectest/ddMultiply.decTest",
-	"dectest/ddFMA.decTest",
+	// "dectest/ddAdd.decTest",
+	// "dectest/ddMultiply.decTest",
+	// "dectest/ddFMA.decTest",
 	// TODO: Implement following tests
 	// "dectest/ddCompare.decTest",
 	// 	"dectest/ddAbs.decTest",
-	// 	"dectest/ddClass.decTest",
+		"dectest/ddClass.decTest",
 	// 	"dectest/ddCopysign.decTest",
 	// 	"dectest/ddDivide.decTest",
 	// 	"dectest/ddLogB.decTest",
@@ -194,6 +194,8 @@ func execOp(val1, val2, val3 Decimal64, op string) Decimal64 {
 		return val1.FMA(val2, val3)
 	case "compare":
 		return NewDecimal64FromInt64(int64(val1.Cmp(val2)))
+	case "class":
+		return val1.Class()
 	default:
 		fmt.Println("end of execOp, no tests ran", op)
 	}
