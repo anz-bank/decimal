@@ -475,6 +475,19 @@ func propagateNan(d ...*decParts) *Decimal64 {
 	return nil
 }
 
+// To be a subnormal, the exponent needs to be less than expmin (-398)
+// & the significand must be less than the decimal 64 base (1E+15)
+func (d Decimal64) isSubnormal() bool {
+	_, _, exp, significand := d.parts()
+
+	if significand < decimal64Base {
+		if exp >= -expOffset {
+			return true
+		}
+	}
+	return false
+}
+
 // class takes one operand and provides the class the decimal is in
 func (d Decimal64) Class() string {
 	// determine whether decimal is negative or positive
@@ -487,36 +500,26 @@ func (d Decimal64) Class() string {
 		return "NaN"
 	}
 	if d.IsInf() {
-		if (sign == 1) {
+		if sign == 1 {
 			return "-Infinity"
 		}
 		return "+Infinity"
 	}
 	if d.isZero() {
-		if (sign == 1) {
+		if sign == 1 {
 			return "-Zero"
 		}
 		return "+Zero"
 	}
-	if (d.isSubnormal()) {
-		if (sign == 1) {
+	if d.isSubnormal() {
+		if sign == 1 {
 			return "-Subnormal"
 		}
 		return "+Subnormal"
 	} else {
-		if (sign == 1) {
+		if sign == 1 {
 			return "-Normal"
 		}
 		return "+Normal"
 	}
-}
-
-//TEST CASES Check if the decimal is subnormal
-	// is-subnormal('2.50') ==> '0'
-	// is-subnormal('0.1E-999') ==> '1'
-	// is-subnormal('0.00') ==> '0'
-	// is-subnormal('-Inf') ==> '0'
-	// is-subnormal('NaN') ==> '0' 
-func (d Decimal64) isSubnormal() bool {
-	return false
 }
