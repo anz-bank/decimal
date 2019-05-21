@@ -109,10 +109,6 @@ func (dec *decParts) updateMag() {
 	dec.mag = dec.significand.numDecimalDigits()
 }
 
-// updateMag updates the magnitude of the dec object
-func (dec *decParts) isZero() bool {
-	return dec.significand.lo == 0 && dec.fl == flNormal
-}
 func signalNaN64() {
 	panic("sNaN64")
 }
@@ -275,9 +271,6 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 	}
 	return
 }
-func (dec decParts) isNan() bool {
-	return dec.fl == flQNaN || dec.fl == flSNaN
-}
 
 // decParts gets the parts and returns in decParts stuct, doesn't get the magnitude due to performance issues\
 // TODO: rename this to parts when parts is depreciated
@@ -396,6 +389,12 @@ func (d Decimal64) Int64() int64 {
 	return int64(1-2*sign) * int64(whole)
 }
 
+// IsZero returns true iff the significand is 0.
+func (d Decimal64) IsZero() bool {
+	fl, _, _, significand := d.parts()
+	return significand == 0 && fl == flNormal
+}
+
 // IsInf returns true iff d = ±∞.
 func (d Decimal64) IsInf() bool {
 	flavor, _, _, _ := d.parts()
@@ -432,9 +431,37 @@ func (d Decimal64) IsInt() bool {
 	}
 }
 
+<<<<<<< HEAD
 func (d Decimal64) isZero() bool {
 	fl, _, _, significand := d.parts()
 	return significand == 0 && fl == flNormal
+=======
+// IsSubnormal returns true iff d is a subnormal.
+func (d Decimal64) IsSubnormal() bool {
+	_, _, exp, significand := d.parts()
+	return significand < decimal64Base && exp >= minExp
+}
+
+// updateMag updates the magnitude of the dec object
+func (dec *decParts) isZero() bool {
+	return dec.significand.lo == 0 && dec.fl == flNormal
+}
+
+func (dec decParts) isInf() bool {
+	return dec.fl == flInf
+}
+
+func (dec decParts) isNan() bool {
+	return dec.fl == flQNaN || dec.fl == flSNaN
+}
+
+func (dec decParts) isSNan() bool {
+	return dec.fl == flSNaN
+}
+
+func (dec decParts) isSubnormal() bool {
+	return dec.significand.lo < decimal64Base && dec.exp >= minExp
+>>>>>>> add missing private functions for flavors
 }
 
 // Sign returns -1/0/1 depending on whether d is </=/> 0.
@@ -475,25 +502,13 @@ func propagateNan(d ...*decParts) *Decimal64 {
 	return nil
 }
 
-// To be a subnormal, the exponent needs to be less than expmin (-398)
-// & the significand must be less than the decimal 64 base (1E+15)
-func (d Decimal64) isSubnormal() bool {
-	_, _, exp, significand := d.parts()
-
-	if significand < decimal64Base {
-		if exp >= minExp {
-			return true
-		}
-	}
-	return false
-}
-
 // Class takes one operand and provides the class the decimal is in
 func (d Decimal64) Class() string {
-	if d.IsSNaN() {
-		return "sNaN"	
-	}
-	if d.IsNaN() {
+	dp := d.getParts()
+
+	if dp.isSNan() {
+		return "sNaN"
+	} else if dp.isNan() {
 		return "NaN"
 	}
 
@@ -506,11 +521,11 @@ func (d Decimal64) Class() string {
 		str += "+"
 	}
 
-	if d.IsInf() {
+	if dp.isInf() {
 		str += "Infinity"
-	} else if d.isZero() {
+	} else if dp.isZero() {
 		str += "Zero"
-	} else if d.isSubnormal() {
+	} else if dp.isSubnormal() {
 		str += "Subnormal"
 	} else {
 		str += "Normal"
