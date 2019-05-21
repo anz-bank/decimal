@@ -40,6 +40,7 @@ const decimal64Base = 1000 * 1000 * 1000 * 1000 * 1000
 const maxSig = 10*decimal64Base - 1
 
 const expOffset = 398
+const minExp = -398
 const expMax = 369
 
 // Max64  is the maximum number representable with a Decimal64.

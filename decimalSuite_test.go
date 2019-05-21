@@ -31,13 +31,13 @@ const IgnorePanics bool = false
 const IgnoreRounding bool = false
 
 var tests = []string{"",
-	// "dectest/ddAdd.decTest",
-	// "dectest/ddMultiply.decTest",
-	// "dectest/ddFMA.decTest",
+	"dectest/ddAdd.decTest",
+	"dectest/ddMultiply.decTest",
+	"dectest/ddFMA.decTest",
+	"dectest/ddClass.decTest",
 	// TODO: Implement following tests
-	// "dectest/ddCompare.decTest",
+	//  "dectest/ddCompare.decTest",
 	// 	"dectest/ddAbs.decTest",
-		"dectest/ddClass.decTest",
 	// 	"dectest/ddCopysign.decTest",
 	// 	"dectest/ddDivide.decTest",
 	// 	"dectest/ddLogB.decTest",

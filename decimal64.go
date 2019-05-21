@@ -481,45 +481,39 @@ func (d Decimal64) isSubnormal() bool {
 	_, _, exp, significand := d.parts()
 
 	if significand < decimal64Base {
-		if exp >= -expOffset {
+		if exp >= minExp {
 			return true
 		}
 	}
 	return false
 }
 
-// class takes one operand and provides the class the decimal is in
+// Class takes one operand and provides the class the decimal is in
 func (d Decimal64) Class() string {
-	// determine whether decimal is negative or positive
-	sign := int(d.bits >> 63)
-
 	if d.IsSNaN() {
-		return "sNaN"
+		return "sNaN"	
 	}
 	if d.IsNaN() {
 		return "NaN"
 	}
-	if d.IsInf() {
-		if sign == 1 {
-			return "-Infinity"
-		}
-		return "+Infinity"
-	}
-	if d.isZero() {
-		if sign == 1 {
-			return "-Zero"
-		}
-		return "+Zero"
-	}
-	if d.isSubnormal() {
-		if sign == 1 {
-			return "-Subnormal"
-		}
-		return "+Subnormal"
+
+	// determine whether decimal is negative or positive
+	sign := int(d.bits >> 63)
+	str := ""
+	if sign == 1 {
+		str += "-"
 	} else {
-		if sign == 1 {
-			return "-Normal"
-		}
-		return "+Normal"
+		str += "+"
 	}
+
+	if d.IsInf() {
+		str += "Infinity"
+	} else if d.isZero() {
+		str += "Zero"
+	} else if d.isSubnormal() {
+		str += "Subnormal"
+	} else {
+		str += "Normal"
+	}
+	return str
 }
