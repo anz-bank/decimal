@@ -8,7 +8,7 @@ This library implements fixed-precision decimal numbers based on IEEE 754 decima
 
 The goal is to fully support decimal64 and decimal128. Currently only supports decimal64, excluding subnormals, and needs more thorough testing.
 
-## Preliminary learning
+## Reccomended preliminary learning
 
 To gain familiarity with this project, it is reccomended to develop a further understanding of the floating point standard, below are some links to get you started
 - [IEEE 754-2008 revision - Wikipedia](https://en.wikipedia.org/wiki/IEEE_754-2008_revision)
@@ -22,16 +22,19 @@ Arithmetic - PDF](http://www.dsc.ufcg.edu.br/~cnum/modulos/Modulo2/IEEE754_2008.
 
 ### IBM unit tests
 
-Our unit tests are provided by Mike Cowlishaw from IBM, they are referenced in our test suite `decimalSuite_test.go`
+Our unit tests are provided by Mike Cowlishaw from IBM, and are referenced in our test suite `decimalSuite_test.go`
 
 You can define which unit tests to run, for example:
-```
+
+```go
 var tests = []string {
     "dectest/ddAdd.decTest",
 }
 ```
+
 Run this command to run all the unit tests:
-```
+
+```bash
 go test -v .
 ```
 
@@ -40,7 +43,8 @@ go test -v .
 If you want to debug your code, the best way to go about this is to create a new file, e.g. `decimal64NewTest_test.go`, you will need `_test.go` for unit tests to work.
 
 You can try this sample unit test for the Fused-Multiply-Add operator (FMA):
-```
+
+```go
 package decimal
 
 import (
@@ -56,7 +60,9 @@ func TestNewTest(t *testing.T) {
 	fmt.Println(ans)
 }
 ```
+
 In your terminal, you can run your unit test with this command:
-```
+
+```bash
 go test -v -run TestNewTest
 ```

@@ -502,8 +502,9 @@ func propagateNan(d ...*decParts) *Decimal64 {
 	return nil
 }
 
-// Class takes one operand and provides the class the decimal is in
-func (d Decimal64) Class() string {
+// Class is a miscellaneous operation that takes one operand and provides the class the decimal is in.
+// This function is formally documented here http://speleotrove.com/decimal/damisc.html#refclass.
+func Class(d Decimal64) string {
 	dp := d.getParts()
 
 	if dp.isSNan() {
