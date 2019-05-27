@@ -30,7 +30,7 @@ const RunTests bool = true
 const IgnorePanics bool = false
 const IgnoreRounding bool = false
 
-var tests = []string{"",
+var tests = []string{
 	"dectest/ddAdd.decTest",
 	"dectest/ddMultiply.decTest",
 	"dectest/ddFMA.decTest",

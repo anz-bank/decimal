@@ -438,8 +438,8 @@ func (d Decimal64) isZero() bool {
 =======
 // IsSubnormal returns true iff d is a subnormal.
 func (d Decimal64) IsSubnormal() bool {
-	_, _, exp, significand := d.parts()
-	return significand < decimal64Base && exp >= minExp
+	flavor, _, exp, significand := d.parts()
+	return significand < decimal64Base && exp >= minExp && flavor == flNormal && significand != 0
 }
 
 // updateMag updates the magnitude of the dec object
@@ -460,8 +460,12 @@ func (dec decParts) isSNan() bool {
 }
 
 func (dec decParts) isSubnormal() bool {
+<<<<<<< HEAD
 	return dec.significand.lo < decimal64Base && dec.exp >= minExp
 >>>>>>> add missing private functions for flavors
+=======
+	return dec.significand.lo < decimal64Base && dec.exp >= minExp && dec.fl == flNormal && dec.significand.lo != 0
+>>>>>>> bugfix subnormal function to work on its own
 }
 
 // Sign returns -1/0/1 depending on whether d is </=/> 0.
