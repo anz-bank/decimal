@@ -9,7 +9,7 @@ type uint128T struct {
 }
 
 func (a uint128T) numDecimalDigits() int {
-	bitSize := 128 - a.leadingZeros()
+	bitSize := 129 - a.leadingZeros()
 	numDigits := int(bitSize * 3 / 10)
 	if a.lt(powerOfTen128(numDigits)) {
 		return numDigits
@@ -22,9 +22,11 @@ func powerOfTen128(n int) uint128T {
 	if n < 0 {
 		n = -n
 	}
-	b := n % 19
-	a := n - b
-	return umul64(powersOf10[a], powersOf10[b])
+
+	if n > 19 {
+		return umul64(powersOf10[19], powersOf10[n-19])
+	}
+	return uint128T{powersOf10[n], 0}
 }
 
 func umul64(a, b uint64) uint128T {
