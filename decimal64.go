@@ -518,9 +518,8 @@ func Class(d Decimal64) string {
 	}
 
 	// determine whether decimal is negative or positive
-	sign := int(d.bits >> 63)
 	str := ""
-	if sign == 1 {
+	if dp.sign == 1 {
 		str += "-"
 	} else {
 		str += "+"

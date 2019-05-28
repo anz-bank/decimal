@@ -93,7 +93,7 @@ func TestFromSuite(t *testing.T) {
 				}
 			}
 			if PrintFiles {
-				fmt.Println("\nNumber of tests ran:", numTests, "Number of failed tests:", failedTests)
+				fmt.Println("Number of tests ran:", numTests, "Number of failed tests:", failedTests)
 			}
 		}
 		fmt.Printf("decimalSuite_test settings (These should only be true for debug):\n Ignore Rounding errors: %v\n Ignore Panics: %v\n", IgnoreRounding, IgnorePanics)
@@ -205,7 +205,7 @@ func runTest(context Context64, testVals decValContainer, testValStrings testCas
 	if calculatedContainer.calculatedString != "" {
 		if calculatedContainer.calculatedString != testValStrings.expectedResult {
 			return fmt.Errorf(
-				"\nfailed:\n%scalculated result: %s",
+				"failed:\n%scalculated result: %s",
 				testValStrings,
 				calculatedContainer.calculatedString)
 		}
@@ -213,14 +213,14 @@ func runTest(context Context64, testVals decValContainer, testValStrings testCas
 	} else if calcRestul.IsNaN() || testVals.expected.IsNaN() {
 		if testVals.expected.String() != calcRestul.String() {
 			return fmt.Errorf(
-				"\nfailed NaN TEST:\n%scalculated result: %v",
+				"failed NaN TEST:\n%scalculated result: %v",
 				testValStrings,
 				calcRestul)
 		}
 		return nil
 	} else if testVals.expected.Cmp(calcRestul) != 0 && !(isRoundingErr(calcRestul, testVals.expected) && IgnoreRounding) {
 		return fmt.Errorf(
-			"\nfailed:\n%scalculated result: %v",
+			"failed:\n%scalculated result: %v",
 			testValStrings,
 			calcRestul)
 	}
