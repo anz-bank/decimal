@@ -431,41 +431,35 @@ func (d Decimal64) IsInt() bool {
 	}
 }
 
-<<<<<<< HEAD
-func (d Decimal64) isZero() bool {
-	fl, _, _, significand := d.parts()
-	return significand == 0 && fl == flNormal
-=======
 // IsSubnormal returns true iff d is a subnormal.
 func (d Decimal64) IsSubnormal() bool {
-	flavor, _, exp, significand := d.parts()
-	return significand < decimal64Base && exp >= minExp && flavor == flNormal && significand != 0
+	fl, _, _, significand := d.parts()
+	return significand != 0 && significand < decimal64Base && fl == flNormal
 }
 
 // updateMag updates the magnitude of the dec object
 func (dec *decParts) isZero() bool {
-	return dec.significand.lo == 0 && dec.fl == flNormal
+	return dec.significand.lo == 0 && dec.significand.hi == 0 && dec.fl == flNormal
 }
 
 func (dec decParts) isInf() bool {
 	return dec.fl == flInf
 }
 
-func (dec decParts) isNan() bool {
+func (dec decParts) isNaN() bool {
 	return dec.fl == flQNaN || dec.fl == flSNaN
 }
 
-func (dec decParts) isSNan() bool {
+func (dec decParts) isQNaN() bool {
+	return dec.fl == flQNaN
+}
+
+func (dec decParts) isSNaN() bool {
 	return dec.fl == flSNaN
 }
 
 func (dec decParts) isSubnormal() bool {
-<<<<<<< HEAD
-	return dec.significand.lo < decimal64Base && dec.exp >= minExp
->>>>>>> add missing private functions for flavors
-=======
-	return dec.significand.lo < decimal64Base && dec.exp >= minExp && dec.fl == flNormal && dec.significand.lo != 0
->>>>>>> bugfix subnormal function to work on its own
+	return dec.significand.lo != 0 && dec.significand.lo < decimal64Base && dec.fl == flNormal 
 }
 
 // Sign returns -1/0/1 depending on whether d is </=/> 0.
@@ -511,28 +505,33 @@ func propagateNan(d ...*decParts) *Decimal64 {
 func Class(d Decimal64) string {
 	dp := d.getParts()
 
-	if dp.isSNan() {
+	switch dp.fl {
+	case flSNaN:
 		return "sNaN"
-	} else if dp.isNan() {
+	case flQNaN:
 		return "NaN"
 	}
 
-	// determine whether decimal is negative or positive
-	str := ""
+	sign := ""
 	if dp.sign == 1 {
-		str += "-"
+		sign = "-"
 	} else {
-		str += "+"
+		sign = "+"
 	}
 
-	if dp.isInf() {
-		str += "Infinity"
-	} else if dp.isZero() {
-		str += "Zero"
-	} else if dp.isSubnormal() {
-		str += "Subnormal"
-	} else {
-		str += "Normal"
+	class := ""
+	switch dp.fl {
+	case flInf:
+		class = "Infinity"
+	case flNormal:
+		if dp.significand.lo == 0 && dp.significand.hi == 0 {
+			class = "Zero"
+		} else if dp.significand.lo < decimal64Base {
+			class = "Subnormal"
+		} else {
+			class = "Normal"
+		}
 	}
-	return str
+
+	return sign + class
 }

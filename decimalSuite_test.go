@@ -36,7 +36,7 @@ var tests = []string{
 	"dectest/ddFMA.decTest",
 	"dectest/ddClass.decTest",
 	// TODO: Implement following tests
-	//  "dectest/ddCompare.decTest",
+	// "dectest/ddCompare.decTest",
 	// 	"dectest/ddAbs.decTest",
 	// 	"dectest/ddCopysign.decTest",
 	// 	"dectest/ddDivide.decTest",
@@ -251,7 +251,7 @@ func execOp(context Context64, a, b, c Decimal64, op string) decValContainer {
 	case "compare":
 		return decValContainer{calculatedString: fmt.Sprintf("%d", int64(a.Cmp(b)))}
 	case "class":
-		return decValContainer{calculatedString: fmt.Sprintf(Class(a))}
+		return decValContainer{calculatedString: Class(a)}
 	default:
 		fmt.Println("end of execOp, no tests ran", op)
 	}

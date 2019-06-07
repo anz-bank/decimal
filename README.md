@@ -8,9 +8,9 @@ This library implements fixed-precision decimal numbers based on IEEE 754 decima
 
 The goal is to fully support decimal64 and decimal128. Currently only supports decimal64, excluding subnormals, and needs more thorough testing.
 
-## Reccomended preliminary learning
+## Recommended preliminary learning
 
-To gain familiarity with this project, it is reccomended to develop a further understanding of the floating point standard, below are some links to get you started
+To gain familiarity with this project, it is recommended to develop a further understanding of the floating point standard, below are some links to get you started
 - [IEEE 754-2008 revision - Wikipedia](https://en.wikipedia.org/wiki/IEEE_754-2008_revision)
 
 - [IEEE Standard for Floating-Point
