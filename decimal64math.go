@@ -56,43 +56,184 @@ func (d Decimal64) Neg() Decimal64 {
 	return Decimal64{neg64 ^ d.bits}
 }
 
+// if C1 < C2
+// nd ¼ digitsðC2Þ  digitsðC1Þ // table lookup
+// C10 ¼ C1  10nd
+// scale ¼ p  1
+// ifðC10 < C2)
+// scale ¼ scale þ 1
+// endif
+// C1	 ¼ C10  10scale
+// Q0 ¼ 0
+// e ¼ e1  e2  scale  nd // expected exponent
+// else
+// Q0 ¼ bC1=C2c, R ¼ C1  Q  C2 // long integer
+// divide and remainder
+// if ðR ¼¼ 0Þ
+// return Q  10e1e2 // result is exact
+// endif
+// scale ¼ p  digitsðQÞ
+// C1	 ¼ R  10scale
+// Q0 ¼ Q0  10scale
+
+// func (d Decimal64) Quo(e Decimal64) Decimal64 {
+// 	dp, ep := d.getParts(), e.getParts()
+// 	var ans decParts
+// 	// if C1 < C2
+// 	Q0 := uint128T{}
+// 	if dp.significand.lt(ep.significand) {
+// 		// nd = digits(C2) − digits(C1)
+// 		nd := ep.significand.numDecimalDigits() - dp.significand.numDecimalDigits()
+// 		// C1 = C1 · 10nd
+// 		dp.significand = dp.significand.mul64(powersOf10[nd])
+// 		// scale = p − 1
+// 		scale := 16 - 1
+// 		// if(C1 < C2)
+// 		if dp.significand.gt(ep.significand) {
+// 			// scale = scale + 1
+// 			scale++
+// 			// endif
+// 		}
+// 		// C1∗ = C1 · 10scale
+// 		dp.significand = dp.significand.mul64(powersOf10[scale])
+// 		// Q0=0
+// 		// Q0 := uint128T{}
+//
+// 		// e = e1 − e2 − scale − nd // expected exponent
+// 		ans.exp = dp.exp - ep.exp - scale - nd
+// 	} else {
+// 		// Q0 = C1/C2, R = C1 − Q0 · C2 // long
+// 		// // integer divide and remainder
+// 		Q0 := dp.significand.div64(ep.significand.lo)
+// 		R := dp.significand.sub(Q0).mul(ep.significand)
+// 		// if (R == 0)
+// 		if (R == uint128T{}) {
+// 			// return Q0 · 10e1−e2 // result is exact
+// 			ans.significand = Q0
+// 			ans.exp = dp.exp - ep.exp
+// 			return newFromParts(ans.sign, ans.exp, ans.significand.lo)
+//
+// 			// endif
+// 		}
+// 		// scale = p − digits(Q0)
+// 		scale := 16 - Q0.numDecimalDigits()
+// 		// C1∗ = R · 10scale
+// 		dp.significand = R.mul64(powersOf10[scale])
+// 		// Q0 = Q0 · 10scale
+// 		Q0 = Q0.mul64(powersOf10[scale])
+// 		// e = e1 − e2 − scale // expected exponent
+// 		ans.exp = dp.exp - ep.exp - scale
+//
+// 		// endif
+// 	}
+// 	// Q1 = C1∗ / C2, R = C1∗ − Q1 · C2
+// 	logicCheck(ep.significand.hi == 0, "ep.significand.hi == 0")
+// 	Q1 := dp.significand.div64(ep.significand.lo)
+// 	R := dp.significand.sub(Q1.mul(ep.significand))
+// 	// // multiprecision integer divide
+// 	// Q = Q0 + Q1
+// 	Q := Q0.add(Q1)
+// 	// if (R == 0)
+// 	if (R == uint128T{}) {
+// 		// eliminate trailing zeros from Q:
+// 		// find largest integer d s.t. Q/10d is exact
+// 		// Q = Q/10d
+// 		// e = e + d // adjust expected exponent
+// 		ans.significand = Q
+// 		ans.removeZeros()
+// 		// if (e ≥ EMIN)
+// 		if ans.exp >= -expOffset {
+// 			// return Q · 10e
+// 			return newFromParts(ans.sign, ans.exp, ans.significand.lo)
+// 		}
+// 		// endif
+// 	}
+// 	// if (e ≥ EMIN)
+// 	if ans.exp >= -expOffset {
+// 	}
+// 	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
+// 	// round Q · 10e according to current rounding
+// 	// mode
+// 	// // rounding to nearest based on comparing
+// 	// // C2 and 2 · R
+// 	// else
+// 	// compute correct result based on Property 1
+// 	// // underflow
+// 	// endif
+// }
+
 // Quo computes d / e.
 func (d Decimal64) Quo(e Decimal64) Decimal64 {
-	flavor1, sign1, exp1, significand1 := d.parts()
-	flavor2, sign2, exp2, significand2 := e.parts()
-	if flavor1 == flSNaN || flavor2 == flSNaN {
-		return SNaN64
+	dp := d.getParts()
+	ep := e.getParts()
+	if ep.isNan() || dp.isNan() {
+		return *propagateNan(&dp, &ep)
 	}
-	if flavor1 == flQNaN || flavor2 == flQNaN {
-		return QNaN64
-	}
-	sign := sign1 ^ sign2
+	var ans decParts
+	ans.sign = dp.sign ^ ep.sign
 	if d == Zero64 || d == NegZero64 {
 		if e == Zero64 || e == NegZero64 {
 			return QNaN64
 		}
-		return zeroes[sign]
+		return zeroes[ans.sign]
 	}
-	if flavor1 == flInf {
-		if flavor2 == flInf {
+	if dp.fl == flInf {
+		if ep.fl == flInf {
 			return QNaN64
 		}
-		return infinities[sign]
+		return infinities[ans.sign]
 	}
-	if flavor2 == flInf {
-		return zeroes[sign]
+	if ep.fl == flInf {
+		return zeroes[ans.sign]
 	}
-	if e == Zero64 || e == NegZero64 {
-		return infinities[sign1]
+	if ep.isZero() {
+		return infinities[dp.sign]
 	}
-	exp := exp1 - exp2 - 16
-	significand := umul64(10*decimal64Base, significand1).div64(significand2)
-	exp, significand.lo = renormalize(exp, significand.lo)
-	if significand.lo > maxSig || exp > expMax {
-		return infinities[sign]
+	adjust := 0
+	if !dp.isZero() {
+		for ep.significand.lt(dp.significand) {
+			dp.significand = dp.significand.mulBy10()
+			adjust++
+		}
+
+		// While the coefficient of the dividend is greater than or equal to ten
+		// times the coefficient of the divisor the coefficient of the divisor is
+		// multiplied by 10 and adjust is decremented by 1.
+		for tmp := (uint128T{}); ; {
+			tmp = ep.significand.mulBy10()
+			if dp.significand.lt(tmp) {
+				break
+			}
+			ep.significand = tmp
+			adjust--
+		}
+		// dp.matchScales128(&ep)
+		for {
+			for dp.significand.gt(ep.significand) {
+				dp.significand = dp.significand.sub(ep.significand)
+				ans.significand = ans.significand.add(uint128T{1, 0})
+			}
+			if dp.significand == (uint128T{}) && adjust >= 0 || ans.significand.numDecimalDigits() == 16 {
+				break
+			}
+			ans.significand = ans.significand.mulBy10()
+			dp.significand = dp.significand.mulBy10()
+			adjust++
+
+		}
 	}
 
-	return newFromParts(sign, exp, significand.lo)
+	// ans.exp = dp.exp - ep.exp - 16 - 1
+	//
+	// ans.significand, _ = umul64(100*decimal64Base, dp.significand.lo).divrem64(ep.significand.lo)
+	// rndStatus := ans.roundToLo()
+	// ans.significand.lo = roundHalfUp.round(ans.significand.lo, rndStatus)
+	// ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
+	if ans.significand.lo > maxSig || ans.exp > expMax {
+		return infinities[ans.sign]
+	}
+
+	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
 }
 
 // Sqrt computes √d.
