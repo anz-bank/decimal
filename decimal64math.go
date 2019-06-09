@@ -182,23 +182,8 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
 	fp := f.getParts()
-	if dp.fl == flSNaN {
-		return d
-	}
-	if ep.fl == flSNaN {
-		return e
-	}
-	if fp.fl == flSNaN {
-		return f
-	}
-	if dp.fl == flQNaN {
-		return d
-	}
-	if ep.fl == flQNaN {
-		return e
-	}
-	if fp.fl == flQNaN {
-		return f
+	if dp.isNan() || ep.isNan() || fp.isNan() {
+		return *propagateNan(&dp, &ep, &fp)
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
