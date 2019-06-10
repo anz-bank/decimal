@@ -1,7 +1,5 @@
 package decimal
 
-import "fmt"
-
 // Abs computes ||d||.
 func (d Decimal64) Abs() Decimal64 {
 	return Decimal64{^neg64 & uint64(d.bits)}
@@ -63,112 +61,6 @@ func (d Decimal64) Neg() Decimal64 {
 	return Decimal64{neg64 ^ d.bits}
 }
 
-// if C1 < C2
-// nd ¼ digitsðC2Þ  digitsðC1Þ // table lookup
-// C10 ¼ C1  10nd
-// scale ¼ p  1
-// ifðC10 < C2)
-// scale ¼ scale þ 1
-// endif
-// C1	 ¼ C10  10scale
-// Q0 ¼ 0
-// e ¼ e1  e2  scale  nd // expected exponent
-// else
-// Q0 ¼ bC1=C2c, R ¼ C1  Q  C2 // long integer
-// divide and remainder
-// if ðR ¼¼ 0Þ
-// return Q  10e1e2 // result is exact
-// endif
-// scale ¼ p  digitsðQÞ
-// C1	 ¼ R  10scale
-// Q0 ¼ Q0  10scale
-
-// func (d Decimal64) Quo(e Decimal64) Decimal64 {
-// 	dp, ep := d.getParts(), e.getParts()
-// 	var ans decParts
-// 	// if C1 < C2
-// 	Q0 := uint128T{}
-// 	if dp.significand.lt(ep.significand) {
-// 		// nd = digits(C2) − digits(C1)
-// 		nd := ep.significand.numDecimalDigits() - dp.significand.numDecimalDigits()
-// 		// C1 = C1 · 10nd
-// 		dp.significand = dp.significand.mul64(powersOf10[nd])
-// 		// scale = p − 1
-// 		scale := 16 - 1
-// 		// if(C1 < C2)
-// 		if dp.significand.gt(ep.significand) {
-// 			// scale = scale + 1
-// 			scale++
-// 			// endif
-// 		}
-// 		// C1∗ = C1 · 10scale
-// 		dp.significand = dp.significand.mul64(powersOf10[scale])
-// 		// Q0=0
-// 		// Q0 := uint128T{}
-//
-// 		// e = e1 − e2 − scale − nd // expected exponent
-// 		ans.exp = dp.exp - ep.exp - scale - nd
-// 	} else {
-// 		// Q0 = C1/C2, R = C1 − Q0 · C2 // long
-// 		// // integer divide and remainder
-// 		Q0 := dp.significand.div64(ep.significand.lo)
-// 		R := dp.significand.sub(Q0).mul(ep.significand)
-// 		// if (R == 0)
-// 		if (R == uint128T{}) {
-// 			// return Q0 · 10e1−e2 // result is exact
-// 			ans.significand = Q0
-// 			ans.exp = dp.exp - ep.exp
-// 			return newFromParts(ans.sign, ans.exp, ans.significand.lo)
-//
-// 			// endif
-// 		}
-// 		// scale = p − digits(Q0)
-// 		scale := 16 - Q0.numDecimalDigits()
-// 		// C1∗ = R · 10scale
-// 		dp.significand = R.mul64(powersOf10[scale])
-// 		// Q0 = Q0 · 10scale
-// 		Q0 = Q0.mul64(powersOf10[scale])
-// 		// e = e1 − e2 − scale // expected exponent
-// 		ans.exp = dp.exp - ep.exp - scale
-//
-// 		// endif
-// 	}
-// 	// Q1 = C1∗ / C2, R = C1∗ − Q1 · C2
-// 	logicCheck(ep.significand.hi == 0, "ep.significand.hi == 0")
-// 	Q1 := dp.significand.div64(ep.significand.lo)
-// 	R := dp.significand.sub(Q1.mul(ep.significand))
-// 	// // multiprecision integer divide
-// 	// Q = Q0 + Q1
-// 	Q := Q0.add(Q1)
-// 	// if (R == 0)
-// 	if (R == uint128T{}) {
-// 		// eliminate trailing zeros from Q:
-// 		// find largest integer d s.t. Q/10d is exact
-// 		// Q = Q/10d
-// 		// e = e + d // adjust expected exponent
-// 		ans.significand = Q
-// 		ans.removeZeros()
-// 		// if (e ≥ EMIN)
-// 		if ans.exp >= -expOffset {
-// 			// return Q · 10e
-// 			return newFromParts(ans.sign, ans.exp, ans.significand.lo)
-// 		}
-// 		// endif
-// 	}
-// 	// if (e ≥ EMIN)
-// 	if ans.exp >= -expOffset {
-// 	}
-// 	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
-// 	// round Q · 10e according to current rounding
-// 	// mode
-// 	// // rounding to nearest based on comparing
-// 	// // C2 and 2 · R
-// 	// else
-// 	// compute correct result based on Property 1
-// 	// // underflow
-// 	// endif
-// }
-
 // Quo computes d / e.
 func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 	dp := d.getParts()
@@ -178,8 +70,8 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
-	if d == Zero64 || d == NegZero64 {
-		if e == Zero64 || e == NegZero64 {
+	if dp.isZero() {
+		if ep.isZero() {
 			return QNaN64
 		}
 		return zeroes[ans.sign]
@@ -199,9 +91,7 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 	if dp.isZero() {
 		return zeroes[ans.sign]
 	}
-
 	dp.matchSignificandDigits(&ep)
-	logicCheck(dp.significand.gt(ep.significand), fmt.Sprintf("dp: %v ep: %v", dp.significand, ep.significand))
 	ans.exp = dp.exp - ep.exp
 	for {
 		for dp.significand.gt(ep.significand) {
@@ -215,8 +105,6 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 		dp.significand = dp.significand.mulBy10()
 		ans.exp--
 	}
-	// dp.matchSignificandDigits(&ep)
-	// logicCheck(dp.significand.numDecimalDigits()-1 == ep.significand.numDecimalDigits(), "sizes and srtuu")
 	var rndStatus discardedDigit
 	dp.significand = dp.significand.mul64(2)
 	if dp.significand == (uint128T{}) {
@@ -228,21 +116,18 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 	} else {
 		rndStatus = eq5
 	}
-	logicCheck(ep.significand.hi == 0, "ep.significand.hi == 0")
-	// ans.roundToLo()
-	logicCheck(ans.significand.hi == 0, "anssighi==0")
 	ans.updateMag()
+	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
+		ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
 	}
-	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
 	if ans.exp >= -expOffset && ans.significand.lo != 0 {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	}
 	if ans.significand.lo > maxSig || ans.exp > expMax {
 		return infinities[ans.sign]
 	}
-
 	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
 }
 
