@@ -170,16 +170,6 @@ func renormalize(exp int, significand uint64) (int, uint64) {
 	return exp, significand
 }
 
-func rescale(exp int, significand uint64, targetExp int) (uint64, int) {
-	expDiff := targetExp - exp
-	mag := numDecimalDigits(significand)
-	if expDiff > mag {
-		return 0, targetExp
-	}
-	divisor := powersOf10[expDiff]
-	return significand / divisor, targetExp
-}
-
 func (dec *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
 	expDiff := targetExp - dec.exp
 	mag := dec.mag
