@@ -228,19 +228,6 @@ func countTrailingZeros(n uint64) int {
 	return zeros
 }
 
-// match scales matches the exponents of d and e and returns the info about the discarded digit
-func matchScales(d, e *decParts) discardedDigit {
-	logicCheck(d.significand.lo != 0, "d.significand (%d) != 0", d.significand.lo)
-	logicCheck(e.significand.lo != 0, "e.significand (%d) != 0", e.significand.lo)
-	if d.exp == e.exp {
-		return eq0
-	}
-	if d.exp < e.exp {
-		return d.rescale(e.exp)
-	}
-	return e.rescale(d.exp)
-}
-
 func newFromParts(sign int, exp int, significand uint64) Decimal64 {
 	s := uint64(sign) << 63
 
