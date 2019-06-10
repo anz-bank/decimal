@@ -191,7 +191,6 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	if ep.isZero() {
 		return infinities[dp.sign]
 	}
-	// adjust := 0
 	if dp.isZero() {
 		return zeroes[ans.sign]
 	}
@@ -201,24 +200,40 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	ans.exp = dp.exp - ep.exp
 	for {
 		for dp.significand.gt(ep.significand) {
-
 			dp.significand = dp.significand.sub(ep.significand)
 			ans.significand = ans.significand.add(uint128T{1, 0})
-
 		}
-		if dp.significand == (uint128T{}) || ans.significand.numDecimalDigits() >= 20 {
+		if dp.significand == (uint128T{}) || ans.significand.numDecimalDigits() == 16 {
 			break
 		}
 		ans.significand = ans.significand.mulBy10()
 		dp.significand = dp.significand.mulBy10()
 		ans.exp--
 	}
-	logicCheck(ep.significand.hi == 0, "ep.significand == 0")
-	// ans.significand = dp.significand.div64(ep.significand.lo)
-	rndStatus := ans.roundToLo()
+	// dp.matchSignificandDigits(&ep)
+	// logicCheck(dp.significand.numDecimalDigits()-1 == ep.significand.numDecimalDigits(), "sizes and srtuu")
+	var rndStatus discardedDigit
+	dp.significand = dp.significand.mul64(2)
+	if dp.significand == (uint128T{}) {
+		rndStatus = eq0
+	} else if dp.significand.gt(ep.significand) {
+		rndStatus = gt5
+	} else if dp.significand.lt(ep.significand) {
+		rndStatus = lt5
+	} else {
+		rndStatus = eq5
+	}
+	logicCheck(ep.significand.hi == 0, "ep.significand.hi == 0")
+	// ans.roundToLo()
 	logicCheck(ans.significand.hi == 0, "anssighi==0")
-	ans.significand.lo = roundHalfUp.round(ans.significand.lo, rndStatus)
-	ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
+	ans.updateMag()
+	if ans.exp < -expOffset {
+		rndStatus = ans.rescale(-expOffset)
+	}
+	ans.significand.lo = roundHalfEven.round(ans.significand.lo, rndStatus)
+	if ans.exp >= -expOffset && ans.significand.lo != 0 {
+		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
+	}
 	if ans.significand.lo > maxSig || ans.exp > expMax {
 		return infinities[ans.sign]
 	}
