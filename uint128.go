@@ -72,7 +72,6 @@ func partialQuotient32(a0, a12, d0, d1 uint64) uint64 {
 	q := a12 / d1
 	if r := a12 - q*d1; r < base32 && !(q < base32 && q*d0 <= r<<32+a0) {
 		q--
-		r += d1
 	}
 	return q
 }
