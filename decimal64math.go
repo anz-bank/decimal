@@ -129,7 +129,7 @@ func (d Decimal64) Sqrt() Decimal64 {
 func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
-	if ok, dec := propagateNan(&dp, &ep); ok {
+	if dec := propagateNan(&dp, &ep); dec != nil {
 		return *dec
 	}
 	if dp.fl == flInf || ep.fl == flInf {
@@ -182,7 +182,7 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
 	fp := f.getParts()
-	if ok, dec := propagateNan(&dp, &ep, &fp); ok {
+	if dec := propagateNan(&dp, &ep, &fp); dec != nil {
 		return *dec
 	}
 	var ans decParts
@@ -240,7 +240,7 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
-	if ok, dec := propagateNan(&dp, &ep); ok {
+	if dec := propagateNan(&dp, &ep); dec != nil {
 		return *dec
 	}
 	var ans decParts
