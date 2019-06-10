@@ -27,6 +27,11 @@ func (d Decimal64) Sub(e Decimal64) Decimal64 {
 	return d.Add(e.Neg())
 }
 
+// Quo computes d * e with default rounding
+func (d Decimal64) Quo(e Decimal64) Decimal64 {
+	return DefaultContext.Quo(d, e)
+}
+
 // Cmp returns:
 //
 //   -2 if d or e is NaN
@@ -165,7 +170,7 @@ func (d Decimal64) Neg() Decimal64 {
 // }
 
 // Quo computes d / e.
-func (d Decimal64) Quo(e Decimal64) Decimal64 {
+func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
 	if ep.isNan() || dp.isNan() {
@@ -230,7 +235,7 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
 	}
-	ans.significand.lo = roundHalfEven.round(ans.significand.lo, rndStatus)
+	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
 	if ans.exp >= -expOffset && ans.significand.lo != 0 {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	}
