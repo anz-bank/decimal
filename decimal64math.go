@@ -1,5 +1,7 @@
 package decimal
 
+import "fmt"
+
 // Abs computes ||d||.
 func (d Decimal64) Abs() Decimal64 {
 	return Decimal64{^neg64 & uint64(d.bits)}
@@ -189,46 +191,34 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	if ep.isZero() {
 		return infinities[dp.sign]
 	}
-	adjust := 0
-	if !dp.isZero() {
-		for ep.significand.lt(dp.significand) {
-			dp.significand = dp.significand.mulBy10()
-			adjust++
-		}
-
-		// While the coefficient of the dividend is greater than or equal to ten
-		// times the coefficient of the divisor the coefficient of the divisor is
-		// multiplied by 10 and adjust is decremented by 1.
-		for tmp := (uint128T{}); ; {
-			tmp = ep.significand.mulBy10()
-			if dp.significand.lt(tmp) {
-				break
-			}
-			ep.significand = tmp
-			adjust--
-		}
-		// dp.matchScales128(&ep)
-		for {
-			for dp.significand.gt(ep.significand) {
-				dp.significand = dp.significand.sub(ep.significand)
-				ans.significand = ans.significand.add(uint128T{1, 0})
-			}
-			if dp.significand == (uint128T{}) && adjust >= 0 || ans.significand.numDecimalDigits() == 16 {
-				break
-			}
-			ans.significand = ans.significand.mulBy10()
-			dp.significand = dp.significand.mulBy10()
-			adjust++
-
-		}
+	// adjust := 0
+	if dp.isZero() {
+		return zeroes[ans.sign]
 	}
 
-	// ans.exp = dp.exp - ep.exp - 16 - 1
-	//
-	// ans.significand, _ = umul64(100*decimal64Base, dp.significand.lo).divrem64(ep.significand.lo)
-	// rndStatus := ans.roundToLo()
-	// ans.significand.lo = roundHalfUp.round(ans.significand.lo, rndStatus)
-	// ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
+	dp.matchSignificandDigits(&ep)
+	logicCheck(dp.significand.gt(ep.significand), fmt.Sprintf("dp: %v ep: %v", dp.significand, ep.significand))
+	ans.exp = dp.exp - ep.exp
+	for {
+		for dp.significand.gt(ep.significand) {
+
+			dp.significand = dp.significand.sub(ep.significand)
+			ans.significand = ans.significand.add(uint128T{1, 0})
+
+		}
+		if dp.significand == (uint128T{}) || ans.significand.numDecimalDigits() >= 20 {
+			break
+		}
+		ans.significand = ans.significand.mulBy10()
+		dp.significand = dp.significand.mulBy10()
+		ans.exp--
+	}
+	logicCheck(ep.significand.hi == 0, "ep.significand == 0")
+	// ans.significand = dp.significand.div64(ep.significand.lo)
+	rndStatus := ans.roundToLo()
+	logicCheck(ans.significand.hi == 0, "anssighi==0")
+	ans.significand.lo = roundHalfUp.round(ans.significand.lo, rndStatus)
+	ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	if ans.significand.lo > maxSig || ans.exp > expMax {
 		return infinities[ans.sign]
 	}
