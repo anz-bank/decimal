@@ -482,16 +482,17 @@ func numDecimalDigits(n uint64) int {
 	return numDigits + 1
 }
 
-// propagateNan returns the decimal pointer to the NaN that is to be propogated
-func propagateNan(dp, ep *decParts) *Decimal64 {
-	if dp.fl == flSNaN {
-		return dp.dec
+// propagateNan returns the decimal pointer to the NaN that is to be propogated else nil
+func propagateNan(d ...*decParts) *Decimal64 {
+	for _, dec := range d {
+		if dec.fl == flSNaN {
+			return dec.dec
+		}
 	}
-	if ep.fl == flSNaN {
-		return ep.dec
+	for _, dec := range d {
+		if dec.fl == flQNaN {
+			return dec.dec
+		}
 	}
-	if dp.fl == flQNaN {
-		return dp.dec
-	}
-	return ep.dec
+	return nil
 }

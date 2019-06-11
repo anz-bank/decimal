@@ -129,8 +129,8 @@ func (d Decimal64) Sqrt() Decimal64 {
 func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
-	if dp.isNan() || ep.isNan() {
-		return *propagateNan(&dp, &ep)
+	if dec := propagateNan(&dp, &ep); dec != nil {
+		return *dec
 	}
 	if dp.fl == flInf || ep.fl == flInf {
 		if dp.fl != flInf {
@@ -182,23 +182,8 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
 	fp := f.getParts()
-	if dp.fl == flSNaN {
-		return d
-	}
-	if ep.fl == flSNaN {
-		return e
-	}
-	if fp.fl == flSNaN {
-		return f
-	}
-	if dp.fl == flQNaN {
-		return d
-	}
-	if ep.fl == flQNaN {
-		return e
-	}
-	if fp.fl == flQNaN {
-		return f
+	if dec := propagateNan(&dp, &ep, &fp); dec != nil {
+		return *dec
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
@@ -255,8 +240,8 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
-	if ep.fl == flQNaN || ep.fl == flSNaN || dp.fl == flQNaN || dp.fl == flSNaN {
-		return *propagateNan(&dp, &ep)
+	if dec := propagateNan(&dp, &ep); dec != nil {
+		return *dec
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
