@@ -25,7 +25,7 @@ func (d Decimal64) Sub(e Decimal64) Decimal64 {
 	return d.Add(e.Neg())
 }
 
-// Quo computes d * e with default rounding
+// Quo computes d / e with default rounding
 func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	return DefaultContext.Quo(d, e)
 }
@@ -76,20 +76,17 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 		}
 		return zeroes[ans.sign]
 	}
-	if dp.fl == flInf {
-		if ep.fl == flInf {
+	if dp.isinf() {
+		if ep.isinf() {
 			return QNaN64
 		}
 		return infinities[ans.sign]
 	}
-	if ep.fl == flInf {
+	if ep.isinf() {
 		return zeroes[ans.sign]
 	}
 	if ep.isZero() {
 		return infinities[dp.sign]
-	}
-	if dp.isZero() {
-		return zeroes[ans.sign]
 	}
 	dp.matchSignificandDigits(&ep)
 	ans.exp = dp.exp - ep.exp
