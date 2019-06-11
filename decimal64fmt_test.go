@@ -54,7 +54,7 @@ func TestDecimal64Format(t *testing.T) {
 		)
 	}
 
-	require.Equal("%!s(*decimal.Decimal64=42)", fmt.Sprintf("%s", NewDecimal64FromInt64(42)))
+	require.Equal("42", NewDecimal64FromInt64(42).String())
 }
 
 func BenchmarkDecimal64Format(b *testing.B) {
