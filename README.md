@@ -9,3 +9,5 @@ decimal64.
 
 The goal is to fully support decimal64 and decimal128. Currently only supports
 decimal64, excluding subnormals, and needs more thorough testing.
+
+[To gain more familiarity with this project you can refer to new starter guide.](docs/newStarters.md)
