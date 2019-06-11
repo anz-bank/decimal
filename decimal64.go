@@ -437,7 +437,6 @@ func (d Decimal64) IsSubnormal() bool {
 	return significand != 0 && significand < decimal64Base && fl == flNormal
 }
 
-// updateMag updates the magnitude of the dec object
 func (dec *decParts) isZero() bool {
 	return dec.significand.lo == 0 && dec.significand.hi == 0 && dec.fl == flNormal
 }
@@ -512,26 +511,25 @@ func Class(d Decimal64) string {
 		return "NaN"
 	}
 
-	sign := ""
+	res := ""
 	if dp.sign == 1 {
-		sign = "-"
+		res += "-"
 	} else {
-		sign = "+"
+		res += "+"
 	}
 
-	class := ""
 	switch dp.fl {
 	case flInf:
-		class = "Infinity"
+		res += "Infinity"
 	case flNormal:
 		if dp.significand.lo == 0 && dp.significand.hi == 0 {
-			class = "Zero"
+			res += "Zero"
 		} else if dp.significand.lo < decimal64Base {
-			class = "Subnormal"
+			res += "Subnormal"
 		} else {
-			class = "Normal"
+			res += "Normal"
 		}
 	}
 
-	return sign + class
+	return res
 }
