@@ -431,6 +431,7 @@ func (d Decimal64) IsInt() bool {
 		return false
 	}
 }
+
 func (d Decimal64) isZero() bool {
 	fl, _, _, significand := d.parts()
 	return significand == 0 && fl == flNormal
