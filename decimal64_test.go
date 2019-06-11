@@ -149,3 +149,11 @@ func TestDecimal64Signbit(t *testing.T) {
 	require.Equal(false, One64.Signbit())
 	require.Equal(true, NegOne64.Signbit())
 }
+
+func TestDecimal64isZero(t *testing.T) {
+	require := require.New(t)
+
+	require.Equal(true, Zero64.isZero())
+	require.Equal(true, Decimal64{Zero64.bits | neg64}.isZero())
+	require.Equal(false, One64.isZero())
+}
