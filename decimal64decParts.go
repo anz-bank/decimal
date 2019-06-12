@@ -33,7 +33,6 @@ func (dp *decParts) matchScales128(ep *decParts) {
 			ep.exp -= expDiff
 		}
 	}
-	return
 }
 
 func (dp *decParts) roundToLo() discardedDigit {

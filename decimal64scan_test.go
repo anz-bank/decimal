@@ -104,7 +104,9 @@ func BenchmarkDecimal64Scan(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		reader.Reset("123456789")
 		var d Decimal64
-		d.Scan(&stringScanner{reader: reader}, 'g')
+		if err := d.Scan(&stringScanner{reader: reader}, 'g'); err != nil {
+			panic("Benchmarking Scan failed")
+		}
 	}
 }
 

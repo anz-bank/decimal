@@ -26,7 +26,9 @@ func (s *stringScanner) SkipSpace() {
 			break
 		}
 		if !unicode.IsSpace(ch) {
-			s.UnreadRune()
+			if err := s.UnreadRune(); err != nil {
+				panic("s.UnreadRune() failed")
+			}
 			break
 		}
 	}

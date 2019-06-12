@@ -170,16 +170,6 @@ func renormalize(exp int, significand uint64) (int, uint64) {
 	return exp, significand
 }
 
-func rescale(exp int, significand uint64, targetExp int) (uint64, int) {
-	expDiff := targetExp - exp
-	mag := numDecimalDigits(significand)
-	if expDiff > mag {
-		return 0, targetExp
-	}
-	divisor := powersOf10[expDiff]
-	return significand / divisor, targetExp
-}
-
 func (dec *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
 	expDiff := targetExp - dec.exp
 	mag := dec.mag
@@ -236,19 +226,6 @@ func countTrailingZeros(n uint64) int {
 		zeros++
 	}
 	return zeros
-}
-
-// match scales matches the exponents of d and e and returns the info about the discarded digit
-func matchScales(d, e *decParts) discardedDigit {
-	logicCheck(d.significand.lo != 0, "d.significand (%d) != 0", d.significand.lo)
-	logicCheck(e.significand.lo != 0, "e.significand (%d) != 0", e.significand.lo)
-	if d.exp == e.exp {
-		return eq0
-	}
-	if d.exp < e.exp {
-		return d.rescale(e.exp)
-	}
-	return e.rescale(d.exp)
 }
 
 func newFromParts(sign int, exp int, significand uint64) Decimal64 {
@@ -454,6 +431,7 @@ func (d Decimal64) IsInt() bool {
 		return false
 	}
 }
+
 func (d Decimal64) isZero() bool {
 	fl, _, _, significand := d.parts()
 	return significand == 0 && fl == flNormal
