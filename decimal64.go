@@ -274,7 +274,7 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 
 // decParts gets the parts and returns in decParts stuct, doesn't get the magnitude due to performance issues\
 // TODO: rename this to parts when parts is depreciated
-func (d *Decimal64) getParts() decParts {
+func (d Decimal64) getParts() decParts {
 	var fl flavor
 	var sign, exp int
 	var significand uint64
@@ -306,7 +306,7 @@ func (d *Decimal64) getParts() decParts {
 			exp = 0
 		}
 	}
-	return decParts{fl, sign, exp, uint128T{significand, 0}, 0, d}
+	return decParts{fl, sign, exp, uint128T{significand, 0}, 0, &d}
 }
 
 func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {
@@ -438,7 +438,7 @@ func (d Decimal64) IsSubnormal() bool {
 }
 
 func (dec *decParts) isZero() bool {
-	return dec.significand.lo == 0 && dec.significand.hi == 0 && dec.fl == flNormal
+	return dec.significand.lo == 0 &&  dec.significand.hi == 0 && dec.fl == flNormal
 }
 
 func (dec *decParts) isInf() bool {
