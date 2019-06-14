@@ -389,7 +389,7 @@ func (d Decimal64) Int64() int64 {
 	return int64(1-2*sign) * int64(whole)
 }
 
-// IsZero returns true iff the significand is 0.
+// IsZero returns true if the Decimal encodes a zero value.
 func (d Decimal64) IsZero() bool {
 	fl, _, _, significand := d.parts()
 	return significand == 0 && fl == flNormal
@@ -441,23 +441,23 @@ func (dec *decParts) isZero() bool {
 	return dec.significand.lo == 0 && dec.significand.hi == 0 && dec.fl == flNormal
 }
 
-func (dec decParts) isInf() bool {
+func (dec *decParts) isInf() bool {
 	return dec.fl == flInf
 }
 
-func (dec decParts) isNaN() bool {
+func (dec *decParts) isNaN() bool {
 	return dec.fl == flQNaN || dec.fl == flSNaN
 }
 
-func (dec decParts) isQNaN() bool {
+func (dec *decParts) isQNaN() bool {
 	return dec.fl == flQNaN
 }
 
-func (dec decParts) isSNaN() bool {
+func (dec *decParts) isSNaN() bool {
 	return dec.fl == flSNaN
 }
 
-func (dec decParts) isSubnormal() bool {
+func (dec *decParts) isSubnormal() bool {
 	return dec.significand.lo != 0 && dec.significand.lo < decimal64Base && dec.fl == flNormal 
 }
 
