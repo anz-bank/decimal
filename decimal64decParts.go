@@ -37,7 +37,6 @@ func (dp *decParts) matchScales128(ep *decParts) {
 
 func (dp *decParts) matchSignificandDigits(ep *decParts) {
 	expDiff := ep.significand.numDecimalDigits() - dp.significand.numDecimalDigits()
-	// logicCheck(ep.significand.numDecimalDigits() >= dp.significand.numDecimalDigits(), "epsig>dpsig")
 	if expDiff >= 0 {
 		dp.significand = dp.significand.mul(powerOfTen128(expDiff + 1))
 		dp.exp -= expDiff + 1
