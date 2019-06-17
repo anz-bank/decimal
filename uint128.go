@@ -42,9 +42,9 @@ func umul64(a, b uint64) uint128T {
 }
 
 func (a uint128T) add(b uint128T) uint128T {
-	carry1 := (a.lo&1 + b.lo&1) >> 1
-	carry64 := (a.lo>>1 + b.lo>>1 + carry1) >> 63
-	return uint128T{a.lo + b.lo, a.hi + b.hi + carry64}
+	lo, carry := bits.Add64(a.lo, b.lo, 0)
+	hi, _ := bits.Add64(a.hi, b.hi, carry)
+	return uint128T{lo, hi}
 }
 
 const base32 = 1 << 32
