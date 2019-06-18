@@ -44,7 +44,6 @@ func (dp *decParts) matchSignificandDigits(ep *decParts) {
 	}
 	ep.significand = ep.significand.mul(powerOfTen128(-expDiff - 1))
 	ep.exp -= -expDiff - 1
-	return
 }
 
 func (dp *decParts) roundToLo() discardedDigit {
