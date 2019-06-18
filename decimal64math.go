@@ -10,12 +10,12 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	return DefaultContext.Add(d, e)
 }
 
-// FMA computes d*e + f with default rounding
+// FMA computes d*e + f with default rounding.
 func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
 	return DefaultContext.FMA(d, e, f)
 }
 
-// Mul computes d * e with default rounding
+// Mul computes d * e with default rounding.
 func (d Decimal64) Mul(e Decimal64) Decimal64 {
 	return DefaultContext.Mul(d, e)
 }
@@ -25,7 +25,7 @@ func (d Decimal64) Sub(e Decimal64) Decimal64 {
 	return d.Add(e.Neg())
 }
 
-// Quo computes d / e with default rounding
+// Quo computes d / e with default rounding.
 func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	return DefaultContext.Quo(d, e)
 }
