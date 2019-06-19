@@ -41,7 +41,6 @@ type decParts struct {
 	sign        int
 	exp         int
 	significand uint128T
-	mag         int
 	dec         *Decimal64
 }
 
@@ -275,7 +274,7 @@ func (d Decimal64) getParts() decParts {
 			exp = 0
 		}
 	}
-	return decParts{fl, sign, exp, uint128T{significand, 0}, 0, &d}
+	return decParts{fl, sign, exp, uint128T{significand, 0}, &d}
 }
 
 func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {

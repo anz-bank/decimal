@@ -83,8 +83,8 @@ func (dp *decParts) isSubnormal() bool {
 }
 
 // separation gets the separation in decimal places of the MSD's of two decimal 64s
-func (dp *decParts) separation(ep decParts) int {
-	return dp.mag + dp.exp - ep.mag - ep.exp
+func (dp *decParts) separation(ep *decParts) int {
+	return dp.significand.numDecimalDigits() + dp.exp - ep.significand.numDecimalDigits() - ep.exp
 }
 
 // removeZeros removes zeros and increments the exponent to match.
@@ -94,11 +94,6 @@ func (dp *decParts) removeZeros() {
 	dp.exp += zeros
 }
 
-// updateMag updates the magnitude of the dec object
-func (dp *decParts) updateMag() {
-	dp.mag = dp.significand.numDecimalDigits()
-}
-
 // isinf returns true if the decimal is an infinty
 func (dp *decParts) isinf() bool {
 	return dp.fl == flInf
@@ -106,7 +101,7 @@ func (dp *decParts) isinf() bool {
 
 func (dp *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
 	expDiff := targetExp - dp.exp
-	mag := dp.mag
+	mag := dp.significand.numDecimalDigits()
 	rndStatus = roundStatus(dp.significand.lo, dp.exp, targetExp)
 	if expDiff > mag {
 		dp.significand.lo, dp.exp = 0, targetExp

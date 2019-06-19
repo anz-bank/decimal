@@ -113,7 +113,6 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 	} else {
 		rndStatus = eq5
 	}
-	ans.updateMag()
 	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
@@ -181,9 +180,7 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	}
 	ep.removeZeros()
 	dp.removeZeros()
-	ep.updateMag()
-	dp.updateMag()
-	sep := dp.separation(ep)
+	sep := dp.separation(&ep)
 
 	if sep < 0 {
 		dp, ep = ep, dp
@@ -196,7 +193,6 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	dp.matchScales128(&ep)
 	ans := dp.add128(&ep)
 	rndStatus = ans.roundToLo()
-	ans.updateMag()
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
 	}
@@ -237,15 +233,11 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	}
 
 	var rndStatus discardedDigit
-	ep.updateMag()
-	dp.updateMag()
-	fp.updateMag()
 	ep.removeZeros()
 	dp.removeZeros()
 	ans.exp = dp.exp + ep.exp
 	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
-	ans.mag = ans.significand.numDecimalDigits()
-	sep := ans.separation(fp)
+	sep := ans.separation(&fp)
 	if fp.significand.lo != 0 {
 		if sep < -17 {
 			return f
@@ -257,7 +249,6 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
 	}
-	ans.updateMag()
 	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
 	if ans.exp >= -expOffset && ans.significand.lo != 0 {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
@@ -286,14 +277,11 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	if ep.significand.lo == 0 || dp.significand.lo == 0 {
 		return zeroes[ans.sign]
 	}
-	ep.updateMag()
-	dp.updateMag()
 	var roundStatus discardedDigit
 	significand := umul64(dp.significand.lo, ep.significand.lo)
 	ans.exp = dp.exp + ep.exp + 15
 	significand = significand.div64(decimal64Base)
 	ans.significand.lo = significand.lo
-	ans.updateMag()
 	if ans.exp >= -expOffset {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	} else if ans.exp < 1-expMax {
