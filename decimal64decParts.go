@@ -79,7 +79,7 @@ func (dp *decParts) isSNaN() bool {
 }
 
 func (dp *decParts) isSubnormal() bool {
-	return dp.significand.lo != 0 && dp.significand.lo < decimal64Base && dp.fl == flNormal
+	return (dp.significand != uint128T{}) && dp.significand.lo < decimal64Base && dp.fl == flNormal
 }
 
 // separation gets the separation in decimal places of the MSD's of two decimal 64s
