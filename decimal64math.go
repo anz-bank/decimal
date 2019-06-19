@@ -25,6 +25,11 @@ func (d Decimal64) Sub(e Decimal64) Decimal64 {
 	return d.Add(e.Neg())
 }
 
+// Quo computes d / e with default rounding
+func (d Decimal64) Quo(e Decimal64) Decimal64 {
+	return DefaultContext.Quo(d, e)
+}
+
 // Cmp returns:
 //
 //   -2 if d or e is NaN
@@ -57,42 +62,70 @@ func (d Decimal64) Neg() Decimal64 {
 }
 
 // Quo computes d / e.
-func (d Decimal64) Quo(e Decimal64) Decimal64 {
-	flavor1, sign1, exp1, significand1 := d.parts()
-	flavor2, sign2, exp2, significand2 := e.parts()
-	if flavor1 == flSNaN || flavor2 == flSNaN {
-		return SNaN64
+func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
+	dp := d.getParts()
+	ep := e.getParts()
+	if ep.isNan() || dp.isNan() {
+		return *propagateNan(&dp, &ep)
 	}
-	if flavor1 == flQNaN || flavor2 == flQNaN {
-		return QNaN64
-	}
-	sign := sign1 ^ sign2
-	if d == Zero64 || d == NegZero64 {
-		if e == Zero64 || e == NegZero64 {
+	var ans decParts
+	ans.sign = dp.sign ^ ep.sign
+	if dp.isZero() {
+		if ep.isZero() {
 			return QNaN64
 		}
-		return zeroes[sign]
+		return zeroes[ans.sign]
 	}
-	if flavor1 == flInf {
-		if flavor2 == flInf {
+	if dp.isinf() {
+		if ep.isinf() {
 			return QNaN64
 		}
-		return infinities[sign]
+		return infinities[ans.sign]
 	}
-	if flavor2 == flInf {
-		return zeroes[sign]
+	if ep.isinf() {
+		return zeroes[ans.sign]
 	}
-	if e == Zero64 || e == NegZero64 {
-		return infinities[sign1]
+	if ep.isZero() {
+		return infinities[dp.sign]
 	}
-	exp := exp1 - exp2 - 16
-	significand := umul64(10*decimal64Base, significand1).div64(significand2)
-	exp, significand.lo = renormalize(exp, significand.lo)
-	if significand.lo > maxSig || exp > expMax {
-		return infinities[sign]
+	dp.matchSignificandDigits(&ep)
+	ans.exp = dp.exp - ep.exp
+	for {
+		for dp.significand.gt(ep.significand) {
+			dp.significand = dp.significand.sub(ep.significand)
+			ans.significand = ans.significand.add(uint128T{1, 0})
+		}
+		if dp.significand == (uint128T{}) || ans.significand.numDecimalDigits() == 16 {
+			break
+		}
+		ans.significand = ans.significand.mulBy10()
+		dp.significand = dp.significand.mulBy10()
+		ans.exp--
 	}
-
-	return newFromParts(sign, exp, significand.lo)
+	var rndStatus discardedDigit
+	dp.significand = dp.significand.mul64(2)
+	if dp.significand == (uint128T{}) {
+		rndStatus = eq0
+	} else if dp.significand.gt(ep.significand) {
+		rndStatus = gt5
+	} else if dp.significand.lt(ep.significand) {
+		rndStatus = lt5
+	} else {
+		rndStatus = eq5
+	}
+	ans.updateMag()
+	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
+	if ans.exp < -expOffset {
+		rndStatus = ans.rescale(-expOffset)
+		ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
+	}
+	if ans.exp >= -expOffset && ans.significand.lo != 0 {
+		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
+	}
+	if ans.significand.lo > maxSig || ans.exp > expMax {
+		return infinities[ans.sign]
+	}
+	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
 }
 
 // Sqrt computes √d.

@@ -39,7 +39,7 @@ var tests = []string{"",
 	// 	"dectest/ddAbs.decTest",
 	// 	"dectest/ddClass.decTest",
 	// 	"dectest/ddCopysign.decTest",
-	// 	"dectest/ddDivide.decTest",
+	"dectest/ddDivide.decTest",
 	// 	"dectest/ddLogB.decTest",
 	// 	"dectest/ddMin.decTest",
 	// 	"dectest/ddMinMag.decTest",
@@ -245,7 +245,7 @@ func execOp(context Context64, a, b, c Decimal64, op string) decValContainer {
 	case "abs":
 		return decValContainer{calculated: a.Abs()}
 	case "divide":
-		return decValContainer{calculated: a.Quo(b)}
+		return decValContainer{calculated: context.Quo(a, b)}
 	case "fma":
 		return decValContainer{calculated: context.FMA(a, b, c)}
 	case "compare":

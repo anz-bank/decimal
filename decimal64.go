@@ -113,6 +113,11 @@ func (dec *decParts) updateMag() {
 func (dec *decParts) isZero() bool {
 	return dec.significand.lo == 0 && dec.fl == flNormal
 }
+
+// isinf returns true if the decimal is an infinty
+func (dec *decParts) isinf() bool {
+	return dec.fl == flInf
+}
 func signalNaN64() {
 	panic("sNaN64")
 }
