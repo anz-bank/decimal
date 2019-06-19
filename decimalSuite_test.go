@@ -251,7 +251,7 @@ func execOp(context Context64, a, b, c Decimal64, op string) decValContainer {
 	case "compare":
 		return decValContainer{calculatedString: fmt.Sprintf("%d", int64(a.Cmp(b)))}
 	case "class":
-		return decValContainer{calculatedString: Class(a)}
+		return decValContainer{calculatedString: a.Class()}
 	default:
 		fmt.Println("end of execOp, no tests ran", op)
 	}

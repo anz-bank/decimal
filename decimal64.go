@@ -241,7 +241,7 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 	return
 }
 
-// decParts gets the parts and returns in decParts stuct, doesn't get the magnitude due to performance issues\
+// getParts gets the parts and returns in decParts stuct, doesn't get the magnitude due to performance issues\
 // TODO: rename this to parts when parts is depreciated
 func (d Decimal64) getParts() decParts {
 	var fl flavor
@@ -444,9 +444,8 @@ func propagateNan(d ...*decParts) *Decimal64 {
 	return nil
 }
 
-// Class is a miscellaneous operation that takes one operand and provides the class the decimal is in.
-// This function is formally documented here http://speleotrove.com/decimal/damisc.html#refclass.
-func Class(d Decimal64) string {
+// Class returns a string of the 'type' that the decimal is.
+func (d Decimal64) Class() string {
 	dp := d.getParts()
 
 	if dp.isSNaN() {
@@ -462,11 +461,13 @@ func Class(d Decimal64) string {
 
 	if dp.isInf() {
 		return sign + "Infinity"
-	} else if dp.isZero() {
-		return sign + "Zero"
-	} else if dp.isSubnormal() {
-		return sign + "Subnormal"
-	} else {
-		return sign + "Normal"
 	}
+	if dp.isZero() {
+		return sign + "Zero"
+	}
+	if dp.isSubnormal() {
+		return sign + "Subnormal"
+	}
+	return sign + "Normal"
+
 }
