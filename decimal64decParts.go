@@ -59,7 +59,7 @@ func (dp *decParts) roundToLo() discardedDigit {
 }
 
 func (dp *decParts) isZero() bool {
-	return dp.significand.lo == 0 && dp.significand.hi == 0 && dp.fl == flNormal
+	return (dp.significand == uint128T{}) && dp.significand.hi == 0 && dp.fl == flNormal
 }
 
 func (dp *decParts) isInf() bool {
