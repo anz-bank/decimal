@@ -153,9 +153,9 @@ func TestDecimal64Signbit(t *testing.T) {
 func TestDecimal64isZero(t *testing.T) {
 	require := require.New(t)
 
-	require.Equal(true, Zero64.isZero())
-	require.Equal(true, Decimal64{Zero64.bits | neg64}.isZero())
-	require.Equal(false, One64.isZero())
+	require.Equal(true, Zero64.IsZero())
+	require.Equal(true, Decimal64{Zero64.bits | neg64}.IsZero())
+	require.Equal(false, One64.IsZero())
 }
 
 func TestNumDecimalDigits(t *testing.T) {
@@ -167,9 +167,12 @@ func TestNumDecimalDigits(t *testing.T) {
 	}
 }
 
-func TestIsNaN(t *testing.T) {
+func TestIsSubnormal(t *testing.T) {
 	require := require.New(t)
-	require.Equal(false, Zero64.getParts().isNan())
-	require.Equal(true, SNaN64.getParts().isNan())
-	require.Equal(true, QNaN64.getParts().isNan())
+
+	require.Equal(true, MustParseDecimal64("0.1E-383").IsSubnormal())
+	require.Equal(true, MustParseDecimal64("-0.1E-383").IsSubnormal())
+	require.Equal(false, MustParseDecimal64("NaN10").IsSubnormal())
+	require.Equal(false, NewDecimal64FromInt64(42).IsSubnormal())
+
 }

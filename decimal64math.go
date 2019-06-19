@@ -65,8 +65,8 @@ func (d Decimal64) Neg() Decimal64 {
 func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 	dp := d.getParts()
 	ep := e.getParts()
-	if ep.isNan() || dp.isNan() {
-		return *propagateNan(&dp, &ep)
+	if dec := propagateNan(&dp, &ep); dec != nil {
+		return *dec
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign

@@ -92,32 +92,6 @@ func (context roundingMode) round(significand uint64, rndStatus discardedDigit) 
 	return significand
 }
 
-// separation gets the separation in decimal places of the MSD's of two decimal 64s
-func (dec *decParts) separation(eDec decParts) int {
-	return dec.mag + dec.exp - eDec.mag - eDec.exp
-}
-
-// removeZeros removes zeros and increments the exponent to match.
-func (dec *decParts) removeZeros() {
-	zeros := countTrailingZeros(dec.significand.lo)
-	dec.significand.lo /= powersOf10[zeros]
-	dec.exp += zeros
-}
-
-// updateMag updates the magnitude of the dec object
-func (dec *decParts) updateMag() {
-	dec.mag = dec.significand.numDecimalDigits()
-}
-
-// updateMag updates the magnitude of the dec object
-func (dec *decParts) isZero() bool {
-	return dec.significand.lo == 0 && dec.fl == flNormal
-}
-
-// isinf returns true if the decimal is an infinty
-func (dec *decParts) isinf() bool {
-	return dec.fl == flInf
-}
 func signalNaN64() {
 	panic("sNaN64")
 }
@@ -173,20 +147,6 @@ func renormalize(exp int, significand uint64) (int, uint64) {
 		significand /= 10
 	}
 	return exp, significand
-}
-
-func (dec *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
-	expDiff := targetExp - dec.exp
-	mag := dec.mag
-	rndStatus = roundStatus(dec.significand.lo, dec.exp, targetExp)
-	if expDiff > mag {
-		dec.significand.lo, dec.exp = 0, targetExp
-		return
-	}
-	divisor := powersOf10[expDiff]
-	dec.significand.lo = dec.significand.lo / divisor
-	dec.exp = targetExp
-	return
 }
 
 // roundStatus gives info about the truncated part of the significand that can't be fully stored in 16 decimal digits.
@@ -280,13 +240,10 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 	}
 	return
 }
-func (dec decParts) isNan() bool {
-	return dec.fl == flQNaN || dec.fl == flSNaN
-}
 
-// decParts gets the parts and returns in decParts stuct, doesn't get the magnitude due to performance issues\
+// getParts gets the parts and returns in decParts stuct, doesn't get the magnitude due to performance issues\
 // TODO: rename this to parts when parts is depreciated
-func (d *Decimal64) getParts() decParts {
+func (d Decimal64) getParts() decParts {
 	var fl flavor
 	var sign, exp int
 	var significand uint64
@@ -318,7 +275,7 @@ func (d *Decimal64) getParts() decParts {
 			exp = 0
 		}
 	}
-	return decParts{fl, sign, exp, uint128T{significand, 0}, 0, d}
+	return decParts{fl, sign, exp, uint128T{significand, 0}, 0, &d}
 }
 
 func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {
@@ -401,6 +358,12 @@ func (d Decimal64) Int64() int64 {
 	return int64(1-2*sign) * int64(whole)
 }
 
+// IsZero returns true if the Decimal encodes a zero value.
+func (d Decimal64) IsZero() bool {
+	fl, _, _, significand := d.parts()
+	return significand == 0 && fl == flNormal
+}
+
 // IsInf returns true iff d = ±∞.
 func (d Decimal64) IsInf() bool {
 	flavor, _, _, _ := d.parts()
@@ -437,9 +400,10 @@ func (d Decimal64) IsInt() bool {
 	}
 }
 
-func (d Decimal64) isZero() bool {
+// IsSubnormal returns true iff d is a subnormal.
+func (d Decimal64) IsSubnormal() bool {
 	fl, _, _, significand := d.parts()
-	return significand == 0 && fl == flNormal
+	return significand != 0 && significand < decimal64Base && fl == flNormal
 }
 
 // Sign returns -1/0/1 depending on whether d is </=/> 0.
@@ -478,4 +442,32 @@ func propagateNan(d ...*decParts) *Decimal64 {
 		}
 	}
 	return nil
+}
+
+// Class returns a string of the 'type' that the decimal is.
+func (d Decimal64) Class() string {
+	dp := d.getParts()
+
+	if dp.isSNaN() {
+		return "sNaN"
+	} else if dp.isNaN() {
+		return "NaN"
+	}
+
+	sign := "+"
+	if dp.sign == 1 {
+		sign = "-"
+	}
+
+	if dp.isInf() {
+		return sign + "Infinity"
+	}
+	if dp.isZero() {
+		return sign + "Zero"
+	}
+	if dp.isSubnormal() {
+		return sign + "Subnormal"
+	}
+	return sign + "Normal"
+
 }
