@@ -89,12 +89,6 @@ func TestDecimal64IsInf(t *testing.T) {
 	require.False(t, SNaN64.IsInf())
 	require.False(t, NewDecimal64FromInt64(42).IsInf())
 	require.False(t, NewDecimal64FromInt64(-42).IsInf())
-
-	a := Infinity64.getParts()
-	require.True(t, a.isInf())
-
-	b := NegInfinity64.getParts()
-	require.True(t, b.isInf())
 }
 
 func TestDecimal64IsNaN(t *testing.T) {
@@ -173,28 +167,12 @@ func TestNumDecimalDigits(t *testing.T) {
 	}
 }
 
-func TestIsNaN(t *testing.T) {
-	require := require.New(t)
-	a := Zero64.getParts()
-	require.Equal(false, a.isNaN())
-
-	b := SNaN64.getParts()
-	require.Equal(true, b.isSNaN())
-
-	c := QNaN64.getParts()
-	require.Equal(true, c.isQNaN())
-}
-
 func TestIsSubnormal(t *testing.T) {
 	require := require.New(t)
 
 	require.Equal(true, MustParseDecimal64("0.1E-383").IsSubnormal())
 	require.Equal(true, MustParseDecimal64("-0.1E-383").IsSubnormal())
 	require.Equal(false, MustParseDecimal64("NaN10").IsSubnormal())
-	subnormal64Parts := MustParseDecimal64("0.1E-383").getParts()
-	require.Equal(true, subnormal64Parts.isSubnormal())
-
 	require.Equal(false, NewDecimal64FromInt64(42).IsSubnormal())
-	fortyTwoParts := NewDecimal64FromInt64(42).getParts()
-	require.Equal(false, fortyTwoParts.isSubnormal())
+
 }
