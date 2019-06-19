@@ -35,6 +35,17 @@ func (dp *decParts) matchScales128(ep *decParts) {
 	}
 }
 
+func (dp *decParts) matchSignificandDigits(ep *decParts) {
+	expDiff := ep.significand.numDecimalDigits() - dp.significand.numDecimalDigits()
+	if expDiff >= 0 {
+		dp.significand = dp.significand.mul(powerOfTen128(expDiff + 1))
+		dp.exp -= expDiff + 1
+		return
+	}
+	ep.significand = ep.significand.mul(powerOfTen128(-expDiff - 1))
+	ep.exp -= -expDiff - 1
+}
+
 func (dp *decParts) roundToLo() discardedDigit {
 	var rndStatus discardedDigit
 	if dp.significand.numDecimalDigits() > 16 {

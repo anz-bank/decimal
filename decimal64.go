@@ -109,6 +109,10 @@ func (dec *decParts) updateMag() {
 	dec.mag = dec.significand.numDecimalDigits()
 }
 
+// isinf returns true if the decimal is an infinty
+func (dec *decParts) isinf() bool {
+	return dec.fl == flInf
+}
 func signalNaN64() {
 	panic("sNaN64")
 }
@@ -438,7 +442,7 @@ func (d Decimal64) IsSubnormal() bool {
 }
 
 func (dec *decParts) isZero() bool {
-	return dec.significand.lo == 0 &&  dec.significand.hi == 0 && dec.fl == flNormal
+	return dec.significand.lo == 0 && dec.significand.hi == 0 && dec.fl == flNormal
 }
 
 func (dec *decParts) isInf() bool {
@@ -458,7 +462,7 @@ func (dec *decParts) isSNaN() bool {
 }
 
 func (dec *decParts) isSubnormal() bool {
-	return dec.significand.lo != 0 && dec.significand.lo < decimal64Base && dec.fl == flNormal 
+	return dec.significand.lo != 0 && dec.significand.lo < decimal64Base && dec.fl == flNormal
 }
 
 // Sign returns -1/0/1 depending on whether d is </=/> 0.
@@ -503,9 +507,9 @@ func propagateNan(d ...*decParts) *Decimal64 {
 // This function is formally documented here http://speleotrove.com/decimal/damisc.html#refclass.
 func Class(d Decimal64) string {
 	dp := d.getParts()
-	
+
 	if dp.isSNaN() {
-		return "sNaN"	
+		return "sNaN"
 	} else if dp.isNaN() {
 		return "NaN"
 	}
@@ -515,13 +519,13 @@ func Class(d Decimal64) string {
 		sign = "-"
 	}
 
-	if dp.isInf(){
+	if dp.isInf() {
 		return sign + "Infinity"
 	} else if dp.isZero() {
 		return sign + "Zero"
-	} else if dp.isSubnormal(){
+	} else if dp.isSubnormal() {
 		return sign + "Subnormal"
 	} else {
 		return sign + "Normal"
-	}	
+	}
 }
