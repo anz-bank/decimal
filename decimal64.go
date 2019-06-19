@@ -92,27 +92,6 @@ func (context roundingMode) round(significand uint64, rndStatus discardedDigit) 
 	return significand
 }
 
-// separation gets the separation in decimal places of the MSD's of two decimal 64s
-func (dec *decParts) separation(eDec decParts) int {
-	return dec.mag + dec.exp - eDec.mag - eDec.exp
-}
-
-// removeZeros removes zeros and increments the exponent to match.
-func (dec *decParts) removeZeros() {
-	zeros := countTrailingZeros(dec.significand.lo)
-	dec.significand.lo /= powersOf10[zeros]
-	dec.exp += zeros
-}
-
-// updateMag updates the magnitude of the dec object
-func (dec *decParts) updateMag() {
-	dec.mag = dec.significand.numDecimalDigits()
-}
-
-// isinf returns true if the decimal is an infinty
-func (dec *decParts) isinf() bool {
-	return dec.fl == flInf
-}
 func signalNaN64() {
 	panic("sNaN64")
 }
@@ -168,20 +147,6 @@ func renormalize(exp int, significand uint64) (int, uint64) {
 		significand /= 10
 	}
 	return exp, significand
-}
-
-func (dec *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
-	expDiff := targetExp - dec.exp
-	mag := dec.mag
-	rndStatus = roundStatus(dec.significand.lo, dec.exp, targetExp)
-	if expDiff > mag {
-		dec.significand.lo, dec.exp = 0, targetExp
-		return
-	}
-	divisor := powersOf10[expDiff]
-	dec.significand.lo = dec.significand.lo / divisor
-	dec.exp = targetExp
-	return
 }
 
 // roundStatus gives info about the truncated part of the significand that can't be fully stored in 16 decimal digits.
@@ -439,30 +404,6 @@ func (d Decimal64) IsInt() bool {
 func (d Decimal64) IsSubnormal() bool {
 	fl, _, _, significand := d.parts()
 	return significand != 0 && significand < decimal64Base && fl == flNormal
-}
-
-func (dec *decParts) isZero() bool {
-	return dec.significand.lo == 0 && dec.significand.hi == 0 && dec.fl == flNormal
-}
-
-func (dec *decParts) isInf() bool {
-	return dec.fl == flInf
-}
-
-func (dec *decParts) isNaN() bool {
-	return dec.fl == flQNaN || dec.fl == flSNaN
-}
-
-func (dec *decParts) isQNaN() bool {
-	return dec.fl == flQNaN
-}
-
-func (dec *decParts) isSNaN() bool {
-	return dec.fl == flSNaN
-}
-
-func (dec *decParts) isSubnormal() bool {
-	return dec.significand.lo != 0 && dec.significand.lo < decimal64Base && dec.fl == flNormal
 }
 
 // Sign returns -1/0/1 depending on whether d is </=/> 0.
