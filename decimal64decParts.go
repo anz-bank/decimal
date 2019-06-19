@@ -2,7 +2,7 @@ package decimal
 
 // add128 adds two decParts with full precision in 128 bits of significand
 func (dp *decParts) add128(ep *decParts) decParts {
-	logicCheck(ep.exp == dp.exp, "ep.exp == dp.exp")
+	dp.matchScales128(ep)
 	var ans decParts
 	ans.exp = dp.exp
 	if dp.sign == ep.sign {

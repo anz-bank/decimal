@@ -250,7 +250,7 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 		if sep < -17 {
 			return f
 		} else if sep <= 17 {
-			ans.matchScales128(&fp)
+			// ans.matchScales128(&fp)
 			ans = ans.add128(&fp)
 		}
 	}
