@@ -503,33 +503,25 @@ func propagateNan(d ...*decParts) *Decimal64 {
 // This function is formally documented here http://speleotrove.com/decimal/damisc.html#refclass.
 func Class(d Decimal64) string {
 	dp := d.getParts()
-
-	switch dp.fl {
-	case flSNaN:
-		return "sNaN"
-	case flQNaN:
+	
+	if dp.isSNaN() {
+		return "sNaN"	
+	} else if dp.isNaN() {
 		return "NaN"
 	}
 
-	res := ""
+	sign := "+"
 	if dp.sign == 1 {
-		res += "-"
+		sign = "-"
+	}
+
+	if dp.isInf(){
+		return sign + "Infinity"
+	} else if dp.isZero() {
+		return sign + "Zero"
+	} else if dp.isSubnormal(){
+		return sign + "Subnormal"
 	} else {
-		res += "+"
-	}
-
-	switch dp.fl {
-	case flInf:
-		res += "Infinity"
-	case flNormal:
-		if dp.significand.lo == 0 && dp.significand.hi == 0 {
-			res += "Zero"
-		} else if dp.significand.lo < decimal64Base {
-			res += "Subnormal"
-		} else {
-			res += "Normal"
-		}
-	}
-
-	return res
+		return sign + "Normal"
+	}	
 }
