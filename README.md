@@ -4,10 +4,19 @@
 
 # decimal
 
-This library implements fixed-precision decimal numbers based on IEEE 754
-decimal64.
+This library implements fixed-precision decimal numbers based on IEEE 754R standard;
+`https://ieeexplore.ieee.org/document/4674342`
 
-The goal is to fully support decimal64 and decimal128. Currently only supports
-decimal64, excluding subnormals, and needs more thorough testing.
 
+#Features
+- Decimal64
+- Half up and half even rounding
+
+# Installation
+Run `go get github.com/anz-bank/decimal`
+
+#Docs
+`https://godoc.org/github.com/anz-bank/decimal`
+
+#Contributing
 If you are looking to become a contributer, you can gain more familiarity with the project by referring [to this guide.](docs/contributing.md)
