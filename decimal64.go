@@ -44,7 +44,7 @@ type decParts struct {
 	dec         *Decimal64
 }
 
-// Context64 stores the rounding type
+// Context64 stores the rounding type for arithmetic operations.
 type Context64 struct {
 	roundingMode roundingMode
 }
@@ -386,31 +386,6 @@ func (d Decimal64) Signbit() bool {
 	return d.bits>>63 == 1
 }
 
-//numDecimalDigits returns the magnitude (number of digits) of a uint64.
-func numDecimalDigits(n uint64) int {
-	numBits := 64 - bits.LeadingZeros64(n)
-	numDigits := numBits * 3 / 10
-	if n < powersOf10[numDigits] {
-		return numDigits
-	}
-	return numDigits + 1
-}
-
-// propagateNan returns the decimal pointer to the NaN that is to be propogated else nil
-func propagateNan(d ...*decParts) *Decimal64 {
-	for _, dec := range d {
-		if dec.fl == flSNaN {
-			return dec.dec
-		}
-	}
-	for _, dec := range d {
-		if dec.fl == flQNaN {
-			return dec.dec
-		}
-	}
-	return nil
-}
-
 // Class returns a string of the 'type' that the decimal is.
 func (d Decimal64) Class() string {
 	dp := d.getParts()
@@ -437,4 +412,29 @@ func (d Decimal64) Class() string {
 	}
 	return sign + "Normal"
 
+}
+
+//numDecimalDigits returns the magnitude (number of digits) of a uint64.
+func numDecimalDigits(n uint64) int {
+	numBits := 64 - bits.LeadingZeros64(n)
+	numDigits := numBits * 3 / 10
+	if n < powersOf10[numDigits] {
+		return numDigits
+	}
+	return numDigits + 1
+}
+
+// propagateNan returns the decimal pointer to the NaN that is to be propogated else nil
+func propagateNan(d ...*decParts) *Decimal64 {
+	for _, dec := range d {
+		if dec.fl == flSNaN {
+			return dec.dec
+		}
+	}
+	for _, dec := range d {
+		if dec.fl == flQNaN {
+			return dec.dec
+		}
+	}
+	return nil
 }
