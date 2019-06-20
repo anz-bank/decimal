@@ -6,7 +6,8 @@
 
 This library implements fixed-precision decimal numbers based on IEEE 754R standard;
 `https://ieeexplore.ieee.org/document/4674342`
-
+More info can be found at:
+`http://speleotrove.com/decimal/`
 
 #Features
 - Decimal64
