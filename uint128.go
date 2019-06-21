@@ -30,21 +30,15 @@ func powerOfTen128(n int) uint128T {
 }
 
 func umul64(a, b uint64) uint128T {
-	a0 := a & 0xffffffff
-	a1 := a >> 32
-	b0 := b & 0xffffffff
-	b1 := b >> 32
-
-	r0 := a0 * b0
-	r1 := a1*b0 + a0*b1 + r0>>32
-	r2 := a1*b1 + r1>>32
-	return uint128T{r0&0xffffffff | r1<<32, r2}
+	var n uint128T
+	n.hi, n.lo = bits.Mul64(a, b)
+	return n
 }
 
 func (a uint128T) add(b uint128T) uint128T {
-	carry1 := (a.lo&1 + b.lo&1) >> 1
-	carry64 := (a.lo>>1 + b.lo>>1 + carry1) >> 63
-	return uint128T{a.lo + b.lo, a.hi + b.hi + carry64}
+	lo, carry := bits.Add64(a.lo, b.lo, 0)
+	hi, _ := bits.Add64(a.hi, b.hi, carry)
+	return uint128T{lo, hi}
 }
 
 const base32 = 1 << 32

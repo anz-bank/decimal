@@ -10,12 +10,12 @@ func (d Decimal64) Add(e Decimal64) Decimal64 {
 	return DefaultContext.Add(d, e)
 }
 
-// FMA computes d*e + f with default rounding
+// FMA computes d*e + f with default rounding.
 func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
 	return DefaultContext.FMA(d, e, f)
 }
 
-// Mul computes d * e with default rounding
+// Mul computes d * e with default rounding.
 func (d Decimal64) Mul(e Decimal64) Decimal64 {
 	return DefaultContext.Mul(d, e)
 }
@@ -25,7 +25,7 @@ func (d Decimal64) Sub(e Decimal64) Decimal64 {
 	return d.Add(e.Neg())
 }
 
-// Quo computes d / e with default rounding
+// Quo computes d / e with default rounding.
 func (d Decimal64) Quo(e Decimal64) Decimal64 {
 	return DefaultContext.Quo(d, e)
 }
@@ -83,7 +83,7 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 		return zeroes[ans.sign]
 	}
 	if ep.isZero() {
-		return infinities[dp.sign]
+		return infinities[ans.sign]
 	}
 	dp.matchSignificandDigits(&ep)
 	ans.exp = dp.exp - ep.exp
@@ -110,7 +110,6 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 	} else {
 		rndStatus = eq5
 	}
-	ans.updateMag()
 	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
@@ -178,9 +177,7 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	}
 	ep.removeZeros()
 	dp.removeZeros()
-	ep.updateMag()
-	dp.updateMag()
-	sep := dp.separation(ep)
+	sep := dp.separation(&ep)
 
 	if sep < 0 {
 		dp, ep = ep, dp
@@ -193,7 +190,6 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	dp.matchScales128(&ep)
 	ans := dp.add128(&ep)
 	rndStatus = ans.roundToLo()
-	ans.updateMag()
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
 	}
@@ -234,20 +230,15 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	}
 
 	var rndStatus discardedDigit
-	ep.updateMag()
-	dp.updateMag()
-	fp.updateMag()
 	ep.removeZeros()
 	dp.removeZeros()
 	ans.exp = dp.exp + ep.exp
 	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
-	ans.mag = ans.significand.numDecimalDigits()
-	sep := ans.separation(fp)
+	sep := ans.separation(&fp)
 	if fp.significand.lo != 0 {
 		if sep < -17 {
 			return f
 		} else if sep <= 17 {
-			ans.matchScales128(&fp)
 			ans = ans.add128(&fp)
 		}
 	}
@@ -255,7 +246,6 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
 	}
-	ans.updateMag()
 	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
 	if ans.exp >= -expOffset && ans.significand.lo != 0 {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
@@ -284,14 +274,11 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	if ep.significand.lo == 0 || dp.significand.lo == 0 {
 		return zeroes[ans.sign]
 	}
-	ep.updateMag()
-	dp.updateMag()
 	var roundStatus discardedDigit
 	significand := umul64(dp.significand.lo, ep.significand.lo)
 	ans.exp = dp.exp + ep.exp + 15
 	significand = significand.div64(decimal64Base)
 	ans.significand.lo = significand.lo
-	ans.updateMag()
 	if ans.exp >= -expOffset {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	} else if ans.exp < 1-expMax {
