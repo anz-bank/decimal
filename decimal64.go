@@ -41,11 +41,10 @@ type decParts struct {
 	sign        int
 	exp         int
 	significand uint128T
-	mag         int
 	dec         *Decimal64
 }
 
-// Context64 stores the rounding type
+// Context64 stores the rounding type for arithmetic operations.
 type Context64 struct {
 	roundingMode roundingMode
 }
@@ -207,7 +206,6 @@ func newFromParts(sign int, exp int, significand uint64) Decimal64 {
 	return Decimal64{s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand}
 }
 
-// TODO: merge parts()/ implement version that uses decParts struct
 func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 	sign = int(d.bits >> 63)
 	switch (d.bits >> (63 - 4)) & 0xf {
@@ -242,40 +240,9 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 }
 
 // getParts gets the parts and returns in decParts stuct, doesn't get the magnitude due to performance issues\
-// TODO: rename this to parts when parts is depreciated
 func (d Decimal64) getParts() decParts {
-	var fl flavor
-	var sign, exp int
-	var significand uint64
-	sign = int(d.bits >> 63)
-
-	switch (d.bits >> (63 - 4)) & 0xf {
-	case 15:
-		switch (d.bits >> (63 - 6)) & 3 {
-		case 0, 1:
-			fl = flInf
-		case 2:
-			fl = flQNaN
-		case 3:
-			fl = flSNaN
-		}
-	case 12, 13, 14:
-		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
-		//     EE ∈ {00, 01, 10}
-		fl = flNormal
-		exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
-		significand = d.bits&(1<<51-1) | (1 << 53)
-	default:
-		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
-		//   EE ∈ {00, 01, 10}
-		fl = flNormal
-		exp = int((d.bits>>(63-10))&(1<<10-1)) - expOffset
-		significand = d.bits & (1<<53 - 1)
-		if significand == 0 {
-			exp = 0
-		}
-	}
-	return decParts{fl, sign, exp, uint128T{significand, 0}, 0, &d}
+	flavor, sign, exp, significand := d.parts()
+	return decParts{flavor, sign, exp, uint128T{significand, 0}, &d}
 }
 
 func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {
@@ -419,31 +386,6 @@ func (d Decimal64) Signbit() bool {
 	return d.bits>>63 == 1
 }
 
-//numDecimalDigits returns the magnitude (number of digits) of a uint64.
-func numDecimalDigits(n uint64) int {
-	numBits := 64 - bits.LeadingZeros64(n)
-	numDigits := numBits * 3 / 10
-	if n < powersOf10[numDigits] {
-		return numDigits
-	}
-	return numDigits + 1
-}
-
-// propagateNan returns the decimal pointer to the NaN that is to be propogated else nil
-func propagateNan(d ...*decParts) *Decimal64 {
-	for _, dec := range d {
-		if dec.fl == flSNaN {
-			return dec.dec
-		}
-	}
-	for _, dec := range d {
-		if dec.fl == flQNaN {
-			return dec.dec
-		}
-	}
-	return nil
-}
-
 // Class returns a string of the 'type' that the decimal is.
 func (d Decimal64) Class() string {
 	dp := d.getParts()
@@ -470,4 +412,29 @@ func (d Decimal64) Class() string {
 	}
 	return sign + "Normal"
 
+}
+
+//numDecimalDigits returns the magnitude (number of digits) of a uint64.
+func numDecimalDigits(n uint64) int {
+	numBits := 64 - bits.LeadingZeros64(n)
+	numDigits := numBits * 3 / 10
+	if n < powersOf10[numDigits] {
+		return numDigits
+	}
+	return numDigits + 1
+}
+
+// propagateNan returns the decimal pointer to the NaN that is to be propogated else nil
+func propagateNan(d ...*decParts) *Decimal64 {
+	for _, dec := range d {
+		if dec.fl == flSNaN {
+			return dec.dec
+		}
+	}
+	for _, dec := range d {
+		if dec.fl == flQNaN {
+			return dec.dec
+		}
+	}
+	return nil
 }
