@@ -2,6 +2,9 @@ package decimal
 
 // Abs computes ||d||.
 func (d Decimal64) Abs() Decimal64 {
+	if d.IsNaN() {
+		return d
+	}
 	return Decimal64{^neg64 & uint64(d.bits)}
 }
 
