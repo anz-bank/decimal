@@ -86,7 +86,7 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 		return zeroes[ans.sign]
 	}
 	if ep.isZero() {
-		return infinities[dp.sign]
+		return infinities[ans.sign]
 	}
 	dp.matchSignificandDigits(&ep)
 	ans.exp = dp.exp - ep.exp
