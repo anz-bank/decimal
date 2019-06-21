@@ -38,15 +38,12 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 //   +1 if d >  e
 //
 func (d Decimal64) Cmp(e Decimal64) int {
-	flavor1, _, _, significand1 := d.parts()
-	flavor2, _, _, significand2 := e.parts()
-	if flavor1 == flSNaN || flavor2 == flSNaN {
+	dp := d.getParts()
+	ep := e.getParts()
+	if dec := propagateNan(&dp, &ep); dec != nil {
 		return -2
 	}
-	if flavor1 == flQNaN || flavor2 == flQNaN {
-		return -2
-	}
-	if significand1 == 0 && significand2 == 0 {
+	if dp.isZero() && ep.isZero() {
 		return 0
 	}
 	if d == e {
