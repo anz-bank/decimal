@@ -37,8 +37,8 @@ var tests = []string{
 	"dectest/ddClass.decTest",
 	// TODO: Implement following tests
 	"dectest/ddCompare.decTest",
-	// 	"dectest/ddAbs.decTest",
-	// 	"dectest/ddCopysign.decTest",
+	"dectest/ddAbs.decTest",
+	// "dectest/ddCopysign.decTest",
 	"dectest/ddDivide.decTest",
 	// 	"dectest/ddLogB.decTest",
 	// 	"dectest/ddMin.decTest",
