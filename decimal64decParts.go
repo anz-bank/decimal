@@ -2,7 +2,7 @@ package decimal
 
 // add128 adds two decParts with full precision in 128 bits of significand
 func (dp *decParts) add128(ep *decParts) decParts {
-	logicCheck(ep.exp == dp.exp, "ep.exp == dp.exp")
+	dp.matchScales128(ep)
 	var ans decParts
 	ans.exp = dp.exp
 	if dp.sign == ep.sign {
@@ -58,62 +58,57 @@ func (dp *decParts) roundToLo() discardedDigit {
 	return rndStatus
 }
 
-func (dec *decParts) isZero() bool {
-	return dec.significand.lo == 0 && dec.significand.hi == 0 && dec.fl == flNormal
+func (dp *decParts) isZero() bool {
+	return (dp.significand == uint128T{}) && dp.significand.hi == 0 && dp.fl == flNormal
 }
 
-func (dec *decParts) isInf() bool {
-	return dec.fl == flInf
+func (dp *decParts) isInf() bool {
+	return dp.fl == flInf
 }
 
-func (dec *decParts) isNaN() bool {
-	return dec.fl == flQNaN || dec.fl == flSNaN
+func (dp *decParts) isNaN() bool {
+	return dp.fl == flQNaN || dp.fl == flSNaN
 }
 
-func (dec *decParts) isQNaN() bool {
-	return dec.fl == flQNaN
+func (dp *decParts) isQNaN() bool {
+	return dp.fl == flQNaN
 }
 
-func (dec *decParts) isSNaN() bool {
-	return dec.fl == flSNaN
+func (dp *decParts) isSNaN() bool {
+	return dp.fl == flSNaN
 }
 
-func (dec *decParts) isSubnormal() bool {
-	return dec.significand.lo != 0 && dec.significand.lo < decimal64Base && dec.fl == flNormal
+func (dp *decParts) isSubnormal() bool {
+	return (dp.significand != uint128T{}) && dp.significand.lo < decimal64Base && dp.fl == flNormal
 }
 
 // separation gets the separation in decimal places of the MSD's of two decimal 64s
-func (dec *decParts) separation(eDec decParts) int {
-	return dec.mag + dec.exp - eDec.mag - eDec.exp
+func (dp *decParts) separation(ep *decParts) int {
+	return dp.significand.numDecimalDigits() + dp.exp - ep.significand.numDecimalDigits() - ep.exp
 }
 
 // removeZeros removes zeros and increments the exponent to match.
-func (dec *decParts) removeZeros() {
-	zeros := countTrailingZeros(dec.significand.lo)
-	dec.significand.lo /= powersOf10[zeros]
-	dec.exp += zeros
-}
-
-// updateMag updates the magnitude of the dec object
-func (dec *decParts) updateMag() {
-	dec.mag = dec.significand.numDecimalDigits()
+func (dp *decParts) removeZeros() {
+	zeros := countTrailingZeros(dp.significand.lo)
+	dp.significand.lo /= powersOf10[zeros]
+	dp.exp += zeros
 }
 
 // isinf returns true if the decimal is an infinty
-func (dec *decParts) isinf() bool {
-	return dec.fl == flInf
+func (dp *decParts) isinf() bool {
+	return dp.fl == flInf
 }
 
-func (dec *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
-	expDiff := targetExp - dec.exp
-	mag := dec.mag
-	rndStatus = roundStatus(dec.significand.lo, dec.exp, targetExp)
+func (dp *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
+	expDiff := targetExp - dp.exp
+	mag := dp.significand.numDecimalDigits()
+	rndStatus = roundStatus(dp.significand.lo, dp.exp, targetExp)
 	if expDiff > mag {
-		dec.significand.lo, dec.exp = 0, targetExp
+		dp.significand.lo, dp.exp = 0, targetExp
 		return
 	}
 	divisor := powersOf10[expDiff]
-	dec.significand.lo = dec.significand.lo / divisor
-	dec.exp = targetExp
+	dp.significand.lo = dp.significand.lo / divisor
+	dp.exp = targetExp
 	return
 }
