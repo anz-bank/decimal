@@ -5,14 +5,17 @@
 # decimal
 
 This library implements fixed-precision decimal numbers based on IEEE 754R standard;
-`https://ieeexplore.ieee.org/document/4674342`
+<https://ieeexplore.ieee.org/document/4674342>
 More info can be found at:
-`http://speleotrove.com/decimal/`
+<http://speleotrove.com/decimal/>
 
-#Features
-- Decimal64
+# Features
+- Decimal64, partial implementation of the ieee-754R standard
 - Half up and half even rounding
 - Up to 3 times faster than arbitrary precision decimal libraries in Go
+
+# Goals
+- To implement 128 bit decimal
 
 # Installation and use
 
@@ -29,17 +32,18 @@ import (
 )
 
 func main() {
+	var a decimal.Decimal64
+	b := decimal.MustParseDecimal64("0.1")
+	c := decimal.MustParseDecimal64("0.3")
+	d := decimal.NewDecimal64FromInt64(123456)
 
-	c := decimal.MustParseDecimal64("0.1")
-	d := decimal.MustParseDecimal64("0.3")
-	// The famous example of a floating point failure
-	fmt.Printf("%f + %f + %f == %f : %v\n\n", c, c, c, d, (c.Add(c).Add(c) == d))
-
+	fmt.Println(a, b, c, d)
 }
+
 ```
 
-#Docs
-`https://godoc.org/github.com/anz-bank/decimal`
+# Docs
+<https://godoc.org/github.com/anz-bank/decimal>
 
 # Why decimal
 Binary floating point numbers are fundamentally flawed when it comes to representing exact numbers in a decimal world. Just like 1/3 can't be represented in base 10 (it evaluates to 0.3333333333 repeating), 1/10 can't be represented in binary.
