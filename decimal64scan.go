@@ -186,7 +186,7 @@ func scanSign(state fmt.ScanState) (int, error) {
 }
 
 func newPayloadNan(sign int, fl flavor, weight uint64) Decimal64 {
-	s := uint64(sign) << 63
+	s := Decimal64(uint64(sign) << 63)
 	switch fl {
 	case flQNaN:
 		return Decimal64(s | QNaN64 | Decimal64(weight))

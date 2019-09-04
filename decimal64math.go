@@ -5,7 +5,7 @@ func (d Decimal64) Abs() Decimal64 {
 	if d.IsNaN() {
 		return d
 	}
-	return Decimal64{^neg64 & uint64(d.bits)}
+	return Decimal64(^neg64 & d)
 }
 
 // Add computes d + e with default rounding
@@ -53,12 +53,12 @@ func (d Decimal64) Cmp(e Decimal64) int {
 		return 0
 	}
 	d = d.Sub(e)
-	return 1 - 2*int(d.bits>>63)
+	return 1 - 2*int(d>>63)
 }
 
 // Neg computes -d.
 func (d Decimal64) Neg() Decimal64 {
-	return Decimal64{neg64 ^ d.bits}
+	return Decimal64(neg64 ^ d)
 }
 
 // Quo computes d / e.

@@ -13,16 +13,16 @@ var One64 = newFromParts(0, -15, decimal64Base)
 var NegOne64 = newFromParts(1, -15, decimal64Base)
 
 // Infinity64 represents ∞ as a Decimal64.
-var Infinity64 = Decimal64{inf64}
+var Infinity64 = Decimal64(inf64)
 
 // NegInfinity64 represents -∞ as a Decimal64.
-var NegInfinity64 = Decimal64{neg64 | inf64}
+var NegInfinity64 = Decimal64(neg64 | inf64)
 
 // QNaN64 represents a quiet NaN as a Decimal64.
-var QNaN64 = Decimal64{0x7c << 56}
+var QNaN64 = Decimal64(0x7c << 56)
 
 // SNaN64 represents a signalling NaN as a Decimal64.
-var SNaN64 = Decimal64{0x7e << 56}
+var SNaN64 = Decimal64(0x7e << 56)
 
 // Pi64 represents π.
 var Pi64 = newFromParts(0, -15, 3141592653589793)
@@ -30,8 +30,8 @@ var Pi64 = newFromParts(0, -15, 3141592653589793)
 // E64 represents e (lim[n→∞](1+1/n)ⁿ).
 var E64 = newFromParts(0, -15, 2718281828459045)
 
-var neg64 uint64 = 0x80 << 56
-var inf64 uint64 = 0x78 << 56
+var neg64 Decimal64 = 0x80 << 56
+var inf64 Decimal64 = 0x78 << 56
 
 // 1E15
 const decimal64Base = 1000 * 1000 * 1000 * 1000 * 1000

@@ -191,8 +191,8 @@ func checkDecimal64QuoByF(t *testing.T, f int64) {
 			if q != e {
 				eFlavor, eSign, eExp, eSignificand := q.parts()
 				qFlavor, qSign, qExp, qSignificand := q.parts()
-				t.Log("e", e.bits, eFlavor, eSign, eExp, eSignificand)
-				t.Log("q", q.bits, qFlavor, qSign, qExp, qSignificand)
+				t.Log("e", e, eFlavor, eSign, eExp, eSignificand)
+				t.Log("q", q, qFlavor, qSign, qExp, qSignificand)
 			}
 			require.Equal(e, q, "%d / %d ≠ %v (expecting %v)", k, j, q, e)
 		}
