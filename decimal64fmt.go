@@ -30,11 +30,11 @@ func appendUint64(buf []byte, n, limit uint64) []byte {
 
 // Append appends the text representation of d to buf.
 func (d Decimal64) Append(buf []byte, format byte, prec int) []byte {
-	flavor, sign, exp, significand := d.parts()
+	flav, sign, exp, significand := d.parts()
 	if sign == 1 {
 		buf = append(buf, '-')
 	}
-	switch flavor {
+	switch flav {
 	case flQNaN, flSNaN:
 		return appendUint64(append(buf, []byte("NaN")...), significand, 10000)
 	case flInf:
@@ -64,10 +64,10 @@ formatBlock:
 		}
 		return buf
 	case 'f', 'F':
-		exp, whole, frac := expWholeFrac(exp, significand)
+		exponent, whole, frac := expWholeFrac(exp, significand)
 		if whole > 0 {
 			buf = appendUint64(buf, whole, decimal64Base)
-			for ; exp > 0; exp-- {
+			for ; exponent > 0; exponent-- {
 				buf = append(buf, '0')
 			}
 		} else {

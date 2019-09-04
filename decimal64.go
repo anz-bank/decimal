@@ -241,8 +241,8 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 
 // getParts gets the parts and returns in decParts stuct, doesn't get the magnitude due to performance issues\
 func (d Decimal64) getParts() decParts {
-	flavor, sign, exp, significand := d.parts()
-	return decParts{flavor, sign, exp, uint128T{significand, 0}, &d}
+	flav, sign, exp, significand := d.parts()
+	return decParts{flav, sign, exp, uint128T{significand, 0}, &d}
 }
 
 func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {
@@ -279,8 +279,8 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 
 // Float64 returns a float64 representation of d.
 func (d Decimal64) Float64() float64 {
-	flavor, sign, exp, significand := d.parts()
-	switch flavor {
+	flav, sign, exp, significand := d.parts()
+	switch flav {
 	case flNormal:
 		if significand == 0 {
 			return 0.0 * float64(1-2*sign)
@@ -301,8 +301,8 @@ func (d Decimal64) Float64() float64 {
 
 // Int64 converts d to an int64.
 func (d Decimal64) Int64() int64 {
-	flavor, sign, exp, significand := d.parts()
-	switch flavor {
+	flav, sign, exp, significand := d.parts()
+	switch flav {
 	case flInf:
 		if sign == 0 {
 			return math.MaxInt64
@@ -327,38 +327,38 @@ func (d Decimal64) Int64() int64 {
 
 // IsZero returns true if the Decimal encodes a zero value.
 func (d Decimal64) IsZero() bool {
-	fl, _, _, significand := d.parts()
-	return significand == 0 && fl == flNormal
+	flav, _, _, significand := d.parts()
+	return significand == 0 && flav == flNormal
 }
 
 // IsInf returns true iff d = ±∞.
 func (d Decimal64) IsInf() bool {
-	flavor, _, _, _ := d.parts()
-	return flavor == flInf
+	flav, _, _, _ := d.parts()
+	return flav == flInf
 }
 
 // IsNaN returns true iff d is not a number.
 func (d Decimal64) IsNaN() bool {
-	flavor, _, _, _ := d.parts()
-	return flavor == flQNaN || flavor == flSNaN
+	flav, _, _, _ := d.parts()
+	return flav == flQNaN || flav == flSNaN
 }
 
 // IsQNaN returns true iff d is a quiet NaN.
 func (d Decimal64) IsQNaN() bool {
-	flavor, _, _, _ := d.parts()
-	return flavor == flQNaN
+	flav, _, _, _ := d.parts()
+	return flav == flQNaN
 }
 
 // IsSNaN returns true iff d is a signalling NaN.
 func (d Decimal64) IsSNaN() bool {
-	flavor, _, _, _ := d.parts()
-	return flavor == flSNaN
+	flav, _, _, _ := d.parts()
+	return flav == flSNaN
 }
 
 // IsInt returns true iff d is an integer.
 func (d Decimal64) IsInt() bool {
-	fl, _, exp, significand := d.parts()
-	switch fl {
+	flav, _, exp, significand := d.parts()
+	switch flav {
 	case flNormal:
 		_, _, frac := expWholeFrac(exp, significand)
 		return frac == 0
@@ -369,8 +369,8 @@ func (d Decimal64) IsInt() bool {
 
 // IsSubnormal returns true iff d is a subnormal.
 func (d Decimal64) IsSubnormal() bool {
-	fl, _, _, significand := d.parts()
-	return significand != 0 && significand < decimal64Base && fl == flNormal
+	flav, _, _, significand := d.parts()
+	return significand != 0 && significand < decimal64Base && flav == flNormal
 }
 
 // Sign returns -1/0/1 depending on whether d is </=/> 0.
