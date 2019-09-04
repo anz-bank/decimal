@@ -129,8 +129,8 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 
 // Sqrt computes √d.
 func (d Decimal64) Sqrt() Decimal64 {
-	flavor, sign, exp, significand := d.parts()
-	switch flavor {
+	flav, sign, exp, significand := d.parts()
+	switch flav {
 	case flInf:
 		if sign == 1 {
 			return QNaN64
