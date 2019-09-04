@@ -31,7 +31,9 @@ const (
 
 // Decimal64 represents an IEEE 754 64-bit floating point decimal number.
 // It uses the binary representation method.
-type Decimal64 uint64
+type Decimal64 struct {
+	bits uint64
+}
 
 // decParts stores the constituting decParts of a decimal64.
 type decParts struct {
@@ -196,40 +198,40 @@ func newFromParts(sign int, exp int, significand uint64) Decimal64 {
 	if significand < 0x8<<50 {
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
-		return Decimal64(s | uint64(exp+expOffset)<<(63-10) | significand)
+		return Decimal64{s | uint64(exp+expOffset)<<(63-10) | significand}
 	}
 	// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 	//     EE ∈ {00, 01, 10}
 	significand &= 0x8<<50 - 1
-	return Decimal64(s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand)
+	return Decimal64{s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand}
 }
 
 func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
-	sign = int(d >> 63)
-	switch (d >> (63 - 4)) & 0xf {
+	sign = int(d.bits >> 63)
+	switch (d.bits >> (63 - 4)) & 0xf {
 	case 15:
-		switch (d >> (63 - 6)) & 3 {
+		switch (d.bits >> (63 - 6)) & 3 {
 		case 0, 1:
 			fl = flInf
 		case 2:
 			fl = flQNaN
-			significand = uint64(d) & (1<<53 - 1)
+			significand = d.bits & (1<<53 - 1)
 		case 3:
 			fl = flSNaN
-			significand = uint64(d) & (1<<53 - 1)
+			significand = d.bits & (1<<53 - 1)
 		}
 	case 12, 13, 14:
 		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//     EE ∈ {00, 01, 10}
 		fl = flNormal
-		exp = int((d>>(63-12))&(1<<10-1)) - expOffset
-		significand = uint64(d)&(1<<51-1) | (1 << 53)
+		exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
+		significand = d.bits&(1<<51-1) | (1 << 53)
 	default:
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
 		fl = flNormal
-		exp = int((d>>(63-10))&(1<<10-1)) - expOffset
-		significand = uint64(d) & (1<<53 - 1)
+		exp = int((d.bits>>(63-10))&(1<<10-1)) - expOffset
+		significand = d.bits & (1<<53 - 1)
 		if significand == 0 {
 			exp = 0
 		}
@@ -376,12 +378,12 @@ func (d Decimal64) Sign() int {
 	if d == Zero64 || d == NegZero64 {
 		return 0
 	}
-	return 1 - 2*int(d>>63)
+	return 1 - 2*int(d.bits>>63)
 }
 
 // Signbit returns true iff d is negative or -0.
 func (d Decimal64) Signbit() bool {
-	return d>>63 == 1
+	return d.bits>>63 == 1
 }
 
 // Class returns a string of the 'type' that the decimal is.
