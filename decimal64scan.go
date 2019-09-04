@@ -79,7 +79,7 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 		return err
 	}
 	if len(dot) > 1 {
-		return fmt.Errorf("Too many dots")
+		return fmt.Errorf("too many dots")
 	}
 
 	frac, err := tokenString(state, unicode.IsDigit)
@@ -92,7 +92,7 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 		return err
 	}
 	if len(e) > 1 {
-		return fmt.Errorf("Too many 'e's")
+		return fmt.Errorf("too many 'e's")
 	}
 
 	var expSign int
@@ -107,13 +107,13 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 			return err
 		}
 		if exp == "" {
-			return fmt.Errorf("Exponent value missing")
+			return fmt.Errorf("exponent value missing")
 		}
 	}
 
 	mantissa := whole + frac
 	if mantissa == "" {
-		return fmt.Errorf("Mantissa missing")
+		return fmt.Errorf("mantissa missing")
 	}
 	mantissa = strings.TrimLeft(mantissa, "0")
 	if mantissa == "" {
@@ -143,7 +143,7 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 }
 
 func notDecimal64() error {
-	return fmt.Errorf("Not a valid Decimal64")
+	return fmt.Errorf("not a valid Decimal64")
 }
 
 func parseUint(s string) (int64, int) {
@@ -180,7 +180,7 @@ func scanSign(state fmt.ScanState) (int, error) {
 			return 1, nil
 		}
 	default:
-		return 0, fmt.Errorf("Too many +/- characters: %s", string(s))
+		return 0, fmt.Errorf("too many +/- characters: %s", string(s))
 	}
 	return 0, nil
 }
@@ -189,9 +189,9 @@ func newPayloadNan(sign int, fl flavor, weight uint64) Decimal64 {
 	s := uint64(sign) << 63
 	switch fl {
 	case flQNaN:
-		return Decimal64{s | QNaN64.bits | weight}
+		return Decimal64(s | QNaN64 | Decimal64(weight))
 	case flSNaN:
-		return Decimal64{s | SNaN64.bits | weight}
+		return Decimal64(s | SNaN64 | Decimal64(weight))
 	default:
 		return QNaN64
 	}
