@@ -74,15 +74,20 @@ func (a uint128T) bitLen() uint {
 	return 128 - a.leadingZeros()
 }
 
+// func (a uint128T) div64(d uint64) uint128T {
+// 	lo, _ := bits.Div64(a.hi, a.lo, d)
+// 	return uint128T{lo, 0}
+// }
+
 func (a uint128T) div64(d uint64) uint128T {
-	q, _ := a.divrem64(d)
-	return q
+	b, _ := a.divrem64(d)
+	return b
 }
 
 func (a uint128T) divrem64(d uint64) (q uint128T, r uint64) {
 	r = 0
-	q.hi, r = uint128T{a.hi, r}.divPart64(d)
-	q.lo, r = uint128T{a.lo, r}.divPart64(d)
+	q.hi, r = bits.Div64(r, a.hi, d)
+	q.lo, r = bits.Div64(r, a.lo, d)
 	return
 }
 
