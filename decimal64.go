@@ -43,6 +43,7 @@ type decParts struct {
 	exp         int
 	significand uint128T
 	dec         *Decimal64
+	original    Decimal64
 }
 
 // Context64 stores the rounding type for arithmetic operations.
@@ -241,7 +242,7 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 
 func (d *Decimal64) getParts() decParts {
 	fl, sign, exp, significand := d.parts()
-	return decParts{fl, sign, exp, uint128T{significand, 0}, d}
+	return decParts{fl, sign, exp, uint128T{significand, 0}, d, *d}
 }
 
 func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {
@@ -436,4 +437,21 @@ func propagateNan(d ...*decParts) *Decimal64 {
 		}
 	}
 	return nil
+}
+
+// propagateNan returns the decimal pointer to the NaN that is to be propogated else nil
+func propagateNan2(d, e *decParts) (Decimal64, bool) {
+	if d.fl == flSNaN {
+		return d.original, true
+	}
+	if e.fl == flSNaN {
+		return e.original, true
+	}
+	if d.fl == flQNaN {
+		return d.original, true
+	}
+	if e.fl == flQNaN {
+		return e.original, true
+	}
+	return d.original, false
 }

@@ -122,10 +122,10 @@ func (dp *decParts) unpack(d Decimal64) {
 			dp.fl = flInf
 		case 2:
 			dp.fl = flQNaN
-			dp.significand.lo = d.bits & (1<<53 - 1)
+			return
 		case 3:
 			dp.fl = flSNaN
-			dp.significand.lo = d.bits & (1<<53 - 1)
+			return
 		}
 	case 12, 13, 14:
 		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
@@ -143,4 +143,5 @@ func (dp *decParts) unpack(d Decimal64) {
 			dp.exp = 0
 		}
 	}
+	return
 }

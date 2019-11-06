@@ -262,14 +262,12 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 // Mul computes d * e
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	dp := decParts{}
-	if err := dp.unpack(d); err != nil {
-		return d
-	}
+	dp.unpack(d)
 	ep := decParts{}
-	if err := ep.unpack(e); err != nil {
-		return e
+	ep.unpack(e)
+	if dec, isNan := propagateNan2(&dp, &ep); isNan {
+		return dec
 	}
-
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
 	if dp.fl == flInf || ep.fl == flInf {
