@@ -262,16 +262,14 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 // Mul computes d * e
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	dp := decParts{}
-	dp.unpack(d)
-	dp.dec = &d
-
-	ep := decParts{}
-	ep.unpack(e)
-	ep.dec = &e
-
-	if dec := propagateNan(&dp, &ep); dec != nil {
-		return *dec
+	if err := dp.unpack(d); err != nil {
+		return d
 	}
+	ep := decParts{}
+	if err := ep.unpack(e); err != nil {
+		return e
+	}
+
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
 	if dp.fl == flInf || ep.fl == flInf {
@@ -284,10 +282,9 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 		return zeroes[ans.sign]
 	}
 	var roundStatus discardedDigit
-	significand := umul64(dp.significand.lo, ep.significand.lo)
+	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
 	ans.exp = dp.exp + ep.exp + 15
-	significand = significand.div64(decimal64Base)
-	ans.significand.lo = significand.lo
+	ans.significand = ans.significand.div64(decimal64Base)
 	if ans.exp >= -expOffset {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	} else if ans.exp < 1-expMax {
