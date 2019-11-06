@@ -119,7 +119,6 @@ func NewDecimal64FromInt64(value int64) Decimal64 {
 }
 
 func renormalize(exp int, significand uint64) (int, uint64) {
-	logicCheck(significand != 0, "significand (%d) != 0", significand)
 
 	numBits := 64 - bits.LeadingZeros64(significand)
 	numDigits := numBits * 3 / 10
@@ -240,10 +239,43 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 	return
 }
 
+func (d *Decimal64) getParts() decParts {
+	fl, sign, exp, significand := d.parts()
+	return decParts{fl, sign, exp, uint128T{significand, 0}, d}
+}
+
 // getParts gets the parts and returns in decParts stuct, doesn't get the magnitude due to performance issues\
-func (d Decimal64) getParts() decParts {
-	flav, sign, exp, significand := d.parts()
-	return decParts{flav, sign, exp, uint128T{significand, 0}, &d}
+func (d Decimal64) getParts2(dp *decParts) {
+	// dp.dec = d
+	dp.sign = int(d.bits >> 63)
+	switch (d.bits >> (63 - 4)) & 0xf {
+	case 15:
+		switch (d.bits >> (63 - 6)) & 3 {
+		case 0, 1:
+			dp.fl = flInf
+		case 2:
+			dp.fl = flQNaN
+			dp.significand.lo = d.bits & (1<<53 - 1)
+		case 3:
+			dp.fl = flSNaN
+			dp.significand.lo = d.bits & (1<<53 - 1)
+		}
+	case 12, 13, 14:
+		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
+		//     EE ∈ {00, 01, 10}
+		dp.fl = flNormal
+		dp.exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
+		dp.significand.lo = d.bits&(1<<51-1) | (1 << 53)
+	default:
+		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
+		//   EE ∈ {00, 01, 10}
+		dp.fl = flNormal
+		dp.exp = int((d.bits>>(63-10))&(1<<10-1)) - expOffset
+		dp.significand.lo = d.bits & (1<<53 - 1)
+		if dp.significand.lo == 0 {
+			dp.exp = 0
+		}
+	}
 }
 
 func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {
