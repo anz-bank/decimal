@@ -261,8 +261,14 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 
 // Mul computes d * e
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
-	dp := d.getParts()
-	ep := e.getParts()
+	dp := decParts{}
+	dp.unpack(d)
+	dp.dec = &d
+
+	ep := decParts{}
+	ep.unpack(e)
+	ep.dec = &e
+
 	if dec := propagateNan(&dp, &ep); dec != nil {
 		return *dec
 	}
