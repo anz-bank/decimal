@@ -29,10 +29,12 @@ func TestIsNaN(t *testing.T) {
 func TestPartsSubnormal(t *testing.T) {
 	require := require.New(t)
 
-	subnormal64Parts := MustParseDecimal64("0.1E-383").getParts()
+	d := MustParseDecimal64("0.1E-383")
+	subnormal64Parts := d.getParts()
 	require.Equal(true, subnormal64Parts.isSubnormal())
 
-	fortyTwoParts := NewDecimal64FromInt64(42).getParts()
+	e := NewDecimal64FromInt64(42)
+	fortyTwoParts := e.getParts()
 	require.Equal(false, fortyTwoParts.isSubnormal())
 
 }
