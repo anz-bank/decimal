@@ -41,9 +41,11 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 //   +1 if d >  e
 //
 func (d Decimal64) Cmp(e Decimal64) int {
-	dp := d.getParts()
-	ep := e.getParts()
-	if dec := propagateNan(&dp, &ep); dec != nil {
+	dp := decParts{}
+	dp.unpack(d)
+	ep := decParts{}
+	ep.unpack(e)
+	if _, ok := checkNan(&dp, &ep); ok == true {
 		return -2
 	}
 	if dp.isZero() && ep.isZero() {
@@ -63,10 +65,12 @@ func (d Decimal64) Neg() Decimal64 {
 
 // Quo computes d / e.
 func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
-	dp := d.getParts()
-	ep := e.getParts()
-	if dec := propagateNan(&dp, &ep); dec != nil {
-		return *dec
+	dp := decParts{}
+	dp.unpack(d)
+	ep := decParts{}
+	ep.unpack(e)
+	if nan, isNan := checkNan(&dp, &ep); isNan {
+		return nan
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
@@ -159,10 +163,12 @@ func (d Decimal64) Sqrt() Decimal64 {
 
 // Add computes d + e
 func (ctx Context64) Add(d, e Decimal64) Decimal64 {
-	dp := d.getParts()
-	ep := e.getParts()
-	if dec := propagateNan(&dp, &ep); dec != nil {
-		return *dec
+	dp := decParts{}
+	dp.unpack(d)
+	ep := decParts{}
+	ep.unpack(e)
+	if nan, isNan := checkNan(&dp, &ep); isNan {
+		return nan
 	}
 	if dp.fl == flInf || ep.fl == flInf {
 		if dp.fl != flInf {
@@ -187,7 +193,7 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 		sep = -sep
 	}
 	if sep > 17 {
-		return *dp.dec
+		return dp.original
 	}
 	var rndStatus discardedDigit
 	dp.matchScales128(&ep)
@@ -208,11 +214,14 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 
 // FMA computes d*e + f
 func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
-	dp := d.getParts()
-	ep := e.getParts()
-	fp := f.getParts()
-	if dec := propagateNan(&dp, &ep, &fp); dec != nil {
-		return *dec
+	dp := decParts{}
+	dp.unpack(d)
+	ep := decParts{}
+	ep.unpack(e)
+	fp := decParts{}
+	fp.unpack(f)
+	if nan, isNan := checkNan3(&dp, &ep, &fp); isNan {
+		return nan
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
@@ -265,8 +274,8 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	dp.unpack(d)
 	ep := decParts{}
 	ep.unpack(e)
-	if dec, isNan := propagateNan2(&dp, &ep); isNan {
-		return dec
+	if nan, isNan := checkNan(&dp, &ep); isNan {
+		return nan
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign

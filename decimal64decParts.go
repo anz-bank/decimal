@@ -114,6 +114,7 @@ func (dp *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
 }
 
 func (dp *decParts) unpack(d Decimal64) {
+	dp.original = d
 	dp.sign = int(d.bits >> 63)
 	switch (d.bits >> (63 - 4)) & 0xf {
 	case 15:
