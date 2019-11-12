@@ -144,5 +144,4 @@ func (dp *decParts) unpack(d Decimal64) {
 			dp.exp = 0
 		}
 	}
-	return
 }

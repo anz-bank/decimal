@@ -239,12 +239,6 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 	return
 }
 
-func (d Decimal64) getParts() decParts {
-	dp := decParts{}
-	dp.unpack(d)
-	return dp
-}
-
 func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {
 	if significand == 0 {
 		return 0, 0, 0
@@ -388,8 +382,8 @@ func (d Decimal64) Signbit() bool {
 
 // Class returns a string of the 'type' that the decimal is.
 func (d Decimal64) Class() string {
-	dp := d.getParts()
-
+	dp := decParts{}
+	dp.unpack(d)
 	if dp.isSNaN() {
 		return "sNaN"
 	} else if dp.isNaN() {
@@ -424,7 +418,7 @@ func numDecimalDigits(n uint64) int {
 	return numDigits + 1
 }
 
-// checkNan returns the decimal NaN that is to be propogated else false
+// checkNan returns the decimal NaN that is to be propogated and true else first decimal and false
 func checkNan(d, e *decParts) (Decimal64, bool) {
 	if d.fl == flSNaN {
 		return d.original, true
@@ -441,7 +435,7 @@ func checkNan(d, e *decParts) (Decimal64, bool) {
 	return d.original, false
 }
 
-// checkNan3 returns the decimal NaN that is to be propogated else false
+// checkNan3 returns the decimal NaN that is to be propogated and true else first decimal and false
 func checkNan3(d, e, f *decParts) (Decimal64, bool) {
 	if d.fl == flSNaN {
 		return d.original, true

@@ -45,7 +45,7 @@ func (d Decimal64) Cmp(e Decimal64) int {
 	dp.unpack(d)
 	ep := decParts{}
 	ep.unpack(e)
-	if _, ok := checkNan(&dp, &ep); ok == true {
+	if _, isNan := checkNan(&dp, &ep); isNan {
 		return -2
 	}
 	if dp.isZero() && ep.isZero() {

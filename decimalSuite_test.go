@@ -123,8 +123,10 @@ func setRoundingFromString(s string) Context64 {
 
 }
 func isRoundingErr(res, expected Decimal64) bool {
-	resP := res.getParts()
-	expectedP := expected.getParts()
+	resP := decParts{}
+	resP.unpack(res)
+	expectedP := decParts{}
+	expectedP.unpack(expected)
 	sigDiff := int64(resP.significand.lo - expectedP.significand.lo)
 	expDiff := resP.exp - expectedP.exp
 	if (sigDiff == 1 || sigDiff == -1) && (expDiff == 1 || expDiff == -1 || expDiff == 0) {
