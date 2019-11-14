@@ -183,10 +183,10 @@ func getInput(line string) testCaseStrings {
 // convertToDec64 converts the map object strings to decimal64s.
 func convertToDec64(testvals testCaseStrings) (dec64vals decValContainer) {
 	var err1, err2, err3, expectedErr error
-	dec64vals.val1, err1 = ParseDecimal64(testvals.val1)
-	dec64vals.val2, err2 = ParseDecimal64(testvals.val2)
-	dec64vals.val3, err3 = ParseDecimal64(testvals.val3)
-	dec64vals.expected, expectedErr = ParseDecimal64(testvals.expectedResult)
+	dec64vals.val1, err1 = Parse64(testvals.val1)
+	dec64vals.val2, err2 = Parse64(testvals.val2)
+	dec64vals.val3, err3 = Parse64(testvals.val3)
+	dec64vals.expected, expectedErr = Parse64(testvals.expectedResult)
 
 	if err1 != nil || err2 != nil || expectedErr != nil {
 		dec64vals.parseError = fmt.Errorf("error parsing in test: %s: \nval 1:%s: \nval 2: %s  \nval 3: %s\nexpected: %s ",

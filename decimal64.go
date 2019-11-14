@@ -101,8 +101,8 @@ func checkSignificandIsNormal(significand uint64) {
 	logicCheck(significand < 10*decimal64Base, "%d < %d", significand, 10*decimal64Base)
 }
 
-// NewDecimal64FromInt64 returns a new Decimal64 with the given value.
-func NewDecimal64FromInt64(value int64) Decimal64 {
+// New64FromInt64 returns a new Decimal64 with the given value.
+func New64FromInt64(value int64) Decimal64 {
 	if value == 0 {
 		return Zero64
 	}

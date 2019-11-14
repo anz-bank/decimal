@@ -9,10 +9,10 @@ import (
 func TestDecimal64Gob(t *testing.T) {
 	require := require.New(t)
 
-	gob, err := NewDecimal64FromInt64(23456).GobEncode()
+	gob, err := New64FromInt64(23456).GobEncode()
 	require.NoError(err)
 
 	var d Decimal64
 	require.NoError(d.GobDecode(gob))
-	require.Equal(NewDecimal64FromInt64(23456), d)
+	require.Equal(New64FromInt64(23456), d)
 }

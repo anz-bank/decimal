@@ -12,7 +12,7 @@ func (d Decimal64) MarshalText() []byte {
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (d *Decimal64) UnmarshalText(text []byte) error {
-	e, err := ParseDecimal64(string(text))
+	e, err := Parse64(string(text))
 	if err != nil {
 		err = fmt.Errorf("decimal: cannot unmarshal %q as Decimal64 (%v)", text, err)
 	} else {

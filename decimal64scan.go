@@ -7,8 +7,8 @@ import (
 	"unicode"
 )
 
-// ParseDecimal64 parses a string representation of a number as a Decimal64.
-func ParseDecimal64(s string) (Decimal64, error) {
+// Parse64 parses a string representation of a number as a Decimal64.
+func Parse64(s string) (Decimal64, error) {
 	state := stringScanner{reader: strings.NewReader(s)}
 	var d Decimal64
 	if err := d.Scan(&state, 'e'); err != nil {
@@ -24,10 +24,10 @@ func ParseDecimal64(s string) (Decimal64, error) {
 	return d, nil
 }
 
-// MustParseDecimal64 parses a string as a Decimal64 and returns the value or
+// MustParse64 parses a string as a Decimal64 and returns the value or
 // panics if the string doesn't represent a valid Decimal64.
-func MustParseDecimal64(s string) Decimal64 {
-	d, err := ParseDecimal64(s)
+func MustParse64(s string) Decimal64 {
+	d, err := Parse64(s)
 	if err != nil {
 		panic(err)
 	}
