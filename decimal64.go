@@ -382,7 +382,7 @@ func (d Decimal64) Signbit() bool {
 
 // Class returns a string of the 'type' that the decimal is.
 func (d Decimal64) Class() string {
-	dp := decParts{}
+	var dp decParts
 	dp.unpack(d)
 	if dp.isSNaN() {
 		return "sNaN"

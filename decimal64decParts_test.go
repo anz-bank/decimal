@@ -7,7 +7,7 @@ import (
 )
 
 func TestPartsInf(t *testing.T) {
-	a := decParts{}
+	var a decParts
 	a.unpack(Infinity64)
 	require.True(t, a.isInf())
 
@@ -17,8 +17,7 @@ func TestPartsInf(t *testing.T) {
 
 func TestIsNaN(t *testing.T) {
 	require := require.New(t)
-
-	a := decParts{}
+	var a decParts
 	a.unpack(Zero64)
 	require.Equal(false, a.isNaN())
 
@@ -33,12 +32,12 @@ func TestPartsSubnormal(t *testing.T) {
 	require := require.New(t)
 
 	d := MustParseDecimal64("0.1E-383")
-	subnormal64Parts := decParts{}
+	var subnormal64Parts decParts
 	subnormal64Parts.unpack(d)
 	require.Equal(true, subnormal64Parts.isSubnormal())
 
 	e := NewDecimal64FromInt64(42)
-	fortyTwoParts := decParts{}
+	var fortyTwoParts decParts
 	fortyTwoParts.unpack(e)
 	require.Equal(false, fortyTwoParts.isSubnormal())
 

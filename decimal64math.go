@@ -41,9 +41,9 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 //   +1 if d >  e
 //
 func (d Decimal64) Cmp(e Decimal64) int {
-	dp := decParts{}
+	var dp decParts
 	dp.unpack(d)
-	ep := decParts{}
+	var ep decParts
 	ep.unpack(e)
 	if _, isNan := checkNan(&dp, &ep); isNan {
 		return -2
@@ -65,9 +65,9 @@ func (d Decimal64) Neg() Decimal64 {
 
 // Quo computes d / e.
 func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
-	dp := decParts{}
+	var dp decParts
 	dp.unpack(d)
-	ep := decParts{}
+	var ep decParts
 	ep.unpack(e)
 	if nan, isNan := checkNan(&dp, &ep); isNan {
 		return nan
@@ -163,9 +163,9 @@ func (d Decimal64) Sqrt() Decimal64 {
 
 // Add computes d + e
 func (ctx Context64) Add(d, e Decimal64) Decimal64 {
-	dp := decParts{}
+	var dp decParts
 	dp.unpack(d)
-	ep := decParts{}
+	var ep decParts
 	ep.unpack(e)
 	if nan, isNan := checkNan(&dp, &ep); isNan {
 		return nan
@@ -214,11 +214,11 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 
 // FMA computes d*e + f
 func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
-	dp := decParts{}
+	var dp decParts
 	dp.unpack(d)
-	ep := decParts{}
+	var ep decParts
 	ep.unpack(e)
-	fp := decParts{}
+	var fp decParts
 	fp.unpack(f)
 	if nan, isNan := checkNan3(&dp, &ep, &fp); isNan {
 		return nan
@@ -270,9 +270,9 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 
 // Mul computes d * e
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
-	dp := decParts{}
+	var dp decParts
 	dp.unpack(d)
-	ep := decParts{}
+	var ep decParts
 	ep.unpack(e)
 	if nan, isNan := checkNan(&dp, &ep); isNan {
 		return nan
