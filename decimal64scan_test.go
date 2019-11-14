@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestParseDecimal64(t *testing.T) {
+func TestParse64(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping TestParseDecimal64 in short mode.")
+		t.Skip("skipping TestParse64 in short mode.")
 	}
 	parseEquals64 := parseEquals64(t)
 
@@ -20,13 +20,13 @@ func TestParseDecimal64(t *testing.T) {
 		for _, suffix := range []string{"", ".", ".0", "e0"} {
 
 			s := strconv.Itoa(int(i))
-			di := NewDecimal64FromInt64(i)
+			di := New64FromInt64(i)
 			parseEquals64(di, s+suffix)
 		}
 	}
 }
 
-func TestParseDecimal64Inf(t *testing.T) {
+func TestParse64Inf(t *testing.T) {
 	parseEquals64 := parseEquals64(t)
 
 	parseEquals64(Infinity64, "Inf")
@@ -41,7 +41,7 @@ func TestParseDecimal64Inf(t *testing.T) {
 
 // TODO: Find out what the correct behavior is with bad inputs
 // TODO: Does nan get returned if there are leading/trailing whitespaces?
-func TestParseDecimal64BadInputs(t *testing.T) {
+func TestParse64BadInputs(t *testing.T) {
 	require := require.New(t)
 	for _, input := range []string{
 		"", " ", "x",
@@ -49,12 +49,12 @@ func TestParseDecimal64BadInputs(t *testing.T) {
 		"0..", "0..2",
 		"0e", "0ee", "0ee2", "0ex",
 	} {
-		d, _ := ParseDecimal64(input)
+		d, _ := Parse64(input)
 		require.Equal(SNaN64.IsNaN(), d.IsNaN())
 	}
 }
 
-func TestParseDecimal64BigExp(t *testing.T) {
+func TestParse64BigExp(t *testing.T) {
 	parseEquals64 := parseEquals64(t)
 
 	parseEquals64(Zero64, "0e-9999")
@@ -68,11 +68,11 @@ func TestParseDecimal64BigExp(t *testing.T) {
 	parseEquals64(NegInfinity64, "-1e9999")
 }
 
-func TestParseDecimal64LongMantissa(t *testing.T) {
+func TestParse64LongMantissa(t *testing.T) {
 	parseEquals64 := parseEquals64(t)
 
 	parseEquals64(One64, "1000000000000000000000e-21")
-	parseEquals64(NewDecimal64FromInt64(123), "1230000000000000000000e-19")
+	parseEquals64(New64FromInt64(123), "1230000000000000000000e-19")
 }
 
 func TestDecimal64ScanFlakyScanState(t *testing.T) {
@@ -91,7 +91,7 @@ func TestDecimal64ScanFlakyScanState(t *testing.T) {
 	}
 }
 
-func BenchmarkParseDecimal64(b *testing.B) {
+func BenchmarkParse64(b *testing.B) {
 	var d Decimal64
 	for n := 0; n < b.N; n++ {
 		buf := bytes.NewBufferString("123456789")
@@ -115,11 +115,11 @@ func parseEquals64(t *testing.T) func(expected Decimal64, input string) {
 
 	return func(expected Decimal64, input string) {
 		require.NotPanics(func() {
-			n := MustParseDecimal64(input)
+			n := MustParse64(input)
 			require.Equal(expected, n, "%s", input)
 		}, "%s", input)
 
-		n, err := ParseDecimal64(input)
+		n, err := Parse64(input)
 		require.NoError(err, "%s", input)
 		require.Equal(expected, n, "%s", input)
 

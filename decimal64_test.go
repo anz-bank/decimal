@@ -9,7 +9,7 @@ import (
 
 func TestNew64FromInt64(t *testing.T) {
 	for i := int64(-1000); i <= 1000; i++ {
-		d := NewDecimal64FromInt64(i)
+		d := New64FromInt64(i)
 		j := d.Int64()
 		require.EqualValues(t, i, j, "%d", i)
 	}
@@ -19,7 +19,7 @@ func TestNew64FromInt64(t *testing.T) {
 	for e := 4; e < 54; e++ {
 		base := int64(1) << uint(e)
 		for i := base - 10; i <= base+10; i++ {
-			d := NewDecimal64FromInt64(i)
+			d := New64FromInt64(i)
 			j := d.Int64()
 			require.EqualValues(t, i, j, "1<<%d + %d", e, i)
 		}
@@ -30,7 +30,7 @@ func TestNew64FromInt64Big(t *testing.T) {
 	const limit = decimal64Base
 	const step = limit / 997
 	for i := -int64(limit); i <= limit; i += step {
-		d := NewDecimal64FromInt64(i)
+		d := New64FromInt64(i)
 		j := d.Int64()
 		require.EqualValues(t, i, j, "%d", i)
 	}
@@ -43,9 +43,9 @@ func TestDecimal64Float64(t *testing.T) {
 	require.Equal(0.0, Zero64.Float64())
 	require.Equal(-0.0, NegZero64.Float64())
 	require.Equal(1.0, One64.Float64())
-	require.Equal(10.0, NewDecimal64FromInt64(10).Float64())
+	require.Equal(10.0, New64FromInt64(10).Float64())
 
-	oneThird := One64.Quo(NewDecimal64FromInt64(3))
+	oneThird := One64.Quo(New64FromInt64(3))
 	one := oneThird.Add(oneThird).Add(oneThird)
 	require.InEpsilon(oneThird.Float64(), 1.0/3.0, 0.00000001)
 	require.InEpsilon(1.0, one.Float64(), 0.00000001)
@@ -63,18 +63,18 @@ func TestDecimal64Int64(t *testing.T) {
 	require.EqualValues(0, Zero64.Int64())
 	require.EqualValues(-0, NegZero64.Int64())
 	require.EqualValues(1, One64.Int64())
-	require.EqualValues(10, NewDecimal64FromInt64(10).Int64())
+	require.EqualValues(10, New64FromInt64(10).Int64())
 
 	require.EqualValues(0, QNaN64.Int64())
 
 	require.EqualValues(math.MaxInt64, Infinity64.Int64())
 	require.EqualValues(math.MinInt64, NegInfinity64.Int64())
 
-	googol, err := ParseDecimal64("1e100")
+	googol, err := Parse64("1e100")
 	require.NoError(err)
 	require.EqualValues(math.MaxInt64, googol.Int64())
 
-	long, err := ParseDecimal64("91234567890123456789e20")
+	long, err := Parse64("91234567890123456789e20")
 	require.NoError(err)
 	require.EqualValues(math.MaxInt64, long.Int64())
 }
@@ -87,8 +87,8 @@ func TestDecimal64IsInf(t *testing.T) {
 	require.False(t, NegZero64.IsInf())
 	require.False(t, QNaN64.IsInf())
 	require.False(t, SNaN64.IsInf())
-	require.False(t, NewDecimal64FromInt64(42).IsInf())
-	require.False(t, NewDecimal64FromInt64(-42).IsInf())
+	require.False(t, New64FromInt64(42).IsInf())
+	require.False(t, New64FromInt64(-42).IsInf())
 }
 
 func TestDecimal64IsNaN(t *testing.T) {
@@ -106,8 +106,8 @@ func TestDecimal64IsNaN(t *testing.T) {
 		NegInfinity64,
 		Zero64,
 		NegZero64,
-		NewDecimal64FromInt64(42),
-		NewDecimal64FromInt64(-42),
+		New64FromInt64(42),
+		New64FromInt64(-42),
 	} {
 		require.False(t, n.IsNaN(), "%v", n)
 		require.False(t, n.IsQNaN(), "%v", n)
@@ -118,7 +118,7 @@ func TestDecimal64IsNaN(t *testing.T) {
 func TestDecimal64IsInt(t *testing.T) {
 	require := require.New(t)
 
-	fortyTwo := NewDecimal64FromInt64(42)
+	fortyTwo := New64FromInt64(42)
 
 	require.True(Zero64.IsInt())
 	require.True(fortyTwo.IsInt())
@@ -170,9 +170,9 @@ func TestNumDecimalDigits(t *testing.T) {
 func TestIsSubnormal(t *testing.T) {
 	require := require.New(t)
 
-	require.Equal(true, MustParseDecimal64("0.1E-383").IsSubnormal())
-	require.Equal(true, MustParseDecimal64("-0.1E-383").IsSubnormal())
-	require.Equal(false, MustParseDecimal64("NaN10").IsSubnormal())
-	require.Equal(false, NewDecimal64FromInt64(42).IsSubnormal())
+	require.Equal(true, MustParse64("0.1E-383").IsSubnormal())
+	require.Equal(true, MustParse64("-0.1E-383").IsSubnormal())
+	require.Equal(false, MustParse64("NaN10").IsSubnormal())
+	require.Equal(false, New64FromInt64(42).IsSubnormal())
 
 }
