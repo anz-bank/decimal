@@ -112,3 +112,36 @@ func (dp *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
 	dp.exp = targetExp
 	return
 }
+
+func (dp *decParts) unpack(d Decimal64) {
+	dp.original = d
+	dp.sign = int(d.bits >> 63)
+	switch (d.bits >> (63 - 4)) & 0xf {
+	case 15:
+		switch (d.bits >> (63 - 6)) & 3 {
+		case 0, 1:
+			dp.fl = flInf
+		case 2:
+			dp.fl = flQNaN
+			return
+		case 3:
+			dp.fl = flSNaN
+			return
+		}
+	case 12, 13, 14:
+		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
+		//     EE ∈ {00, 01, 10}
+		dp.fl = flNormal
+		dp.exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
+		dp.significand.lo = d.bits&(1<<51-1) | (1 << 53)
+	default:
+		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
+		//   EE ∈ {00, 01, 10}
+		dp.fl = flNormal
+		dp.exp = int((d.bits>>(63-10))&(1<<10-1)) - expOffset
+		dp.significand.lo = d.bits & (1<<53 - 1)
+		if dp.significand.lo == 0 {
+			dp.exp = 0
+		}
+	}
+}

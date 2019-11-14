@@ -42,7 +42,7 @@ type decParts struct {
 	sign        int
 	exp         int
 	significand uint128T
-	dec         *Decimal64
+	original    Decimal64
 }
 
 // Context64 stores the rounding type for arithmetic operations.
@@ -119,7 +119,6 @@ func NewDecimal64FromInt64(value int64) Decimal64 {
 }
 
 func renormalize(exp int, significand uint64) (int, uint64) {
-	logicCheck(significand != 0, "significand (%d) != 0", significand)
 
 	numBits := 64 - bits.LeadingZeros64(significand)
 	numDigits := numBits * 3 / 10
@@ -238,12 +237,6 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 		}
 	}
 	return
-}
-
-// getParts gets the parts and returns in decParts stuct, doesn't get the magnitude due to performance issues\
-func (d Decimal64) getParts() decParts {
-	flav, sign, exp, significand := d.parts()
-	return decParts{flav, sign, exp, uint128T{significand, 0}, &d}
 }
 
 func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {
@@ -389,8 +382,8 @@ func (d Decimal64) Signbit() bool {
 
 // Class returns a string of the 'type' that the decimal is.
 func (d Decimal64) Class() string {
-	dp := d.getParts()
-
+	var dp decParts
+	dp.unpack(d)
 	if dp.isSNaN() {
 		return "sNaN"
 	} else if dp.isNaN() {
@@ -425,17 +418,42 @@ func numDecimalDigits(n uint64) int {
 	return numDigits + 1
 }
 
-// propagateNan returns the decimal pointer to the NaN that is to be propogated else nil
-func propagateNan(d ...*decParts) *Decimal64 {
-	for _, dec := range d {
-		if dec.fl == flSNaN {
-			return dec.dec
-		}
+// checkNan returns the decimal NaN that is to be propogated and true else first decimal and false
+func checkNan(d, e *decParts) (Decimal64, bool) {
+	if d.fl == flSNaN {
+		return d.original, true
 	}
-	for _, dec := range d {
-		if dec.fl == flQNaN {
-			return dec.dec
-		}
+	if e.fl == flSNaN {
+		return e.original, true
 	}
-	return nil
+	if d.fl == flQNaN {
+		return d.original, true
+	}
+	if e.fl == flQNaN {
+		return e.original, true
+	}
+	return d.original, false
+}
+
+// checkNan3 returns the decimal NaN that is to be propogated and true else first decimal and false
+func checkNan3(d, e, f *decParts) (Decimal64, bool) {
+	if d.fl == flSNaN {
+		return d.original, true
+	}
+	if e.fl == flSNaN {
+		return e.original, true
+	}
+	if f.fl == flSNaN {
+		return f.original, true
+	}
+	if d.fl == flQNaN {
+		return d.original, true
+	}
+	if e.fl == flQNaN {
+		return e.original, true
+	}
+	if f.fl == flQNaN {
+		return f.original, true
+	}
+	return d.original, false
 }

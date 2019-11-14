@@ -41,9 +41,11 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 //   +1 if d >  e
 //
 func (d Decimal64) Cmp(e Decimal64) int {
-	dp := d.getParts()
-	ep := e.getParts()
-	if dec := propagateNan(&dp, &ep); dec != nil {
+	var dp decParts
+	dp.unpack(d)
+	var ep decParts
+	ep.unpack(e)
+	if _, isNan := checkNan(&dp, &ep); isNan {
 		return -2
 	}
 	if dp.isZero() && ep.isZero() {
@@ -63,10 +65,12 @@ func (d Decimal64) Neg() Decimal64 {
 
 // Quo computes d / e.
 func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
-	dp := d.getParts()
-	ep := e.getParts()
-	if dec := propagateNan(&dp, &ep); dec != nil {
-		return *dec
+	var dp decParts
+	dp.unpack(d)
+	var ep decParts
+	ep.unpack(e)
+	if nan, isNan := checkNan(&dp, &ep); isNan {
+		return nan
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
@@ -159,10 +163,12 @@ func (d Decimal64) Sqrt() Decimal64 {
 
 // Add computes d + e
 func (ctx Context64) Add(d, e Decimal64) Decimal64 {
-	dp := d.getParts()
-	ep := e.getParts()
-	if dec := propagateNan(&dp, &ep); dec != nil {
-		return *dec
+	var dp decParts
+	dp.unpack(d)
+	var ep decParts
+	ep.unpack(e)
+	if nan, isNan := checkNan(&dp, &ep); isNan {
+		return nan
 	}
 	if dp.fl == flInf || ep.fl == flInf {
 		if dp.fl != flInf {
@@ -187,7 +193,7 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 		sep = -sep
 	}
 	if sep > 17 {
-		return *dp.dec
+		return dp.original
 	}
 	var rndStatus discardedDigit
 	dp.matchScales128(&ep)
@@ -208,11 +214,14 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 
 // FMA computes d*e + f
 func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
-	dp := d.getParts()
-	ep := e.getParts()
-	fp := f.getParts()
-	if dec := propagateNan(&dp, &ep, &fp); dec != nil {
-		return *dec
+	var dp decParts
+	dp.unpack(d)
+	var ep decParts
+	ep.unpack(e)
+	var fp decParts
+	fp.unpack(f)
+	if nan, isNan := checkNan3(&dp, &ep, &fp); isNan {
+		return nan
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
@@ -261,10 +270,12 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 
 // Mul computes d * e
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
-	dp := d.getParts()
-	ep := e.getParts()
-	if dec := propagateNan(&dp, &ep); dec != nil {
-		return *dec
+	var dp decParts
+	dp.unpack(d)
+	var ep decParts
+	ep.unpack(e)
+	if nan, isNan := checkNan(&dp, &ep); isNan {
+		return nan
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
@@ -278,10 +289,9 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 		return zeroes[ans.sign]
 	}
 	var roundStatus discardedDigit
-	significand := umul64(dp.significand.lo, ep.significand.lo)
+	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
 	ans.exp = dp.exp + ep.exp + 15
-	significand = significand.div64(decimal64Base)
-	ans.significand.lo = significand.lo
+	ans.significand = ans.significand.div64(decimal64Base)
 	if ans.exp >= -expOffset {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	} else if ans.exp < 1-expMax {

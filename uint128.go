@@ -41,35 +41,6 @@ func (a uint128T) add(b uint128T) uint128T {
 	return uint128T{lo, hi}
 }
 
-const base32 = 1 << 32
-
-// Compute q, r such that q*d + r = a.
-// Assumes a < d<<64.
-// http://www.hackersdelight.org/hdcodetxt/divlu.c.txt: divlu1()
-func (a uint128T) divPart64(d uint64) (q, r uint64) {
-	shift := uint(bits.LeadingZeros64(d))
-	d <<= shift
-
-	d0, d1 := d%base32, d/base32
-	a = a.shl(shift)
-	a0, a1 := a.lo%base32, a.lo/base32
-	q1 := partialQuotient32(a1, a.hi, d0, d1)
-	a12 := a1 + a.hi*base32 - q1*d
-	q0 := partialQuotient32(a0, a12, d0, d1)
-	a01 := a0 + a12*base32 - q0*d
-
-	return q0 + q1*base32, a01 >> shift
-}
-
-// Helper for divPart64
-func partialQuotient32(a0, a12, d0, d1 uint64) uint64 {
-	q := a12 / d1
-	if r := a12 - q*d1; r < base32 && !(q < base32 && q*d0 <= r<<32+a0) {
-		q--
-	}
-	return q
-}
-
 func (a uint128T) bitLen() uint {
 	return 128 - a.leadingZeros()
 }
@@ -81,8 +52,8 @@ func (a uint128T) div64(d uint64) uint128T {
 
 func (a uint128T) divrem64(d uint64) (q uint128T, r uint64) {
 	r = 0
-	q.hi, r = uint128T{a.hi, r}.divPart64(d)
-	q.lo, r = uint128T{a.lo, r}.divPart64(d)
+	q.hi, r = bits.Div64(r, a.hi, d)
+	q.lo, r = bits.Div64(r, a.lo, d)
 	return
 }
 
