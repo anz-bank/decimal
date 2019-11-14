@@ -46,8 +46,8 @@ func (a uint128T) bitLen() uint {
 }
 
 func (a uint128T) div64(d uint64) uint128T {
-	b, _ := a.divrem64(d)
-	return b
+	q, _ := a.divrem64(d)
+	return q
 }
 
 func (a uint128T) divrem64(d uint64) (q uint128T, r uint64) {
