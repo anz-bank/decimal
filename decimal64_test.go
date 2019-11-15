@@ -27,7 +27,7 @@ func TestNew64FromInt64(t *testing.T) {
 }
 
 func TestNew64FromInt64Big(t *testing.T) {
-	const limit = decimal64Base
+	const limit = int64(decimal64Base)
 	const step = limit / 997
 	for i := -int64(limit); i <= limit; i += step {
 		d := New64FromInt64(i)
@@ -67,16 +67,16 @@ func TestDecimal64Int64(t *testing.T) {
 
 	require.EqualValues(0, QNaN64.Int64())
 
-	require.EqualValues(math.MaxInt64, Infinity64.Int64())
-	require.EqualValues(math.MinInt64, NegInfinity64.Int64())
+	require.EqualValues(int64(math.MaxInt64), Infinity64.Int64())
+	require.EqualValues(int64(math.MinInt64), NegInfinity64.Int64())
 
 	googol, err := Parse64("1e100")
 	require.NoError(err)
-	require.EqualValues(math.MaxInt64, googol.Int64())
+	require.EqualValues(int64(math.MaxInt64), googol.Int64())
 
 	long, err := Parse64("91234567890123456789e20")
 	require.NoError(err)
-	require.EqualValues(math.MaxInt64, long.Int64())
+	require.EqualValues(int64(math.MaxInt64), long.Int64())
 }
 
 func TestDecimal64IsInf(t *testing.T) {
