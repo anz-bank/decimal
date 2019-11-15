@@ -34,7 +34,7 @@ var neg64 uint64 = 0x80 << 56
 var inf64 uint64 = 0x78 << 56
 
 // 1E15
-const decimal64Base = 1000 * 1000 * 1000 * 1000 * 1000
+const decimal64Base uint64 = 1000 * 1000 * 1000 * 1000 * 1000
 
 // maxSig is the maximum significand possible that fits in 16 decimal places.
 const maxSig = 10*decimal64Base - 1

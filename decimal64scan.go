@@ -150,7 +150,7 @@ func parseUint(s string) (int64, int) {
 	var a int64
 	var exp int
 	for i, c := range s {
-		if a >= decimal64Base {
+		if a >= int64(decimal64Base) {
 			exp = len(s) - i
 			break
 		}

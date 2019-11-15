@@ -22,8 +22,8 @@ func TestUint128Sqrt(t *testing.T) {
 	require.EqualValues(t, 2, uint128T{4, 0}.sqrt())
 	require.EqualValues(t, 2, uint128T{8, 0}.sqrt())
 	require.EqualValues(t, 3, uint128T{9, 0}.sqrt())
-	require.EqualValues(t, 1<<32, uint128T{0, 1}.sqrt())
-	require.EqualValues(t, 2<<32, uint128T{0, 4}.sqrt())
+	require.EqualValues(t, int64(1<<32), uint128T{0, 1}.sqrt())
+	require.EqualValues(t, int64(2<<32), uint128T{0, 4}.sqrt())
 }
 
 func TestUint128DivBy10(t *testing.T) {
