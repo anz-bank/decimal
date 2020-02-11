@@ -1,3 +1,4 @@
+examoke
 # decimal
 
 This library implements fixed-precision decimal numbers based on IEEE 754R standard;
