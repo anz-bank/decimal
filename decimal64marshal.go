@@ -1,13 +1,18 @@
 package decimal
 
 import (
+	"encoding"
+	"encoding/binary"
 	"fmt"
 )
 
+var _ encoding.TextMarshaler = Decimal64{}
+var _ encoding.TextUnmarshaler = (*Decimal64)(nil)
+
 // MarshalText implements the encoding.TextMarshaler interface.
-func (d Decimal64) MarshalText() []byte {
-	var buf []byte
-	return d.Append(buf, 'g', -1)
+func (d Decimal64) MarshalText() ([]byte, error) {
+	data := d.Append(make([]byte, 0, 16), 'g', -1)
+	return data, nil
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
@@ -19,4 +24,21 @@ func (d *Decimal64) UnmarshalText(text []byte) error {
 		*d = e
 	}
 	return err
+}
+
+var _ encoding.BinaryMarshaler = Decimal64{}
+var _ encoding.BinaryUnmarshaler = (*Decimal64)(nil)
+
+// MarshalBinary implements the encoding.BinaryMarshaler interface.
+func (d Decimal64) MarshalBinary() ([]byte, error) {
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, d.bits)
+	return buf, nil
+}
+
+// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
+func (d *Decimal64) UnmarshalBinary(data []byte) error {
+	d.bits = binary.BigEndian.Uint64(data)
+	// TODO: Check for out of bounds significand.
+	return nil
 }

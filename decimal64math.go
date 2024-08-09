@@ -439,3 +439,77 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	}
 	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
 }
+
+// NextPlus returns the next value above d.
+func (d Decimal64) NextPlus() Decimal64 {
+	flav, sign, exp, significand := d.parts()
+	switch {
+	case flav == flInf:
+		if sign == 1 {
+			return NegMax64
+		}
+		return Infinity64
+	case flav != flNormal:
+		return d
+	case significand == 0:
+		return Min64
+	case sign == 1:
+		switch {
+		case significand > decimal64Base:
+			return Decimal64{bits: d.bits - 1}.debug()
+		case exp == -398:
+			if significand > 1 {
+				return Decimal64{bits: d.bits - 1}.debug()
+			}
+			return Zero64
+		default:
+			return newFromParts(sign, exp-1, 10*decimal64Base-1)
+		}
+	default:
+		switch {
+		case significand < 10*decimal64Base-1:
+			return Decimal64{bits: d.bits + 1}.debug()
+		case exp == 369:
+			return Infinity64
+		default:
+			return newFromParts(sign, exp+1, decimal64Base)
+		}
+	}
+}
+
+// NextMinus returns the next value above d.
+func (d Decimal64) NextMinus() Decimal64 {
+	flav, sign, exp, significand := d.parts()
+	switch {
+	case flav == flInf:
+		if sign == 0 {
+			return Max64
+		}
+		return NegInfinity64
+	case flav != flNormal:
+		return d
+	case significand == 0:
+		return NegMin64
+	case sign == 0:
+		switch {
+		case significand > decimal64Base:
+			return Decimal64{bits: d.bits - 1}.debug()
+		case exp == -398:
+			if significand > 1 {
+				return Decimal64{bits: d.bits - 1}.debug()
+			}
+			return Zero64
+		default:
+			return newFromParts(sign, exp-1, 10*decimal64Base-1)
+		}
+	default:
+		switch {
+		case significand < 10*decimal64Base-1:
+			return Decimal64{bits: d.bits + 1}.debug()
+		case exp == 369:
+			return NegInfinity64
+		default:
+			return newFromParts(sign, exp+1, decimal64Base)
+		}
+	}
+}

@@ -49,10 +49,10 @@ var Max64 = newFromParts(0, expMax, maxSig)
 // NegMax64  is the minimum finite number (most negative) possible with Decimal64 (negative).
 var NegMax64 = newFromParts(1, expMax, maxSig)
 
-// Min64 is the smallest number that is subnormal possible with Decimal64.
+// Min64 is the closest positive number to zero.
 var Min64 = newFromParts(0, -398, 1)
 
-// Min64 is the smallest number that is subnormal possible with Decimal64.
+// Min64 is the closest negative number to zero.
 var NegMin64 = newFromParts(1, -398, 1)
 
 var zeroes = []Decimal64{Zero64, NegZero64}
