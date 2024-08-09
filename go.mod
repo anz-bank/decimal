@@ -1,6 +1,6 @@
 module github.com/anz-bank/decimal
 
-go 1.19
+go 1.20
 
 require github.com/stretchr/testify v1.2.2
 
