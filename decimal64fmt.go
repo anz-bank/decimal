@@ -22,11 +22,25 @@ func appendFrac64(buf []byte, n, limit uint64) []byte {
 
 var zeros = []byte("0000000000000000")
 
+func appendZeros(buf []byte, n int) []byte {
+	if n <= 0 {
+		return buf
+	}
+	l := len(zeros)
+	for ; n > l; n -= l {
+		buf = append(buf, zeros...)
+	}
+	return append(buf, zeros[:n]...)
+}
+
 func appendFrac64Prec(buf []byte, n uint64, prec int) []byte {
+	if prec < 0 {
+		return buf
+	}
 	// Add a digit in front so strconv.AppendUint doesn't trim leading zeros.
 	n += 10 * decimal64Base
 	if prec < 16 {
-		unit := powersOf10[16-prec]
+		unit := powersOf10[max(0, 16-prec)]
 		rem := n % unit
 		n /= unit
 		if rem > unit/2 || rem == unit/2 && n%2 == 1 {
@@ -40,14 +54,7 @@ func appendFrac64Prec(buf []byte, n uint64, prec int) []byte {
 	buf = strconv.AppendUint(buf[:buflen-1], n, 10)
 	buf[buflen-1] = prefix
 
-	for ; prec >= 2*decimal64Digits; prec -= decimal64Digits {
-		buf = append(buf, zeros...)
-	}
-	if prec > decimal64Digits {
-		buf = append(buf, zeros[:prec-decimal64Digits]...)
-	}
-
-	return buf
+	return appendZeros(buf, prec-decimal64Digits)
 }
 
 func appendUint64(buf []byte, n, limit uint64) []byte {
@@ -132,7 +139,7 @@ formatBlock:
 			buf = append(buf, '.')
 			if exponent < 0 {
 				p += exponent
-				buf = append(buf, zeros[:-exponent]...)
+				buf = appendZeros(buf, min(-exponent, prec))
 			}
 			buf = appendFrac64Prec(buf, frac, p)
 			if prec == -1 {
