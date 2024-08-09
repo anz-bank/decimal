@@ -64,13 +64,13 @@ func TestFromSuite(t *testing.T) {
 		"dectest/ddMinMag.decTest",
 		"dectest/ddMinus.decTest",
 		"dectest/ddMultiply.decTest",
+		"dectest/ddNextMinus.decTest",
+		"dectest/ddNextPlus.decTest",
 		"dectest/ddPlus.decTest",
 		"dectest/ddSubtract.decTest",
 
 		// Future
 		// "dectest/ddBase.decTest",
-		// "dectest/ddNextMinus.decTest",
-		// "dectest/ddNextPlus.decTest",
 		// "dectest/ddNextToward.decTest",
 		// "dectest/ddRemainder.decTest",
 		// "dectest/ddRemainderNear.decTest",
@@ -301,6 +301,10 @@ func execOp(context Context64, a, b, c Decimal64, op string) opResult {
 		return opResult{result: a.MinMag(b)}
 	case "minus":
 		return opResult{result: a.Neg()}
+	case "nextminus":
+		return opResult{result: a.NextMinus()}
+	case "nextplus":
+		return opResult{result: a.NextPlus()}
 	case "plus":
 		return opResult{result: a}
 	case "subtract":

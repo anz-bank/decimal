@@ -52,6 +52,9 @@ var NegMax64 = newFromParts(1, expMax, maxSig)
 // Min64 is the smallest number that is subnormal possible with Decimal64.
 var Min64 = newFromParts(0, -398, 1)
 
+// Min64 is the smallest number that is subnormal possible with Decimal64.
+var NegMin64 = newFromParts(1, -398, 1)
+
 var zeroes = []Decimal64{Zero64, NegZero64}
 var infinities = []Decimal64{Infinity64, NegInfinity64}
 

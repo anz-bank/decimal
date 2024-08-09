@@ -185,23 +185,76 @@ func (d Decimal64) Text(format byte, prec int) string {
 	return string(d.Append(make([]byte, 0, 16), format, prec))
 }
 
-// RoundHalfAwayFromZero returns a Decimal64 with the smallest possible
-// increment applied to the significand.
-//
-// The default behaviour when formatting Decimal64 is to use half-even rounding,
-// which rounds the last digit away from zero if it is odd or leaves it as is if
-// it is even.
-// This function changes the rounding behaviour such that the last formatted
-// digit will always round away from zero when the next digit is a 5.
-// The downside is that the number just before a half might round up, but this
-// very unlikely since halves are far more likely that almost halves.
-func (d Decimal64) RoundHalfAwayFromZero() Decimal64 {
+// NextPlus returns the next value above d.
+func (d Decimal64) NextPlus() Decimal64 {
 	flav, sign, exp, significand := d.parts()
-	if flav != flNormal {
+	switch {
+	case flav == flInf:
+		if sign == 1 {
+			return NegMax64
+		}
+		return Infinity64
+	case flav != flNormal:
 		return d
+	case significand == 0:
+		return Min64
+	case sign == 1:
+		switch {
+		case significand > decimal64Base:
+			return Decimal64{bits: d.bits - 1}.debug()
+		case exp == -398:
+			if significand > 1 {
+				return Decimal64{bits: d.bits - 1}.debug()
+			}
+			return Zero64
+		default:
+			return newFromParts(sign, exp-1, 10*decimal64Base-1)
+		}
+	default:
+		switch {
+		case significand < 10*decimal64Base-1:
+			return Decimal64{bits: d.bits + 1}.debug()
+		case exp == 369:
+			return Infinity64
+		default:
+			return newFromParts(sign, exp+1, decimal64Base)
+		}
 	}
-	if significand < 10*decimal64Base-1 {
-		return Decimal64{bits: d.bits + 1}.debug()
+}
+
+// NextMinus returns the next value above d.
+func (d Decimal64) NextMinus() Decimal64 {
+	flav, sign, exp, significand := d.parts()
+	switch {
+	case flav == flInf:
+		if sign == 0 {
+			return Max64
+		}
+		return NegInfinity64
+	case flav != flNormal:
+		return d
+	case significand == 0:
+		return NegMin64
+	case sign == 0:
+		switch {
+		case significand > decimal64Base:
+			return Decimal64{bits: d.bits - 1}.debug()
+		case exp == -398:
+			if significand > 1 {
+				return Decimal64{bits: d.bits - 1}.debug()
+			}
+			return Zero64
+		default:
+			return newFromParts(sign, exp-1, 10*decimal64Base-1)
+		}
+	default:
+		switch {
+		case significand < 10*decimal64Base-1:
+			return Decimal64{bits: d.bits + 1}.debug()
+		case exp == 369:
+			return NegInfinity64
+		default:
+			return newFromParts(sign, exp+1, decimal64Base)
+		}
 	}
-	return newFromParts(sign, exp+1, decimal64Base)
 }

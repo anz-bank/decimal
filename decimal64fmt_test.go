@@ -178,7 +178,8 @@ func TestDecimal64FormatPrecEdgeCasesHalfAway(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			n, err := Parse64(test.input)
 			require.NoError(t, err)
-			assert.Equal(t, test.expected, fmt.Sprintf("%.3f", n.RoundHalfAwayFromZero().Float64()))
+			n = n.Abs().NextPlus().CopySign(n)
+			assert.Equal(t, test.expected, fmt.Sprintf("%.3f", n.Float64()))
 		})
 	}
 }
