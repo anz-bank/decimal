@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"slices"
 	"strings"
 	"testing"
 
@@ -181,7 +180,16 @@ func getInput(line string) *testCase {
 	for _, f := range m {
 		fields = append(fields, strings.ReplaceAll(f[1], "''", "'")+f[2])
 	}
-	if i := slices.Index(fields, "->"); i < 5 {
+	i := 0
+	for ; i < len(fields); i++ {
+		if fields[i] == "->" {
+			break
+		}
+	}
+	if i == len(fields) {
+		panic("missing ->")
+	}
+	if i < 5 {
 		if i == -1 {
 			panic(fmt.Errorf("malformed input: %s", line))
 		}
