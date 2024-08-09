@@ -6,6 +6,10 @@ import (
 	"strconv"
 )
 
+var _ fmt.Formatter = Decimal64{}
+var _ fmt.Scanner = (*Decimal64)(nil)
+var _ fmt.Stringer = Decimal64{}
+
 func appendFrac64(buf []byte, n, limit uint64) []byte {
 	for n > 0 {
 		msd := n / limit
