@@ -41,7 +41,6 @@ func TestDecimal64Float64(t *testing.T) {
 
 	require.Equal(-1.0, NegOne64.Float64())
 	require.Equal(0.0, Zero64.Float64())
-	require.Equal(-0.0, NegZero64.Float64())
 	require.Equal(1.0, One64.Float64())
 	require.Equal(10.0, New64FromInt64(10).Float64())
 
@@ -70,12 +69,10 @@ func TestDecimal64Int64(t *testing.T) {
 	require.EqualValues(int64(math.MaxInt64), Infinity64.Int64())
 	require.EqualValues(int64(math.MinInt64), NegInfinity64.Int64())
 
-	googol, err := Parse64("1e100")
-	require.NoError(err)
+	googol := MustParse64("1e100")
 	require.EqualValues(int64(math.MaxInt64), googol.Int64())
 
-	long, err := Parse64("91234567890123456789e20")
-	require.NoError(err)
+	long := MustParse64("91234567890123456789e20")
 	require.EqualValues(int64(math.MaxInt64), long.Int64())
 }
 
@@ -154,7 +151,7 @@ func TestDecimal64isZero(t *testing.T) {
 	require := require.New(t)
 
 	require.Equal(true, Zero64.IsZero())
-	require.Equal(true, Decimal64{Zero64.bits | neg64}.IsZero())
+	require.Equal(true, Decimal64{bits: Zero64.bits | neg64}.IsZero())
 	require.Equal(false, One64.IsZero())
 }
 

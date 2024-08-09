@@ -13,28 +13,29 @@ var One64 = newFromParts(0, -15, decimal64Base)
 var NegOne64 = newFromParts(1, -15, decimal64Base)
 
 // Infinity64 represents ∞ as a Decimal64.
-var Infinity64 = Decimal64{inf64}
+var Infinity64 = Decimal64{bits: inf64}.debug()
 
 // NegInfinity64 represents -∞ as a Decimal64.
-var NegInfinity64 = Decimal64{neg64 | inf64}
+var NegInfinity64 = Decimal64{bits: neg64 | inf64}.debug()
 
 // QNaN64 represents a quiet NaN as a Decimal64.
-var QNaN64 = Decimal64{0x7c << 56}
+var QNaN64 = Decimal64{bits: 0x7c << 56}.debug()
 
 // SNaN64 represents a signalling NaN as a Decimal64.
-var SNaN64 = Decimal64{0x7e << 56}
+var SNaN64 = Decimal64{bits: 0x7e << 56}.debug()
 
 // Pi64 represents π.
-var Pi64 = newFromParts(0, -15, 3141592653589793)
+var Pi64 = newFromParts(0, -15, 3_141592653589793)
 
 // E64 represents e (lim[n→∞](1+1/n)ⁿ).
-var E64 = newFromParts(0, -15, 2718281828459045)
+var E64 = newFromParts(0, -15, 2_718281828459045)
 
 var neg64 uint64 = 0x80 << 56
 var inf64 uint64 = 0x78 << 56
 
 // 1E15
-const decimal64Base uint64 = 1000 * 1000 * 1000 * 1000 * 1000
+const decimal64Base uint64 = 1_000_000_000_000_000
+const decimal64Digits = 16
 
 // maxSig is the maximum significand possible that fits in 16 decimal places.
 const maxSig = 10*decimal64Base - 1
@@ -48,8 +49,11 @@ var Max64 = newFromParts(0, expMax, maxSig)
 // NegMax64  is the minimum finite number (most negative) possible with Decimal64 (negative).
 var NegMax64 = newFromParts(1, expMax, maxSig)
 
-// Min64 is the smallest number that is subnormal possible with Decimal64.
+// Min64 is the closest positive number to zero.
 var Min64 = newFromParts(0, -398, 1)
+
+// Min64 is the closest negative number to zero.
+var NegMin64 = newFromParts(1, -398, 1)
 
 var zeroes = []Decimal64{Zero64, NegZero64}
 var infinities = []Decimal64{Infinity64, NegInfinity64}

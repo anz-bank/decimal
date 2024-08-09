@@ -1,19 +1,18 @@
 package decimal
 
 import (
-	"encoding/binary"
+	"encoding/gob"
 )
+
+var _ gob.GobDecoder = (*Decimal64)(nil)
+var _ gob.GobEncoder = Decimal64{}
 
 // GobDecode implements encoding.GobDecoder.
 func (d *Decimal64) GobDecode(buf []byte) error {
-	d.bits = binary.BigEndian.Uint64(buf)
-	// TODO: Check for out of bounds significand.
-	return nil
+	return d.UnmarshalBinary(buf)
 }
 
 // GobEncode implements encoding.GobEncoder.
 func (d Decimal64) GobEncode() ([]byte, error) {
-	buf := make([]byte, 8)
-	binary.BigEndian.PutUint64(buf, d.bits)
-	return buf, nil
+	return d.MarshalBinary()
 }

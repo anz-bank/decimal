@@ -5,7 +5,7 @@ func (d Decimal64) Abs() Decimal64 {
 	if d.IsNaN() {
 		return d
 	}
-	return Decimal64{^neg64 & uint64(d.bits)}
+	return Decimal64{bits: ^neg64 & uint64(d.bits)}.debug()
 }
 
 // Add computes d + e with default rounding
@@ -35,11 +35,10 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 
 // Cmp returns:
 //
-//   -2 if d or e is NaN
-//   -1 if d <  e
-//    0 if d == e (incl. -0 == 0, -Inf == -Inf, and +Inf == +Inf)
-//   +1 if d >  e
-//
+//	-2 if d or e is NaN
+//	-1 if d <  e
+//	 0 if d == e (incl. -0 == 0, -Inf == -Inf, and +Inf == +Inf)
+//	+1 if d >  e
 func (d Decimal64) Cmp(e Decimal64) int {
 	var dp decParts
 	dp.unpack(d)
@@ -48,19 +47,156 @@ func (d Decimal64) Cmp(e Decimal64) int {
 	if _, isNan := checkNan(&dp, &ep); isNan {
 		return -2
 	}
-	if dp.isZero() && ep.isZero() {
-		return 0
+	return cmp(&dp, &ep)
+}
+
+// Cmp64 returns the same output as Cmp as a Decimal64, unless d or e is NaN, in
+// which case it returns a corresponding NaN result.
+func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
+	var dp decParts
+	dp.unpack(d)
+	var ep decParts
+	ep.unpack(e)
+	if n, isNan := checkNan(&dp, &ep); isNan {
+		return n
 	}
-	if d == e {
-		return 0
+	switch cmp(&dp, &ep) {
+	case -1:
+		return NegOne64
+	case 1:
+		return One64
+	default:
+		return Zero64
 	}
-	d = d.Sub(e)
-	return 1 - 2*int(d.bits>>63)
+}
+
+func cmp(dp, ep *decParts) int {
+	switch {
+	case dp.isZero() && ep.isZero(), dp.original == ep.original:
+		return 0
+	default:
+		diff := dp.original.Sub(ep.original)
+		return 1 - 2*int(diff.bits>>63)
+	}
+}
+
+// Min returns the lower of d and e.
+func (d Decimal64) Min(e Decimal64) Decimal64 {
+	return d.min(e, 1)
+}
+
+// Max returns the lower of d and e.
+func (d Decimal64) Max(e Decimal64) Decimal64 {
+	return d.min(e, -1)
+}
+
+// Min returns the lower of d and e.
+func (d Decimal64) min(e Decimal64, sign int) Decimal64 {
+	var dp decParts
+	dp.unpack(d)
+	var ep decParts
+	ep.unpack(e)
+
+	dnan := dp.isNaN()
+	enan := ep.isNaN()
+
+	switch {
+	case !dnan && !enan: // Fast path for non-NaNs.
+		if sign*cmp(&dp, &ep) < 0 {
+			return d
+		}
+		return e
+
+	case dp.isSNaN():
+		return d.quiet()
+	case ep.isSNaN():
+		return e.quiet()
+
+	case !enan:
+		return e
+	default:
+		return d
+	}
+}
+
+// MinMag returns the lower of d and e.
+func (d Decimal64) MinMag(e Decimal64) Decimal64 {
+	return d.minMag(e, 1)
+}
+
+// MaxMag returns the lower of d and e.
+func (d Decimal64) MaxMag(e Decimal64) Decimal64 {
+	return d.minMag(e, -1)
+}
+
+// MinMag returns the lower of d and e.
+func (d Decimal64) minMag(e Decimal64, sign int) Decimal64 {
+	var dp decParts
+	dp.unpack(d.Abs())
+	var ep decParts
+	ep.unpack(e.Abs())
+
+	dnan := dp.isNaN()
+	enan := ep.isNaN()
+
+	switch {
+	case !dnan && !enan: // Fast path for non-NaNs.
+		switch sign * cmp(&dp, &ep) {
+		case -1:
+			return d
+		case 1:
+			return e
+		default:
+			if 2*int(d.bits>>63) == 1+sign {
+				return d
+			}
+			return e
+		}
+	case dp.isSNaN():
+		return d.quiet()
+	case ep.isSNaN():
+		return e.quiet()
+	case !enan:
+		return e
+	default:
+		return d
+	}
 }
 
 // Neg computes -d.
 func (d Decimal64) Neg() Decimal64 {
-	return Decimal64{neg64 ^ d.bits}
+	if d.IsNaN() {
+		return d
+	}
+	return Decimal64{bits: neg64 ^ d.bits}.debug()
+}
+
+// Logb return the integral log10 of d.
+func (d Decimal64) Logb() Decimal64 {
+	switch {
+	case d.IsNaN():
+		return d
+	case d.IsZero():
+		return NegInfinity64
+	case d.IsInf():
+		return Infinity64
+	default:
+		var dp decParts
+		dp.unpack(d)
+
+		// Adjust for subnormals.
+		e := dp.exp
+		for s := dp.significand.lo; s < decimal64Base; s *= 10 {
+			e--
+		}
+
+		return New64FromInt64(int64(15 + e))
+	}
+}
+
+// CopySign copies d, but with the sign taken from e.
+func (d Decimal64) CopySign(e Decimal64) Decimal64 {
+	return Decimal64{bits: d.bits&^neg64 | e.bits&neg64}.debug()
 }
 
 // Quo computes d / e.
@@ -302,4 +438,78 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 		return infinities[ans.sign]
 	}
 	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
+}
+
+// NextPlus returns the next value above d.
+func (d Decimal64) NextPlus() Decimal64 {
+	flav, sign, exp, significand := d.parts()
+	switch {
+	case flav == flInf:
+		if sign == 1 {
+			return NegMax64
+		}
+		return Infinity64
+	case flav != flNormal:
+		return d
+	case significand == 0:
+		return Min64
+	case sign == 1:
+		switch {
+		case significand > decimal64Base:
+			return Decimal64{bits: d.bits - 1}.debug()
+		case exp == -398:
+			if significand > 1 {
+				return Decimal64{bits: d.bits - 1}.debug()
+			}
+			return Zero64
+		default:
+			return newFromParts(sign, exp-1, 10*decimal64Base-1)
+		}
+	default:
+		switch {
+		case significand < 10*decimal64Base-1:
+			return Decimal64{bits: d.bits + 1}.debug()
+		case exp == 369:
+			return Infinity64
+		default:
+			return newFromParts(sign, exp+1, decimal64Base)
+		}
+	}
+}
+
+// NextMinus returns the next value above d.
+func (d Decimal64) NextMinus() Decimal64 {
+	flav, sign, exp, significand := d.parts()
+	switch {
+	case flav == flInf:
+		if sign == 0 {
+			return Max64
+		}
+		return NegInfinity64
+	case flav != flNormal:
+		return d
+	case significand == 0:
+		return NegMin64
+	case sign == 0:
+		switch {
+		case significand > decimal64Base:
+			return Decimal64{bits: d.bits - 1}.debug()
+		case exp == -398:
+			if significand > 1 {
+				return Decimal64{bits: d.bits - 1}.debug()
+			}
+			return Zero64
+		default:
+			return newFromParts(sign, exp-1, 10*decimal64Base-1)
+		}
+	default:
+		switch {
+		case significand < 10*decimal64Base-1:
+			return Decimal64{bits: d.bits + 1}.debug()
+		case exp == 369:
+			return NegInfinity64
+		default:
+			return newFromParts(sign, exp+1, decimal64Base)
+		}
+	}
 }
