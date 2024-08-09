@@ -357,7 +357,7 @@ func (d Decimal64) IsInt() bool {
 
 // quiet returns a quiet form of d, which must be a NaN.
 func (d Decimal64) quiet() Decimal64 {
-	return Decimal64{bits: d.bits &^ (2 << 56)}
+	return Decimal64{bits: d.bits &^ (2 << 56)}.debug()
 }
 
 // IsSubnormal returns true iff d is a subnormal.

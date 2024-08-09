@@ -196,7 +196,7 @@ func (d Decimal64) Logb() Decimal64 {
 
 // CopySign copies d, but with the sign taken from e.
 func (d Decimal64) CopySign(e Decimal64) Decimal64 {
-	return Decimal64{bits: d.bits&^neg64 | e.bits&neg64}
+	return Decimal64{bits: d.bits&^neg64 | e.bits&neg64}.debug()
 }
 
 // Quo computes d / e.
