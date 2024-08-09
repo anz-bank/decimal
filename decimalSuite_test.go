@@ -47,22 +47,60 @@ var ignoredFunctions = set[string]{"apply": {}}
 
 // TestFromSuite is the master tester for the dectest suite.
 func TestFromSuite(t *testing.T) {
+	t.Parallel()
+
 	for _, file := range []string{
-		"dectest/ddAdd.decTest",
-		"dectest/ddMultiply.decTest",
-		"dectest/ddFMA.decTest",
-		"dectest/ddClass.decTest",
-		// TODO: Implement following tests
-		"dectest/ddCompare.decTest",
 		"dectest/ddAbs.decTest",
-		// "dectest/ddCopysign.decTest",
+		"dectest/ddAdd.decTest",
+		"dectest/ddClass.decTest",
+		"dectest/ddCompare.decTest",
+		"dectest/ddCopysign.decTest",
 		"dectest/ddDivide.decTest",
-		// 	"dectest/ddLogB.decTest",
+		"dectest/ddFMA.decTest",
+		"dectest/ddLogB.decTest",
+		"dectest/ddMax.decTest",
+		"dectest/ddMaxMag.decTest",
 		"dectest/ddMin.decTest",
 		"dectest/ddMinMag.decTest",
 		"dectest/ddMinus.decTest",
+		"dectest/ddMultiply.decTest",
+		"dectest/ddPlus.decTest",
+		"dectest/ddSubtract.decTest",
+
+		// Future
+		// "dectest/ddBase.decTest",
+		// "dectest/ddNextMinus.decTest",
+		// "dectest/ddNextPlus.decTest",
+		// "dectest/ddNextToward.decTest",
+		// "dectest/ddRemainder.decTest",
+		// "dectest/ddRemainderNear.decTest",
+		// "dectest/ddScaleB.decTest",
+		// "dectest/ddQuantize.decTest",
+		// "dectest/ddToIntegral.decTest",
+
+		// Not planned
+		// "dectest/ddAnd.decTest",
+		// "dectest/ddCanonical.decTest",
+		// "dectest/ddCompareSig.decTest",
+		// "dectest/ddCompareTotal.decTest",
+		// "dectest/ddCompareTotalMag.decTest",
+		// "dectest/ddCopy.decTest",
+		// "dectest/ddCopyAbs.decTest",
+		// "dectest/ddCopyNegate.decTest",
+		// "dectest/ddDivideInt.decTest",
+		// "dectest/ddEncode.decTest",
+		// "dectest/ddInvert.decTest",
+		// "dectest/ddOr.decTest",
+		// "dectest/ddReduce.decTest",
+		// "dectest/ddRotate.decTest",
+		// "dectest/ddSameQuantum.decTest",
+		// "dectest/ddShift.decTest",
+		// "dectest/ddXor.decTest",
 	} {
+		file := file
 		t.Run(file, func(t *testing.T) {
+			t.Parallel()
+
 			f, _ := os.Open(file)
 			scanner := bufio.NewScanner(f)
 			numTests := 0
@@ -243,22 +281,33 @@ func execOp(context Context64, a, b, c Decimal64, op string) opResult {
 		return opResult{result: context.Mul(a, b)}
 	case "abs":
 		return opResult{result: a.Abs()}
-	case "minus":
-		return opResult{result: a.Neg()}
+	case "compare":
+		return opResult{result: a.Cmp64(b)}
+	case "copysign":
+		return opResult{result: a.CopySign(b)}
 	case "divide":
 		return opResult{result: context.Quo(a, b)}
 	case "fma":
 		return opResult{result: context.FMA(a, b, c)}
-	case "compare":
-		return opResult{result: a.Cmp64(b)}
+	case "logb":
+		return opResult{result: a.Logb()}
+	case "max":
+		return opResult{result: a.Max(b)}
+	case "maxmag":
+		return opResult{result: a.MaxMag(b)}
 	case "min":
 		return opResult{result: a.Min(b)}
 	case "minmag":
 		return opResult{result: a.MinMag(b)}
+	case "minus":
+		return opResult{result: a.Neg()}
+	case "plus":
+		return opResult{result: a}
+	case "subtract":
+		return opResult{result: context.Add(a, b.Neg())}
 	case "class":
 		return opResult{text: a.Class()}
 	default:
-		fmt.Println("end of execOp, no tests ran", op)
+		panic(fmt.Errorf("unhandled op: %s", op))
 	}
-	return opResult{result: Zero64}
 }

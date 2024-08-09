@@ -82,6 +82,16 @@ func cmp(dp, ep *decParts) int {
 
 // Min returns the lower of d and e.
 func (d Decimal64) Min(e Decimal64) Decimal64 {
+	return d.min(e, 1)
+}
+
+// Max returns the lower of d and e.
+func (d Decimal64) Max(e Decimal64) Decimal64 {
+	return d.min(e, -1)
+}
+
+// Min returns the lower of d and e.
+func (d Decimal64) min(e Decimal64, sign int) Decimal64 {
 	var dp decParts
 	dp.unpack(d)
 	var ep decParts
@@ -92,7 +102,7 @@ func (d Decimal64) Min(e Decimal64) Decimal64 {
 
 	switch {
 	case !dnan && !enan: // Fast path for non-NaNs.
-		if cmp(&dp, &ep) < 0 {
+		if sign*cmp(&dp, &ep) < 0 {
 			return d
 		}
 		return e
@@ -111,6 +121,16 @@ func (d Decimal64) Min(e Decimal64) Decimal64 {
 
 // MinMag returns the lower of d and e.
 func (d Decimal64) MinMag(e Decimal64) Decimal64 {
+	return d.minMag(e, 1)
+}
+
+// MaxMag returns the lower of d and e.
+func (d Decimal64) MaxMag(e Decimal64) Decimal64 {
+	return d.minMag(e, -1)
+}
+
+// MinMag returns the lower of d and e.
+func (d Decimal64) minMag(e Decimal64, sign int) Decimal64 {
 	var dp decParts
 	dp.unpack(d.Abs())
 	var ep decParts
@@ -121,23 +141,21 @@ func (d Decimal64) MinMag(e Decimal64) Decimal64 {
 
 	switch {
 	case !dnan && !enan: // Fast path for non-NaNs.
-		switch cmp(&dp, &ep) {
+		switch sign * cmp(&dp, &ep) {
 		case -1:
 			return d
 		case 1:
 			return e
 		default:
-			if d.bits&neg64 != 0 {
+			if 2*int(d.bits>>63) == 1+sign {
 				return d
 			}
 			return e
 		}
-
 	case dp.isSNaN():
 		return d.quiet()
 	case ep.isSNaN():
 		return e.quiet()
-
 	case !enan:
 		return e
 	default:
@@ -151,6 +169,34 @@ func (d Decimal64) Neg() Decimal64 {
 		return d
 	}
 	return Decimal64{bits: neg64 ^ d.bits}.debug()
+}
+
+// Logb return the integral log10 of d.
+func (d Decimal64) Logb() Decimal64 {
+	switch {
+	case d.IsNaN():
+		return d
+	case d.IsZero():
+		return NegInfinity64
+	case d.IsInf():
+		return Infinity64
+	default:
+		var dp decParts
+		dp.unpack(d)
+
+		// Adjust for subnormals.
+		e := dp.exp
+		for s := dp.significand.lo; s < decimal64Base; s *= 10 {
+			e--
+		}
+
+		return New64FromInt64(int64(15 + e))
+	}
+}
+
+// CopySign copies d, but with the sign taken from e.
+func (d Decimal64) CopySign(e Decimal64) Decimal64 {
+	return Decimal64{bits: d.bits&^neg64 | e.bits&neg64}
 }
 
 // Quo computes d / e.
