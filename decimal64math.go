@@ -80,6 +80,71 @@ func cmp(dp, ep *decParts) int {
 	}
 }
 
+// Min returns the lower of d and e.
+func (d Decimal64) Min(e Decimal64) Decimal64 {
+	var dp decParts
+	dp.unpack(d)
+	var ep decParts
+	ep.unpack(e)
+
+	dnan := dp.isNaN()
+	enan := ep.isNaN()
+
+	switch {
+	case !dnan && !enan: // Fast path for non-NaNs.
+		if cmp(&dp, &ep) < 0 {
+			return d
+		}
+		return e
+
+	case dp.isSNaN():
+		return d.quiet()
+	case ep.isSNaN():
+		return e.quiet()
+
+	case !enan:
+		return e
+	default:
+		return d
+	}
+}
+
+// MinMag returns the lower of d and e.
+func (d Decimal64) MinMag(e Decimal64) Decimal64 {
+	var dp decParts
+	dp.unpack(d.Abs())
+	var ep decParts
+	ep.unpack(e.Abs())
+
+	dnan := dp.isNaN()
+	enan := ep.isNaN()
+
+	switch {
+	case !dnan && !enan: // Fast path for non-NaNs.
+		switch cmp(&dp, &ep) {
+		case -1:
+			return d
+		case 1:
+			return e
+		default:
+			if d.bits&neg64 != 0 {
+				return d
+			}
+			return e
+		}
+
+	case dp.isSNaN():
+		return d.quiet()
+	case ep.isSNaN():
+		return e.quiet()
+
+	case !enan:
+		return e
+	default:
+		return d
+	}
+}
+
 // Neg computes -d.
 func (d Decimal64) Neg() Decimal64 {
 	if d.IsNaN() {

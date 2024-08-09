@@ -28,9 +28,6 @@ type testCase struct {
 	rounding       string
 }
 
-const IgnorePanics bool = false
-const IgnoreRounding bool = false
-
 func (testVal *testCase) String() string {
 	if testVal == nil {
 		return "nil"
@@ -61,8 +58,8 @@ func TestFromSuite(t *testing.T) {
 		// "dectest/ddCopysign.decTest",
 		"dectest/ddDivide.decTest",
 		// 	"dectest/ddLogB.decTest",
-		// 	"dectest/ddMin.decTest",
-		// 	"dectest/ddMinMag.decTest",
+		"dectest/ddMin.decTest",
+		"dectest/ddMinMag.decTest",
 		"dectest/ddMinus.decTest",
 	} {
 		t.Run(file, func(t *testing.T) {
@@ -93,7 +90,6 @@ func TestFromSuite(t *testing.T) {
 			}
 		})
 	}
-	fmt.Printf("decimalSuite_test settings (These should only be true for debug):\n Ignore Rounding errors: %v\n Ignore Panics: %v\n", IgnoreRounding, IgnorePanics)
 }
 
 func setRoundingFromString(s string) Context64 {
@@ -168,11 +164,9 @@ func getInput(line string) *testCase {
 	if ignoredFunctions.Has(test.function) {
 		return nil
 	}
-	if test.val1 == "#" {
-		test.val1 = ""
-	}
-	if test.val2 == "#" {
-		test.val2 = ""
+	// # represents a null value, which isn't meaningful for this package.
+	if test.val1 == "#" || test.val2 == "#" {
+		return nil
 	}
 	return test
 }
@@ -231,11 +225,8 @@ func runTest(t *testing.T, context Context64, expected opResult, testValStrings 
 		}
 		return true
 	}
-	if expected.result.Cmp(actual.result) != 0 && !(isRoundingErr(actual.result, expected.result) && IgnoreRounding) {
-		return assert.Fail(t,
-			"failed", "test:\n%s\ncalculated result: %v",
-			testValStrings,
-			actual.result)
+	if expected.result.Cmp(actual.result) != 0 {
+		return assert.Fail(t, "failed", "test:\n%s\ncalculated result: %v", testValStrings, actual.result)
 	}
 	return true
 }
@@ -245,13 +236,6 @@ var textResults = set[string]{"class": {}}
 // TODO: get runTest to run more functions such as FMA.
 // execOp returns the calculated answer to the operation as Decimal64.
 func execOp(context Context64, a, b, c Decimal64, op string) opResult {
-	if IgnorePanics {
-		defer func() {
-			if r := recover(); r != nil {
-				fmt.Println("failed", r, a, b)
-			}
-		}()
-	}
 	switch op {
 	case "add":
 		return opResult{result: context.Add(a, b)}
@@ -267,6 +251,10 @@ func execOp(context Context64, a, b, c Decimal64, op string) opResult {
 		return opResult{result: context.FMA(a, b, c)}
 	case "compare":
 		return opResult{result: a.Cmp64(b)}
+	case "min":
+		return opResult{result: a.Min(b)}
+	case "minmag":
+		return opResult{result: a.MinMag(b)}
 	case "class":
 		return opResult{text: a.Class()}
 	default:

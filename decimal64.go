@@ -17,7 +17,7 @@ const (
 type flavor int
 
 const (
-	flNormal flavor = iota
+	flNormal flavor = 1 << iota
 	flInf
 	flQNaN
 	flSNaN
@@ -37,15 +37,6 @@ const (
 type Decimal64 struct {
 	bits      uint64
 	debugInfo //nolint:unused
-}
-
-// decParts stores the constituting decParts of a decimal64.
-type decParts struct {
-	fl          flavor
-	sign        int
-	exp         int
-	significand uint128T
-	original    Decimal64
 }
 
 // Context64 stores the rounding type for arithmetic operations.
@@ -362,6 +353,11 @@ func (d Decimal64) IsInt() bool {
 	default:
 		return false
 	}
+}
+
+// quiet returns a quiet form of d, which must be a NaN.
+func (d Decimal64) quiet() Decimal64 {
+	return Decimal64{bits: d.bits &^ (2 << 56)}
 }
 
 // IsSubnormal returns true iff d is a subnormal.

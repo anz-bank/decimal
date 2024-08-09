@@ -1,5 +1,14 @@
 package decimal
 
+// decParts stores the constituting decParts of a decimal64.
+type decParts struct {
+	fl          flavor
+	sign        int
+	exp         int
+	significand uint128T
+	original    Decimal64
+}
+
 // add128 adds two decParts with full precision in 128 bits of significand
 func (dp *decParts) add128(ep *decParts) decParts {
 	dp.matchScales128(ep)
@@ -67,7 +76,7 @@ func (dp *decParts) isInf() bool {
 }
 
 func (dp *decParts) isNaN() bool {
-	return dp.fl == flQNaN || dp.fl == flSNaN
+	return dp.fl&(flQNaN|flSNaN) != 0
 }
 
 func (dp *decParts) isQNaN() bool {
@@ -76,6 +85,10 @@ func (dp *decParts) isQNaN() bool {
 
 func (dp *decParts) isSNaN() bool {
 	return dp.fl == flSNaN
+}
+
+func (dp *decParts) nanWeight() int {
+	return int(dp.significand.lo)
 }
 
 func (dp *decParts) isSubnormal() bool {
@@ -123,9 +136,11 @@ func (dp *decParts) unpack(d Decimal64) {
 			dp.fl = flInf
 		case 2:
 			dp.fl = flQNaN
+			dp.significand.lo = d.bits & (1<<51 - 1) // Payload
 			return
 		case 3:
 			dp.fl = flSNaN
+			dp.significand.lo = d.bits & (1<<51 - 1) // Payload
 			return
 		}
 	case 12, 13, 14:
