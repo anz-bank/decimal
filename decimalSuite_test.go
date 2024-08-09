@@ -34,15 +34,15 @@ func (testVal *testCase) String() string {
 	return fmt.Sprintf("%s %s (%v, %v, %v) -> %v", testVal.name, testVal.function, testVal.val1, testVal.val2, testVal.val3, testVal.expectedResult)
 }
 
-type set[K comparable] map[K]struct{}
+type set map[string]struct{}
 
-func (s set[K]) Has(k K) bool {
+func (s set) Has(k string) bool {
 	_, ok := s[k]
 	return ok
 }
 
-var supportedRounding = set[string]{"half_up": {}, "half_even": {}}
-var ignoredFunctions = set[string]{"apply": {}}
+var supportedRounding = set{"half_up": {}, "half_even": {}}
+var ignoredFunctions = set{"apply": {}}
 
 // TestFromSuite is the master tester for the dectest suite.
 func TestFromSuite(t *testing.T) {
@@ -277,7 +277,7 @@ func runTest(t *testing.T, context Context64, expected opResult, testValStrings 
 	return true
 }
 
-var textResults = set[string]{"class": {}}
+var textResults = set{"class": {}}
 
 // TODO: get runTest to run more functions such as FMA.
 // execOp returns the calculated answer to the operation as Decimal64.
