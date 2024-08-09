@@ -14,8 +14,8 @@ import (
 )
 
 type opResult struct {
-	val1, val2, val3, expected, result Decimal64
-	text                               string
+	val1, val2, val3, result Decimal64
+	text                     string
 }
 
 type testCase struct {
@@ -63,7 +63,7 @@ func TestFromSuite(t *testing.T) {
 		// 	"dectest/ddLogB.decTest",
 		// 	"dectest/ddMin.decTest",
 		// 	"dectest/ddMinMag.decTest",
-		// 	"dectest/ddMinus.decTest",
+		"dectest/ddMinus.decTest",
 	} {
 		t.Run(file, func(t *testing.T) {
 			f, _ := os.Open(file)
@@ -202,7 +202,7 @@ func convertToDec64(testvals *testCase) (opResult, error) {
 	if textResults.Has(testvals.function) {
 		r.text = testvals.expectedResult
 	} else {
-		r.expected, err = parseNotEmpty(testvals.expectedResult)
+		r.result, err = parseNotEmpty(testvals.expectedResult)
 		if err != nil {
 			return opResult{}, fmt.Errorf("error parsing expected: %w", err)
 		}
@@ -210,12 +210,12 @@ func convertToDec64(testvals *testCase) (opResult, error) {
 	return r, nil
 }
 
-// runTest completes the tests and returns a boolean and string on if the test passes.
+// runTest completes the tests and compares actual and expected results.
 func runTest(t *testing.T, context Context64, expected opResult, testValStrings *testCase) bool {
 	actual := execOp(context, expected.val1, expected.val2, expected.val3, testValStrings.function)
 
 	if actual.text != "" {
-		if testValStrings.function == "compare" && actual.text == "-2" && expected.expected.IsNaN() {
+		if testValStrings.function == "compare" && actual.text == "-2" && expected.result.IsNaN() {
 			return true
 		}
 		if actual.text != testValStrings.expectedResult {
@@ -223,13 +223,15 @@ func runTest(t *testing.T, context Context64, expected opResult, testValStrings 
 		}
 		return true
 	}
-	if actual.result.IsNaN() || expected.expected.IsNaN() {
-		if expected.expected.String() != actual.result.String() {
+	if actual.result.IsNaN() || expected.result.IsNaN() {
+		e := expected.result.String()
+		a := actual.result.String()
+		if e != a {
 			return assert.Failf(t, "failed NaN test", "test:\n%s\ncalculated result: %v", testValStrings, actual.result)
 		}
 		return true
 	}
-	if expected.expected.Cmp(actual.result) != 0 && !(isRoundingErr(actual.result, expected.expected) && IgnoreRounding) {
+	if expected.result.Cmp(actual.result) != 0 && !(isRoundingErr(actual.result, expected.result) && IgnoreRounding) {
 		return assert.Fail(t,
 			"failed", "test:\n%s\ncalculated result: %v",
 			testValStrings,
@@ -257,6 +259,8 @@ func execOp(context Context64, a, b, c Decimal64, op string) opResult {
 		return opResult{result: context.Mul(a, b)}
 	case "abs":
 		return opResult{result: a.Abs()}
+	case "minus":
+		return opResult{result: a.Neg()}
 	case "divide":
 		return opResult{result: context.Quo(a, b)}
 	case "fma":

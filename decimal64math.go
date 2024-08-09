@@ -82,6 +82,9 @@ func cmp(dp, ep *decParts) int {
 
 // Neg computes -d.
 func (d Decimal64) Neg() Decimal64 {
+	if d.IsNaN() {
+		return d
+	}
 	return Decimal64{bits: neg64 ^ d.bits}.debug()
 }
 
