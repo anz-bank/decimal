@@ -13,28 +13,29 @@ var One64 = newFromParts(0, -15, decimal64Base)
 var NegOne64 = newFromParts(1, -15, decimal64Base)
 
 // Infinity64 represents ∞ as a Decimal64.
-var Infinity64 = Decimal64{inf64}
+var Infinity64 = Decimal64{bits: inf64}.debug()
 
 // NegInfinity64 represents -∞ as a Decimal64.
-var NegInfinity64 = Decimal64{neg64 | inf64}
+var NegInfinity64 = Decimal64{bits: neg64 | inf64}.debug()
 
 // QNaN64 represents a quiet NaN as a Decimal64.
-var QNaN64 = Decimal64{0x7c << 56}
+var QNaN64 = Decimal64{bits: 0x7c << 56}.debug()
 
 // SNaN64 represents a signalling NaN as a Decimal64.
-var SNaN64 = Decimal64{0x7e << 56}
+var SNaN64 = Decimal64{bits: 0x7e << 56}.debug()
 
 // Pi64 represents π.
-var Pi64 = newFromParts(0, -15, 3141592653589793)
+var Pi64 = newFromParts(0, -15, 3_141592653589793)
 
 // E64 represents e (lim[n→∞](1+1/n)ⁿ).
-var E64 = newFromParts(0, -15, 2718281828459045)
+var E64 = newFromParts(0, -15, 2_718281828459045)
 
 var neg64 uint64 = 0x80 << 56
 var inf64 uint64 = 0x78 << 56
 
 // 1E15
-const decimal64Base uint64 = 1000 * 1000 * 1000 * 1000 * 1000
+const decimal64Base uint64 = 1_000_000_000_000_000
+const decimal64Digits = 16
 
 // maxSig is the maximum significand possible that fits in 16 decimal places.
 const maxSig = 10*decimal64Base - 1

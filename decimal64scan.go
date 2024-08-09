@@ -189,9 +189,9 @@ func newPayloadNan(sign int, fl flavor, weight uint64) Decimal64 {
 	s := uint64(sign) << 63
 	switch fl {
 	case flQNaN:
-		return Decimal64{s | QNaN64.bits | weight}
+		return Decimal64{bits: s | QNaN64.bits | weight}.debug()
 	case flSNaN:
-		return Decimal64{s | SNaN64.bits | weight}
+		return Decimal64{bits: s | SNaN64.bits | weight}.debug()
 	default:
 		return QNaN64
 	}

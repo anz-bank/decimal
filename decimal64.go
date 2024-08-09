@@ -5,8 +5,6 @@ import (
 	"math/bits"
 )
 
-type flavor int
-type roundingMode int
 type discardedDigit int
 
 const (
@@ -16,12 +14,16 @@ const (
 	gt5
 )
 
+type flavor int
+
 const (
 	flNormal flavor = iota
 	flInf
 	flQNaN
 	flSNaN
 )
+
+type roundingMode int
 
 const (
 	roundHalfUp roundingMode = iota
@@ -33,7 +35,8 @@ const (
 // It uses the binary representation method.
 // Decimal64 is intentionally a struct to ensure users don't accidentally cast it to uint64
 type Decimal64 struct {
-	bits uint64
+	bits      uint64
+	debugInfo //nolint:unused
 }
 
 // decParts stores the constituting decParts of a decimal64.
@@ -166,7 +169,7 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 	return gt5
 }
 
-//func from stack overflow: samgak
+// func from stack overflow: samgak
 // TODO: make this more efficent
 func countTrailingZeros(n uint64) int {
 	zeros := 0
@@ -198,12 +201,12 @@ func newFromParts(sign int, exp int, significand uint64) Decimal64 {
 	if significand < 0x8<<50 {
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
-		return Decimal64{s | uint64(exp+expOffset)<<(63-10) | significand}
+		return Decimal64{bits: s | uint64(exp+expOffset)<<(63-10) | significand}.debug()
 	}
 	// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 	//     EE ∈ {00, 01, 10}
 	significand &= 0x8<<50 - 1
-	return Decimal64{s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand}
+	return Decimal64{bits: s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand}.debug()
 }
 
 func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
@@ -408,7 +411,7 @@ func (d Decimal64) Class() string {
 
 }
 
-//numDecimalDigits returns the magnitude (number of digits) of a uint64.
+// numDecimalDigits returns the magnitude (number of digits) of a uint64.
 func numDecimalDigits(n uint64) int {
 	numBits := 64 - bits.LeadingZeros64(n)
 	numDigits := numBits * 3 / 10

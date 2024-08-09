@@ -5,7 +5,7 @@ func (d Decimal64) Abs() Decimal64 {
 	if d.IsNaN() {
 		return d
 	}
-	return Decimal64{^neg64 & uint64(d.bits)}
+	return Decimal64{bits: ^neg64 & uint64(d.bits)}.debug()
 }
 
 // Add computes d + e with default rounding
@@ -35,11 +35,10 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 
 // Cmp returns:
 //
-//   -2 if d or e is NaN
-//   -1 if d <  e
-//    0 if d == e (incl. -0 == 0, -Inf == -Inf, and +Inf == +Inf)
-//   +1 if d >  e
-//
+//	-2 if d or e is NaN
+//	-1 if d <  e
+//	 0 if d == e (incl. -0 == 0, -Inf == -Inf, and +Inf == +Inf)
+//	+1 if d >  e
 func (d Decimal64) Cmp(e Decimal64) int {
 	var dp decParts
 	dp.unpack(d)
@@ -48,19 +47,42 @@ func (d Decimal64) Cmp(e Decimal64) int {
 	if _, isNan := checkNan(&dp, &ep); isNan {
 		return -2
 	}
-	if dp.isZero() && ep.isZero() {
-		return 0
+	return cmp(&dp, &ep)
+}
+
+// Cmp64 returns the same output as Cmp as a Decimal64, unless d or e is NaN, in
+// which case it returns a corresponding NaN result.
+func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
+	var dp decParts
+	dp.unpack(d)
+	var ep decParts
+	ep.unpack(e)
+	if n, isNan := checkNan(&dp, &ep); isNan {
+		return n
 	}
-	if d == e {
-		return 0
+	switch cmp(&dp, &ep) {
+	case -1:
+		return NegOne64
+	case 1:
+		return One64
+	default:
+		return Zero64
 	}
-	d = d.Sub(e)
-	return 1 - 2*int(d.bits>>63)
+}
+
+func cmp(dp, ep *decParts) int {
+	switch {
+	case dp.isZero() && ep.isZero(), dp.original == ep.original:
+		return 0
+	default:
+		diff := dp.original.Sub(ep.original)
+		return 1 - 2*int(diff.bits>>63)
+	}
 }
 
 // Neg computes -d.
 func (d Decimal64) Neg() Decimal64 {
-	return Decimal64{neg64 ^ d.bits}
+	return Decimal64{bits: neg64 ^ d.bits}.debug()
 }
 
 // Quo computes d / e.
