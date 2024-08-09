@@ -87,10 +87,6 @@ func (dp *decParts) isSNaN() bool {
 	return dp.fl == flSNaN
 }
 
-func (dp *decParts) nanWeight() int {
-	return int(dp.significand.lo)
-}
-
 func (dp *decParts) isSubnormal() bool {
 	return (dp.significand != uint128T{}) && dp.significand.lo < decimal64Base && dp.fl == flNormal
 }

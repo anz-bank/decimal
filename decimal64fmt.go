@@ -175,7 +175,7 @@ func (d Decimal64) Format(s fmt.State, format rune) {
 		fmt.Fprintf(s, "%%!%c(*decimal.Decimal64=%s)", format, d.String())
 		return
 	}
-	s.Write(d.append(make([]byte, 0, 16), byte(format), width, prec))
+	s.Write(d.append(make([]byte, 0, 16), byte(format), width, prec)) //nolint:errcheck
 }
 
 // String returns a string representation of d.

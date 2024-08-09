@@ -41,7 +41,6 @@ func TestDecimal64Float64(t *testing.T) {
 
 	require.Equal(-1.0, NegOne64.Float64())
 	require.Equal(0.0, Zero64.Float64())
-	require.Equal(-0.0, NegZero64.Float64())
 	require.Equal(1.0, One64.Float64())
 	require.Equal(10.0, New64FromInt64(10).Float64())
 

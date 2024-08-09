@@ -95,7 +95,7 @@ func BenchmarkParse64(b *testing.B) {
 	var d Decimal64
 	for n := 0; n < b.N; n++ {
 		buf := bytes.NewBufferString("123456789")
-		fmt.Fscanf(buf, "%g", &d)
+		fmt.Fscanf(buf, "%g", &d) //nolint:errcheck
 	}
 }
 
