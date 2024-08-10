@@ -103,12 +103,7 @@ formatBlock:
 	switch format {
 	case 'e', 'E':
 		// normalise subnormals
-		if significand > 0 {
-			for significand < decimal64Base {
-				significand *= 10
-				exp--
-			}
-		}
+		exp, significand = unsubnormal(exp, significand)
 
 		whole := significand / decimal64Base
 		buf = append(buf, byte('0'+whole))

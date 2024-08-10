@@ -9,6 +9,12 @@ type decParts struct {
 	original    Decimal64
 }
 
+func unpack(d Decimal64) decParts {
+	var dp decParts
+	dp.unpack(d)
+	return dp
+}
+
 // add128 adds two decParts with full precision in 128 bits of significand
 func (dp *decParts) add128(ep *decParts) decParts {
 	dp.matchScales128(ep)

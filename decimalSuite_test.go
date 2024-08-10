@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -41,8 +42,15 @@ func (s set) Has(k string) bool {
 	return ok
 }
 
-var supportedRounding = set{"half_up": {}, "half_even": {}}
-var ignoredFunctions = set{"apply": {}}
+var (
+	supportedRounding = set{"half_up": {}, "half_even": {}}
+	ignoredFunctions  = set{"apply": {}}
+	excludedTests     = set{
+		// ddintx074 and ddintx094 expect a specific bit pattern that doesn't
+		// seem to make sense
+		"ddintx074": {}, "ddintx094": {},
+	}
+)
 
 // TestFromSuite is the master tester for the dectest suite.
 func TestFromSuite(t *testing.T) {
@@ -66,7 +74,9 @@ func TestFromSuite(t *testing.T) {
 		"dectest/ddNextMinus.decTest",
 		"dectest/ddNextPlus.decTest",
 		"dectest/ddPlus.decTest",
+		"dectest/ddRound.decTest",
 		"dectest/ddSubtract.decTest",
+		"dectest/ddToIntegral.decTest",
 
 		// Future
 		// "dectest/ddBase.decTest",
@@ -74,8 +84,6 @@ func TestFromSuite(t *testing.T) {
 		// "dectest/ddRemainder.decTest",
 		// "dectest/ddRemainderNear.decTest",
 		// "dectest/ddScaleB.decTest",
-		// "dectest/ddQuantize.decTest",
-		// "dectest/ddToIntegral.decTest",
 
 		// Not planned
 		// "dectest/ddAnd.decTest",
@@ -90,6 +98,7 @@ func TestFromSuite(t *testing.T) {
 		// "dectest/ddEncode.decTest",
 		// "dectest/ddInvert.decTest",
 		// "dectest/ddOr.decTest",
+		// "dectest/ddQuantize.decTest",
 		// "dectest/ddReduce.decTest",
 		// "dectest/ddRotate.decTest",
 		// "dectest/ddSameQuantum.decTest",
@@ -191,13 +200,18 @@ func getInput(line string) *testCase {
 		val3:           fields[4],
 		expectedResult: fields[6], // field[6] == "->"
 	}
+	if excludedTests.Has(test.name) {
+		return nil
+	}
 	if ignoredFunctions.Has(test.function) {
 		return nil
 	}
-	// # represents a null value, which isn't meaningful for this package.
+
+	// # represents a null value, which isn't meaningful for Decimal64.
 	if test.val1 == "#" || test.val2 == "#" {
 		return nil
 	}
+
 	return test
 }
 
@@ -208,6 +222,13 @@ func convertToDec64(testvals *testCase) (opResult, error) {
 	parseNotEmpty := func(s string) (Decimal64, error) {
 		if s == "" {
 			return QNaN64, nil
+		}
+		if hexBits, cut := strings.CutPrefix(s, "#"); cut {
+			bits, err := strconv.ParseUint(hexBits, 16, 64)
+			if err != nil {
+				return Decimal64{}, err
+			}
+			return new64(bits), nil
 		}
 		return Parse64(s)
 	}
@@ -265,12 +286,12 @@ var textResults = set{"class": {}}
 
 // TODO: get runTest to run more functions such as FMA.
 // execOp returns the calculated answer to the operation as Decimal64.
-func execOp(context Context64, a, b, c Decimal64, op string) opResult {
+func execOp(ctx Context64, a, b, c Decimal64, op string) opResult {
 	switch op {
 	case "add":
-		return opResult{result: context.Add(a, b)}
+		return opResult{result: ctx.Add(a, b)}
 	case "multiply":
-		return opResult{result: context.Mul(a, b)}
+		return opResult{result: ctx.Mul(a, b)}
 	case "abs":
 		return opResult{result: a.Abs()}
 	case "compare":
@@ -278,9 +299,9 @@ func execOp(context Context64, a, b, c Decimal64, op string) opResult {
 	case "copysign":
 		return opResult{result: a.CopySign(b)}
 	case "divide":
-		return opResult{result: context.Quo(a, b)}
+		return opResult{result: ctx.Quo(a, b)}
 	case "fma":
-		return opResult{result: context.FMA(a, b, c)}
+		return opResult{result: ctx.FMA(a, b, c)}
 	case "logb":
 		return opResult{result: a.Logb()}
 	case "max":
@@ -299,8 +320,14 @@ func execOp(context Context64, a, b, c Decimal64, op string) opResult {
 		return opResult{result: a.NextPlus()}
 	case "plus":
 		return opResult{result: a}
+	// case "quantize":
+	// 	return opResult{result: ctx.Quantize(a, b)}
+	case "round":
+		return opResult{result: ctx.Round(a, b)}
+	case "tointegralx":
+		return opResult{result: ctx.ToIntegral(a)}
 	case "subtract":
-		return opResult{result: context.Add(a, b.Neg())}
+		return opResult{result: ctx.Add(a, b.Neg())}
 	case "class":
 		return opResult{text: a.Class()}
 	default:
