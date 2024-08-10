@@ -295,9 +295,9 @@ func TestDecimal64Sub(t *testing.T) {
 	)
 }
 
-func rnd(ctx Context64, x, y uint64) int {
+func rnd(ctx Context64, x, y uint64) uint64 {
 	ans, _ := ctx.round(x, y)
-	return int(ans)
+	return ans
 }
 
 func TestRoundHalfUp(t *testing.T) {
