@@ -102,11 +102,23 @@ func (d Decimal64) append(buf []byte, format byte, width, prec int) []byte {
 formatBlock:
 	switch format {
 	case 'e', 'E':
+		// normalise subnormals
+		if significand > 0 {
+			for significand < decimal64Base {
+				significand *= 10
+				exp--
+			}
+		}
+
 		whole := significand / decimal64Base
 		buf = append(buf, byte('0'+whole))
 		frac := significand - decimal64Base*whole
 		if frac > 0 {
 			buf = appendFrac64(append(buf, '.'), frac, decimal64Base/10)
+		}
+
+		if significand == 0 {
+			return buf
 		}
 
 		exp += 15
@@ -149,7 +161,9 @@ formatBlock:
 		}
 		return buf
 	case 'g', 'G':
-		if exp < -decimal64Digits-4 || prec >= 0 && exp > prec {
+		if exp < -decimal64Digits-3 ||
+			prec >= 0 && exp > prec ||
+			prec < 0 && exp > -decimal64Digits+6 {
 			format -= 'g' - 'e'
 		} else {
 			format -= 'g' - 'f'

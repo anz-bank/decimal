@@ -105,7 +105,6 @@ func New64FromInt64(value int64) Decimal64 {
 }
 
 func renormalize(exp int, significand uint64) (int, uint64) {
-
 	numBits := 64 - bits.LeadingZeros64(significand)
 	numDigits := numBits * 3 / 10
 	normExp := 15 - numDigits
