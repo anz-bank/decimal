@@ -1,0 +1,838 @@
+-- ddRound.decTest is a copy of ddQuantize.decTest that only retains tests for
+-- cases where the second argument is a simple power of 10 with one significant
+-- figure.
+
+------------------------------------------------------------------------
+-- ddQuantize.decTest -- decDouble round operation                 --
+-- Copyright (c) Mike Cowlishaw,  1981, 2010.  All rights reserved.   --
+-- Parts copyright (c) IBM Corporation, 1981, 2008.                   --
+------------------------------------------------------------------------
+-- Please see the document "General Decimal Arithmetic Testcases"     --
+-- at http://speleotrove.com/decimal for the description of           --
+-- these testcases.                                                   --
+--                                                                    --
+-- These testcases are experimental ('beta' versions), and they       --
+-- may contain errors.  They are offered on an as-is basis.  In       --
+-- particular, achieving the same results as the tests here is not    --
+-- a guarantee that an implementation complies with any Standard      --
+-- or specification.  The tests are not exhaustive.                   --
+--                                                                    --
+-- Please send comments, suggestions, and corrections to the author:  --
+--   Mike Cowlishaw, mfc@speleotrove.com                              --
+------------------------------------------------------------------------
+version: 2.62
+
+-- Most of the tests here assume a "regular pattern", where the
+-- sign and coefficient are +1.
+-- 2004.03.15 Underflow for round is suppressed
+-- 2005.06.08 More extensive tests for 'does not fit'
+precision:   16
+maxExponent: 384
+minExponent: -383
+extended:    1
+clamp:       1
+rounding:    half_even
+
+ddqua441 round   0.000999     1e-4  ->  0.0010   Inexact Rounded
+
+-- sanity checks
+ddqua001 round 0       1e0   -> 0
+ddqua002 round 1       1e0   -> 1
+ddqua003 round 0.1    1e+2   -> 0E+2 Inexact Rounded
+ddqua005 round 0.1    1e+1   -> 0E+1 Inexact Rounded
+ddqua006 round 0.1     1e0   -> 0 Inexact Rounded
+ddqua007 round 0.1    1e-1   -> 0.1
+ddqua008 round 0.1    1e-2   -> 0.10
+ddqua009 round 0.1    1e-3   -> 0.100
+ddqua010 round 0.9    1e+2   -> 0E+2 Inexact Rounded
+ddqua011 round 0.9    1e+1   -> 0E+1 Inexact Rounded
+ddqua012 round 0.9    1e+0   -> 1 Inexact Rounded
+ddqua013 round 0.9    1e-1   -> 0.9
+ddqua014 round 0.9    1e-2   -> 0.90
+ddqua015 round 0.9    1e-3   -> 0.900
+-- negatives
+ddqua021 round -0      1e0   -> -0
+ddqua022 round -1      1e0   -> -1
+ddqua023 round -0.1   1e+2   -> -0E+2 Inexact Rounded
+ddqua025 round -0.1   1e+1   -> -0E+1 Inexact Rounded
+ddqua026 round -0.1    1e0   -> -0 Inexact Rounded
+ddqua027 round -0.1   1e-1   -> -0.1
+ddqua028 round -0.1   1e-2   -> -0.10
+ddqua029 round -0.1   1e-3   -> -0.100
+ddqua030 round -0.9   1e+2   -> -0E+2 Inexact Rounded
+ddqua031 round -0.9   1e+1   -> -0E+1 Inexact Rounded
+ddqua032 round -0.9   1e+0   -> -1 Inexact Rounded
+ddqua033 round -0.9   1e-1   -> -0.9
+ddqua034 round -0.9   1e-2   -> -0.90
+ddqua035 round -0.9   1e-3   -> -0.900
+ddqua036 round -0.5   1e+2   -> -0E+2 Inexact Rounded
+ddqua037 round -0.5   1e+1   -> -0E+1 Inexact Rounded
+ddqua038 round -0.5   1e+0   -> -0 Inexact Rounded
+ddqua039 round -0.5   1e-1   -> -0.5
+ddqua040 round -0.5   1e-2   -> -0.50
+ddqua041 round -0.5   1e-3   -> -0.500
+ddqua042 round -0.9   1e+2   -> -0E+2 Inexact Rounded
+ddqua043 round -0.9   1e+1   -> -0E+1 Inexact Rounded
+ddqua044 round -0.9   1e+0   -> -1 Inexact Rounded
+ddqua045 round -0.9   1e-1   -> -0.9
+ddqua046 round -0.9   1e-2   -> -0.90
+ddqua047 round -0.9   1e-3   -> -0.900
+
+-- examples from Specification
+ddqua060 round 2.17   0.001  -> 2.170
+ddqua061 round 2.17   0.01   -> 2.17
+ddqua062 round 2.17   0.1    -> 2.2 Inexact Rounded
+ddqua063 round 2.17   1e+0   -> 2 Inexact Rounded
+ddqua064 round 2.17   1e+1   -> 0E+1 Inexact Rounded
+ddqua065 round -Inf    Inf   -> -Infinity
+ddqua066 round 2       Inf   -> NaN Invalid_operation
+ddqua067 round -0.1    1     -> -0 Inexact Rounded
+ddqua068 round -0      1e+5     -> -0E+5
+-- ddqua069 round +123456789012345.6 1e-2 -> NaN Invalid_operation
+-- ddqua070 round -987654335236450.6 1e-2 -> NaN Invalid_operation
+ddqua071 round 217    1e-1   -> 217.0
+ddqua072 round 217    1e+0   -> 217
+ddqua073 round 217    1e+1   -> 2.2E+2 Inexact Rounded
+ddqua074 round 217    1e+2   -> 2E+2 Inexact Rounded
+
+-- general tests ..
+ddqua089 round 12     1e+4   -> 0E+4 Inexact Rounded
+ddqua090 round 12     1e+3   -> 0E+3 Inexact Rounded
+ddqua091 round 12     1e+2   -> 0E+2 Inexact Rounded
+ddqua092 round 12     1e+1   -> 1E+1 Inexact Rounded
+ddqua093 round 1.2345 1e-2   -> 1.23 Inexact Rounded
+ddqua094 round 1.2355 1e-2   -> 1.24 Inexact Rounded
+ddqua095 round 1.2345 1e-6   -> 1.234500
+ddqua096 round 9.9999 1e-2   -> 10.00 Inexact Rounded
+ddqua097 round 0.0001 1e-2   -> 0.00 Inexact Rounded
+ddqua098 round 0.001  1e-2   -> 0.00 Inexact Rounded
+ddqua099 round 0.009  1e-2   -> 0.01 Inexact Rounded
+ddqua100 round 92     1e+2   -> 1E+2 Inexact Rounded
+
+ddqua101 round -1      1e0   ->  -1
+ddqua102 round -1     1e-1   ->  -1.0
+ddqua103 round -1     1e-2   ->  -1.00
+ddqua104 round  0      1e0   ->  0
+ddqua105 round  0     1e-1   ->  0.0
+ddqua106 round  0     1e-2   ->  0.00
+ddqua107 round  0.00   1e0   ->  0
+ddqua108 round  0     1e+1   ->  0E+1
+ddqua109 round  0     1e+2   ->  0E+2
+ddqua110 round +1      1e0   ->  1
+ddqua111 round +1     1e-1   ->  1.0
+ddqua112 round +1     1e-2   ->  1.00
+
+ddqua120 round   1.04  1e-3 ->  1.040
+ddqua121 round   1.04  1e-2 ->  1.04
+ddqua122 round   1.04  1e-1 ->  1.0 Inexact Rounded
+ddqua123 round   1.04   1e0 ->  1 Inexact Rounded
+ddqua124 round   1.05  1e-3 ->  1.050
+ddqua125 round   1.05  1e-2 ->  1.05
+ddqua126 round   1.05  1e-1 ->  1.0 Inexact Rounded
+ddqua131 round   1.05   1e0 ->  1 Inexact Rounded
+ddqua132 round   1.06  1e-3 ->  1.060
+ddqua133 round   1.06  1e-2 ->  1.06
+ddqua134 round   1.06  1e-1 ->  1.1 Inexact Rounded
+ddqua135 round   1.06   1e0 ->  1 Inexact Rounded
+
+ddqua140 round   -10    1e-2  ->  -10.00
+ddqua141 round   +1     1e-2  ->  1.00
+ddqua142 round   +10    1e-2  ->  10.00
+-- ddqua143 round   1E+17  1e-2  ->  NaN Invalid_operation
+ddqua144 round   1E-17  1e-2  ->  0.00 Inexact Rounded
+ddqua145 round   1E-3   1e-2  ->  0.00 Inexact Rounded
+ddqua146 round   1E-2   1e-2  ->  0.01
+ddqua147 round   1E-1   1e-2  ->  0.10
+ddqua148 round   0E-17  1e-2  ->  0.00
+
+ddqua150 round   1.0600 1e-5 ->  1.06000
+ddqua151 round   1.0600 1e-4 ->  1.0600
+ddqua152 round   1.0600 1e-3 ->  1.060 Rounded
+ddqua153 round   1.0600 1e-2 ->  1.06 Rounded
+ddqua154 round   1.0600 1e-1 ->  1.1 Inexact Rounded
+ddqua155 round   1.0600  1e0 ->  1 Inexact Rounded
+
+-- a couple where rounding was different in base tests
+rounding:    half_up
+ddqua157 round -0.5   1e+0   -> -1 Inexact Rounded
+ddqua158 round   1.05  1e-1 ->  1.1 Inexact Rounded
+ddqua159 round   1.06   1e0 ->  1 Inexact Rounded
+rounding:    half_even
+
+-- base tests with non-1 coefficients
+-- ddqua161 round 0      -9e0   -> 0
+-- ddqua162 round 1      -7e0   -> 1
+ddqua163 round 0.1   -1e+2   -> 0E+2 Inexact Rounded
+-- ddqua165 round 0.1    0e+1   -> 0E+1 Inexact Rounded
+-- ddqua166 round 0.1     2e0   -> 0 Inexact Rounded
+-- ddqua167 round 0.1    3e-1   -> 0.1
+-- ddqua168 round 0.1   44e-2   -> 0.10
+-- ddqua169 round 0.1  555e-3   -> 0.100
+-- ddqua170 round 0.9 6666e+2   -> 0E+2 Inexact Rounded
+-- ddqua171 round 0.9 -777e+1   -> 0E+1 Inexact Rounded
+-- ddqua172 round 0.9  -88e+0   -> 1 Inexact Rounded
+-- ddqua173 round 0.9   -9e-1   -> 0.9
+-- ddqua174 round 0.9    0e-2   -> 0.90
+-- ddqua175 round 0.9  1.1e-3   -> 0.9000
+-- negatives
+-- ddqua181 round -0    1.1e0   -> -0.0
+ddqua182 round -1     -1e0   -> -1
+-- ddqua183 round -0.1  11e+2   -> -0E+2 Inexact Rounded
+-- ddqua185 round -0.1 111e+1   -> -0E+1 Inexact Rounded
+-- ddqua186 round -0.1   71e0   -> -0 Inexact Rounded
+-- ddqua187 round -0.1 -91e-1   -> -0.1
+ddqua188 round -0.1 -.1e-2   -> -0.100
+ddqua189 round -0.1  -1e-3   -> -0.100
+ddqua190 round -0.9   0e+2   -> -0E+2 Inexact Rounded
+ddqua191 round -0.9  -0e+1   -> -0E+1 Inexact Rounded
+-- ddqua192 round -0.9 -10e+0   -> -1 Inexact Rounded
+-- ddqua193 round -0.9 100e-1   -> -0.9
+-- ddqua194 round -0.9 999e-2   -> -0.90
+
+-- +ve exponents ..
+ddqua201 round   -1   1e+0 ->  -1
+ddqua202 round   -1   1e+1 ->  -0E+1 Inexact Rounded
+ddqua203 round   -1   1e+2 ->  -0E+2 Inexact Rounded
+ddqua204 round    0   1e+0 ->  0
+ddqua205 round    0   1e+1 ->  0E+1
+ddqua206 round    0   1e+2 ->  0E+2
+ddqua207 round   +1   1e+0 ->  1
+ddqua208 round   +1   1e+1 ->  0E+1 Inexact Rounded
+ddqua209 round   +1   1e+2 ->  0E+2 Inexact Rounded
+
+ddqua220 round   1.04 1e+3 ->  0E+3 Inexact Rounded
+ddqua221 round   1.04 1e+2 ->  0E+2 Inexact Rounded
+ddqua222 round   1.04 1e+1 ->  0E+1 Inexact Rounded
+ddqua223 round   1.04 1e+0 ->  1 Inexact Rounded
+ddqua224 round   1.05 1e+3 ->  0E+3 Inexact Rounded
+ddqua225 round   1.05 1e+2 ->  0E+2 Inexact Rounded
+ddqua226 round   1.05 1e+1 ->  0E+1 Inexact Rounded
+ddqua227 round   1.05 1e+0 ->  1 Inexact Rounded
+ddqua228 round   1.05 1e+3 ->  0E+3 Inexact Rounded
+ddqua229 round   1.05 1e+2 ->  0E+2 Inexact Rounded
+ddqua230 round   1.05 1e+1 ->  0E+1 Inexact Rounded
+ddqua231 round   1.05 1e+0 ->  1 Inexact Rounded
+ddqua232 round   1.06 1e+3 ->  0E+3 Inexact Rounded
+ddqua233 round   1.06 1e+2 ->  0E+2 Inexact Rounded
+ddqua234 round   1.06 1e+1 ->  0E+1 Inexact Rounded
+ddqua235 round   1.06 1e+0 ->  1 Inexact Rounded
+
+ddqua240 round   -10   1e+1  ->  -1E+1 Rounded
+ddqua241 round   +1    1e+1  ->  0E+1 Inexact Rounded
+ddqua242 round   +10   1e+1  ->  1E+1 Rounded
+ddqua243 round   1E+1  1e+1  ->  1E+1          -- underneath this is E+1
+ddqua244 round   1E+2  1e+1  ->  1.0E+2        -- underneath this is E+1
+ddqua245 round   1E+3  1e+1  ->  1.00E+3       -- underneath this is E+1
+ddqua246 round   1E+4  1e+1  ->  1.000E+4      -- underneath this is E+1
+ddqua247 round   1E+5  1e+1  ->  1.0000E+5     -- underneath this is E+1
+ddqua248 round   1E+6  1e+1  ->  1.00000E+6    -- underneath this is E+1
+ddqua249 round   1E+7  1e+1  ->  1.000000E+7   -- underneath this is E+1
+ddqua250 round   1E+8  1e+1  ->  1.0000000E+8  -- underneath this is E+1
+ddqua251 round   1E+9  1e+1  ->  1.00000000E+9 -- underneath this is E+1
+-- next one tries to add 9 zeros
+-- ddqua252 round   1E+17 1e+1  ->  NaN Invalid_operation
+ddqua253 round   1E-17 1e+1  ->  0E+1 Inexact Rounded
+ddqua254 round   1E-2  1e+1  ->  0E+1 Inexact Rounded
+ddqua255 round   0E-17 1e+1  ->  0E+1
+ddqua256 round  -0E-17 1e+1  -> -0E+1
+ddqua257 round  -0E-1  1e+1  -> -0E+1
+ddqua258 round  -0     1e+1  -> -0E+1
+ddqua259 round  -0E+1  1e+1  -> -0E+1
+
+ddqua260 round   -10   1e+2  ->  -0E+2 Inexact Rounded
+ddqua261 round   +1    1e+2  ->  0E+2 Inexact Rounded
+ddqua262 round   +10   1e+2  ->  0E+2 Inexact Rounded
+ddqua263 round   1E+1  1e+2  ->  0E+2 Inexact Rounded
+ddqua264 round   1E+2  1e+2  ->  1E+2
+ddqua265 round   1E+3  1e+2  ->  1.0E+3
+ddqua266 round   1E+4  1e+2  ->  1.00E+4
+ddqua267 round   1E+5  1e+2  ->  1.000E+5
+ddqua268 round   1E+6  1e+2  ->  1.0000E+6
+ddqua269 round   1E+7  1e+2  ->  1.00000E+7
+ddqua270 round   1E+8  1e+2  ->  1.000000E+8
+ddqua271 round   1E+9  1e+2  ->  1.0000000E+9
+ddqua272 round   1E+10 1e+2  ->  1.00000000E+10
+ddqua273 round   1E-10 1e+2  ->  0E+2 Inexact Rounded
+ddqua274 round   1E-2  1e+2  ->  0E+2 Inexact Rounded
+ddqua275 round   0E-10 1e+2  ->  0E+2
+
+ddqua280 round   -10   1e+3  ->  -0E+3 Inexact Rounded
+ddqua281 round   +1    1e+3  ->  0E+3 Inexact Rounded
+ddqua282 round   +10   1e+3  ->  0E+3 Inexact Rounded
+ddqua283 round   1E+1  1e+3  ->  0E+3 Inexact Rounded
+ddqua284 round   1E+2  1e+3  ->  0E+3 Inexact Rounded
+ddqua285 round   1E+3  1e+3  ->  1E+3
+ddqua286 round   1E+4  1e+3  ->  1.0E+4
+ddqua287 round   1E+5  1e+3  ->  1.00E+5
+ddqua288 round   1E+6  1e+3  ->  1.000E+6
+ddqua289 round   1E+7  1e+3  ->  1.0000E+7
+ddqua290 round   1E+8  1e+3  ->  1.00000E+8
+ddqua291 round   1E+9  1e+3  ->  1.000000E+9
+ddqua292 round   1E+10 1e+3  ->  1.0000000E+10
+ddqua293 round   1E-10 1e+3  ->  0E+3 Inexact Rounded
+ddqua294 round   1E-2  1e+3  ->  0E+3 Inexact Rounded
+ddqua295 round   0E-10 1e+3  ->  0E+3
+
+-- round up from below [sign wrong in JIT compiler once]
+ddqua300 round   0.0078 1e-5 ->  0.00780
+ddqua301 round   0.0078 1e-4 ->  0.0078
+ddqua302 round   0.0078 1e-3 ->  0.008 Inexact Rounded
+ddqua303 round   0.0078 1e-2 ->  0.01 Inexact Rounded
+ddqua304 round   0.0078 1e-1 ->  0.0 Inexact Rounded
+ddqua305 round   0.0078  1e0 ->  0 Inexact Rounded
+ddqua306 round   0.0078 1e+1 ->  0E+1 Inexact Rounded
+ddqua307 round   0.0078 1e+2 ->  0E+2 Inexact Rounded
+
+ddqua310 round  -0.0078 1e-5 -> -0.00780
+ddqua311 round  -0.0078 1e-4 -> -0.0078
+ddqua312 round  -0.0078 1e-3 -> -0.008 Inexact Rounded
+ddqua313 round  -0.0078 1e-2 -> -0.01 Inexact Rounded
+ddqua314 round  -0.0078 1e-1 -> -0.0 Inexact Rounded
+ddqua315 round  -0.0078  1e0 -> -0 Inexact Rounded
+ddqua316 round  -0.0078 1e+1 -> -0E+1 Inexact Rounded
+ddqua317 round  -0.0078 1e+2 -> -0E+2 Inexact Rounded
+
+ddqua320 round   0.078 1e-5 ->  0.07800
+ddqua321 round   0.078 1e-4 ->  0.0780
+ddqua322 round   0.078 1e-3 ->  0.078
+ddqua323 round   0.078 1e-2 ->  0.08 Inexact Rounded
+ddqua324 round   0.078 1e-1 ->  0.1 Inexact Rounded
+ddqua325 round   0.078  1e0 ->  0 Inexact Rounded
+ddqua326 round   0.078 1e+1 ->  0E+1 Inexact Rounded
+ddqua327 round   0.078 1e+2 ->  0E+2 Inexact Rounded
+
+ddqua330 round  -0.078 1e-5 -> -0.07800
+ddqua331 round  -0.078 1e-4 -> -0.0780
+ddqua332 round  -0.078 1e-3 -> -0.078
+ddqua333 round  -0.078 1e-2 -> -0.08 Inexact Rounded
+ddqua334 round  -0.078 1e-1 -> -0.1 Inexact Rounded
+ddqua335 round  -0.078  1e0 -> -0 Inexact Rounded
+ddqua336 round  -0.078 1e+1 -> -0E+1 Inexact Rounded
+ddqua337 round  -0.078 1e+2 -> -0E+2 Inexact Rounded
+
+ddqua340 round   0.78 1e-5 ->  0.78000
+ddqua341 round   0.78 1e-4 ->  0.7800
+ddqua342 round   0.78 1e-3 ->  0.780
+ddqua343 round   0.78 1e-2 ->  0.78
+ddqua344 round   0.78 1e-1 ->  0.8 Inexact Rounded
+ddqua345 round   0.78  1e0 ->  1 Inexact Rounded
+ddqua346 round   0.78 1e+1 ->  0E+1 Inexact Rounded
+ddqua347 round   0.78 1e+2 ->  0E+2 Inexact Rounded
+
+ddqua350 round  -0.78 1e-5 -> -0.78000
+ddqua351 round  -0.78 1e-4 -> -0.7800
+ddqua352 round  -0.78 1e-3 -> -0.780
+ddqua353 round  -0.78 1e-2 -> -0.78
+ddqua354 round  -0.78 1e-1 -> -0.8 Inexact Rounded
+ddqua355 round  -0.78  1e0 -> -1 Inexact Rounded
+ddqua356 round  -0.78 1e+1 -> -0E+1 Inexact Rounded
+ddqua357 round  -0.78 1e+2 -> -0E+2 Inexact Rounded
+
+ddqua360 round   7.8 1e-5 ->  7.80000
+ddqua361 round   7.8 1e-4 ->  7.8000
+ddqua362 round   7.8 1e-3 ->  7.800
+ddqua363 round   7.8 1e-2 ->  7.80
+ddqua364 round   7.8 1e-1 ->  7.8
+ddqua365 round   7.8  1e0 ->  8 Inexact Rounded
+ddqua366 round   7.8 1e+1 ->  1E+1 Inexact Rounded
+ddqua367 round   7.8 1e+2 ->  0E+2 Inexact Rounded
+ddqua368 round   7.8 1e+3 ->  0E+3 Inexact Rounded
+
+ddqua370 round  -7.8 1e-5 -> -7.80000
+ddqua371 round  -7.8 1e-4 -> -7.8000
+ddqua372 round  -7.8 1e-3 -> -7.800
+ddqua373 round  -7.8 1e-2 -> -7.80
+ddqua374 round  -7.8 1e-1 -> -7.8
+ddqua375 round  -7.8  1e0 -> -8 Inexact Rounded
+ddqua376 round  -7.8 1e+1 -> -1E+1 Inexact Rounded
+ddqua377 round  -7.8 1e+2 -> -0E+2 Inexact Rounded
+ddqua378 round  -7.8 1e+3 -> -0E+3 Inexact Rounded
+
+-- some individuals
+ddqua380 round   1234567352364.506 1e-2 -> 1234567352364.51 Inexact Rounded
+ddqua381 round   12345673523645.06 1e-2 -> 12345673523645.06
+-- ddqua382 round   123456735236450.6 1e-2 -> NaN Invalid_operation
+-- ddqua383 round   1234567352364506  1e-2 -> NaN Invalid_operation
+ddqua384 round  -1234567352364.506 1e-2 -> -1234567352364.51 Inexact Rounded
+ddqua385 round  -12345673523645.06 1e-2 -> -12345673523645.06
+-- ddqua386 round  -123456735236450.6 1e-2 -> NaN Invalid_operation
+-- ddqua387 round  -1234567352364506  1e-2 -> NaN Invalid_operation
+
+rounding: down
+-- ddqua389 round   123456735236450.6 1e-2 -> NaN Invalid_operation
+-- ? should that one instead have been:
+-- ddqua389 round   123456735236450.6 1e-2 -> NaN Invalid_operation
+rounding: half_up
+
+-- and a few more from e-mail discussions
+ddqua391 round  12345678912.34567  1e-3 -> 12345678912.346   Inexact Rounded
+ddqua392 round  123456789123.4567  1e-3 -> 123456789123.457  Inexact Rounded
+ddqua393 round  1234567891234.567  1e-3 -> 1234567891234.567
+-- ddqua394 round  12345678912345.67  1e-3 -> NaN Invalid_operation
+-- ddqua395 round  123456789123456.7  1e-3 -> NaN Invalid_operation
+-- ddqua396 round  1234567891234567.  1e-3 -> NaN Invalid_operation
+
+-- some 9999 round-up cases
+ddqua400 round   9.999        1e-5  ->  9.99900
+ddqua401 round   9.999        1e-4  ->  9.9990
+ddqua402 round   9.999        1e-3  ->  9.999
+ddqua403 round   9.999        1e-2  -> 10.00     Inexact Rounded
+ddqua404 round   9.999        1e-1  -> 10.0      Inexact Rounded
+ddqua405 round   9.999         1e0  -> 10        Inexact Rounded
+ddqua406 round   9.999         1e1  -> 1E+1      Inexact Rounded
+ddqua407 round   9.999         1e2  -> 0E+2      Inexact Rounded
+
+ddqua410 round   0.999        1e-5  ->  0.99900
+ddqua411 round   0.999        1e-4  ->  0.9990
+ddqua412 round   0.999        1e-3  ->  0.999
+ddqua413 round   0.999        1e-2  ->  1.00     Inexact Rounded
+ddqua414 round   0.999        1e-1  ->  1.0      Inexact Rounded
+ddqua415 round   0.999         1e0  ->  1        Inexact Rounded
+ddqua416 round   0.999         1e1  -> 0E+1      Inexact Rounded
+
+ddqua420 round   0.0999       1e-5  ->  0.09990
+ddqua421 round   0.0999       1e-4  ->  0.0999
+ddqua422 round   0.0999       1e-3  ->  0.100    Inexact Rounded
+ddqua423 round   0.0999       1e-2  ->  0.10     Inexact Rounded
+ddqua424 round   0.0999       1e-1  ->  0.1      Inexact Rounded
+ddqua425 round   0.0999        1e0  ->  0        Inexact Rounded
+ddqua426 round   0.0999        1e1  -> 0E+1      Inexact Rounded
+
+ddqua430 round   0.00999      1e-5  ->  0.00999
+ddqua431 round   0.00999      1e-4  ->  0.0100   Inexact Rounded
+ddqua432 round   0.00999      1e-3  ->  0.010    Inexact Rounded
+ddqua433 round   0.00999      1e-2  ->  0.01     Inexact Rounded
+ddqua434 round   0.00999      1e-1  ->  0.0      Inexact Rounded
+ddqua435 round   0.00999       1e0  ->  0        Inexact Rounded
+ddqua436 round   0.00999       1e1  -> 0E+1      Inexact Rounded
+
+ddqua440 round   0.000999     1e-5  ->  0.00100  Inexact Rounded
+ddqua441 round   0.000999     1e-4  ->  0.0010   Inexact Rounded
+ddqua442 round   0.000999     1e-3  ->  0.001    Inexact Rounded
+ddqua443 round   0.000999     1e-2  ->  0.00     Inexact Rounded
+ddqua444 round   0.000999     1e-1  ->  0.0      Inexact Rounded
+ddqua445 round   0.000999      1e0  ->  0        Inexact Rounded
+ddqua446 round   0.000999      1e1  -> 0E+1      Inexact Rounded
+
+ddqua1001 round  0.000        0.001 ->  0.000
+ddqua1002 round  0.001        0.001 ->  0.001
+ddqua1003 round  0.0012       0.001 ->  0.001     Inexact Rounded
+ddqua1004 round  0.0018       0.001 ->  0.002     Inexact Rounded
+ddqua1005 round  0.501        0.001 ->  0.501
+ddqua1006 round  0.5012       0.001 ->  0.501     Inexact Rounded
+ddqua1007 round  0.5018       0.001 ->  0.502     Inexact Rounded
+ddqua1008 round  0.999        0.001 ->  0.999
+
+ddqua481 round 12345678000 1e+3 -> 1.2345678E+10 Rounded
+ddqua482 round 1234567800  1e+1 -> 1.23456780E+9 Rounded
+ddqua483 round 1234567890  1e+1 -> 1.23456789E+9 Rounded
+ddqua484 round 1234567891  1e+1 -> 1.23456789E+9 Inexact Rounded
+ddqua485 round 12345678901 1e+2 -> 1.23456789E+10 Inexact Rounded
+ddqua486 round 1234567896  1e+1 -> 1.23456790E+9 Inexact Rounded
+-- a potential double-round
+ddqua487 round 1234.987643 1e-4 -> 1234.9876 Inexact Rounded
+ddqua488 round 1234.987647 1e-4 -> 1234.9876 Inexact Rounded
+
+ddqua491 round 12345678000 1e+3 -> 1.2345678E+10 Rounded
+ddqua492 round 1234567800  1e+1 -> 1.23456780E+9 Rounded
+ddqua493 round 1234567890  1e+1 -> 1.23456789E+9 Rounded
+ddqua494 round 1234567891  1e+1 -> 1.23456789E+9 Inexact Rounded
+ddqua495 round 12345678901 1e+2 -> 1.23456789E+10 Inexact Rounded
+ddqua496 round 1234567896  1e+1 -> 1.23456790E+9 Inexact Rounded
+ddqua497 round 1234.987643 1e-4 -> 1234.9876 Inexact Rounded
+ddqua498 round 1234.987647 1e-4 -> 1234.9876 Inexact Rounded
+
+-- Zeros
+ddqua500 round   0     1e1 ->  0E+1
+ddqua501 round   0     1e0 ->  0
+ddqua502 round   0    1e-1 ->  0.0
+ddqua503 round   0.0  1e-1 ->  0.0
+ddqua504 round   0.0   1e0 ->  0
+ddqua505 round   0.0  1e+1 ->  0E+1
+ddqua506 round   0E+1 1e-1 ->  0.0
+ddqua507 round   0E+1  1e0 ->  0
+ddqua508 round   0E+1 1e+1 ->  0E+1
+ddqua509 round  -0     1e1 -> -0E+1
+ddqua510 round  -0     1e0 -> -0
+ddqua511 round  -0    1e-1 -> -0.0
+ddqua512 round  -0.0  1e-1 -> -0.0
+ddqua513 round  -0.0   1e0 -> -0
+ddqua514 round  -0.0  1e+1 -> -0E+1
+ddqua515 round  -0E+1 1e-1 -> -0.0
+ddqua516 round  -0E+1  1e0 -> -0
+ddqua517 round  -0E+1 1e+1 -> -0E+1
+
+-- Suspicious RHS values
+ddqua520 round   1.234    1e359 -> 0E+359 Inexact Rounded
+ddqua521 round 123.456    1e359 -> 0E+359 Inexact Rounded
+ddqua522 round   1.234    1e359 -> 0E+359 Inexact Rounded
+ddqua523 round 123.456    1e359 -> 0E+359 Inexact Rounded
+-- next four are "won't fit" overfl
+-- ddqua526 round   1.234   1e-299 -> NaN Invalid_operation
+-- ddqua527 round 123.456   1e-299 -> NaN Invalid_operation
+-- ddqua528 round   1.234   1e-299 -> NaN Invalid_operation
+-- ddqua529 round 123.456   1e-299 -> NaN Invalid_operation
+
+ddqua532 round   1.234E+299    1e299 -> 1E+299    Inexact Rounded
+ddqua533 round   1.234E+298    1e299 -> 0E+299    Inexact Rounded
+ddqua534 round   1.234         1e299 -> 0E+299    Inexact Rounded
+ddqua537 round   0            1e-299 -> 0E-299
+-- next two are "won't fit" overflows
+-- ddqua538 round   1.234        1e-299 -> NaN Invalid_operation
+-- ddqua539 round   1.234        1e-300 -> NaN Invalid_operation
+-- [more below]
+
+-- Specials
+ddqua580 round  Inf    -Inf   ->  Infinity
+ddqua581 round  Inf  1e-299   ->  NaN  Invalid_operation
+ddqua582 round  Inf  1e-1     ->  NaN  Invalid_operation
+ddqua583 round  Inf   1e0     ->  NaN  Invalid_operation
+ddqua584 round  Inf   1e1     ->  NaN  Invalid_operation
+ddqua585 round  Inf   1e299   ->  NaN  Invalid_operation
+ddqua586 round  Inf     Inf   ->  Infinity
+ddqua587 round -1000    Inf   ->  NaN  Invalid_operation
+ddqua588 round -Inf     Inf   ->  -Infinity
+ddqua589 round -1       Inf   ->  NaN  Invalid_operation
+ddqua590 round  0       Inf   ->  NaN  Invalid_operation
+ddqua591 round  1       Inf   ->  NaN  Invalid_operation
+ddqua592 round  1000    Inf   ->  NaN  Invalid_operation
+ddqua593 round  Inf     Inf   ->  Infinity
+ddqua594 round  Inf  1e-0     ->  NaN  Invalid_operation
+ddqua595 round -0       Inf   ->  NaN  Invalid_operation
+
+ddqua600 round -Inf    -Inf   ->  -Infinity
+ddqua601 round -Inf  1e-299   ->  NaN  Invalid_operation
+ddqua602 round -Inf  1e-1     ->  NaN  Invalid_operation
+ddqua603 round -Inf   1e0     ->  NaN  Invalid_operation
+ddqua604 round -Inf   1e1     ->  NaN  Invalid_operation
+ddqua605 round -Inf   1e299   ->  NaN  Invalid_operation
+ddqua606 round -Inf     Inf   ->  -Infinity
+ddqua607 round -1000    Inf   ->  NaN  Invalid_operation
+ddqua608 round -Inf    -Inf   ->  -Infinity
+ddqua609 round -1      -Inf   ->  NaN  Invalid_operation
+ddqua610 round  0      -Inf   ->  NaN  Invalid_operation
+ddqua611 round  1      -Inf   ->  NaN  Invalid_operation
+ddqua612 round  1000   -Inf   ->  NaN  Invalid_operation
+ddqua613 round  Inf    -Inf   ->  Infinity
+ddqua614 round -Inf  1e-0     ->  NaN  Invalid_operation
+ddqua615 round -0      -Inf   ->  NaN  Invalid_operation
+
+ddqua621 round  NaN   -Inf    ->  NaN
+ddqua622 round  NaN 1e-299    ->  NaN
+ddqua623 round  NaN 1e-1      ->  NaN
+ddqua624 round  NaN  1e0      ->  NaN
+ddqua625 round  NaN  1e1      ->  NaN
+ddqua626 round  NaN  1e299    ->  NaN
+ddqua627 round  NaN    Inf    ->  NaN
+ddqua628 round  NaN    NaN    ->  NaN
+ddqua629 round -Inf    NaN    ->  NaN
+ddqua630 round -1000   NaN    ->  NaN
+ddqua631 round -1      NaN    ->  NaN
+ddqua632 round  0      NaN    ->  NaN
+ddqua633 round  1      NaN    ->  NaN
+ddqua634 round  1000   NaN    ->  NaN
+ddqua635 round  Inf    NaN    ->  NaN
+ddqua636 round  NaN 1e-0      ->  NaN
+ddqua637 round -0      NaN    ->  NaN
+
+ddqua641 round  sNaN   -Inf   ->  NaN  Invalid_operation
+ddqua642 round  sNaN 1e-299   ->  NaN  Invalid_operation
+ddqua643 round  sNaN 1e-1     ->  NaN  Invalid_operation
+ddqua644 round  sNaN  1e0     ->  NaN  Invalid_operation
+ddqua645 round  sNaN  1e1     ->  NaN  Invalid_operation
+ddqua646 round  sNaN  1e299   ->  NaN  Invalid_operation
+ddqua647 round  sNaN    NaN   ->  NaN  Invalid_operation
+ddqua648 round  sNaN   sNaN   ->  NaN  Invalid_operation
+ddqua649 round  NaN    sNaN   ->  NaN  Invalid_operation
+ddqua650 round -Inf    sNaN   ->  NaN  Invalid_operation
+ddqua651 round -1000   sNaN   ->  NaN  Invalid_operation
+ddqua652 round -1      sNaN   ->  NaN  Invalid_operation
+ddqua653 round  0      sNaN   ->  NaN  Invalid_operation
+ddqua654 round  1      sNaN   ->  NaN  Invalid_operation
+ddqua655 round  1000   sNaN   ->  NaN  Invalid_operation
+ddqua656 round  Inf    sNaN   ->  NaN  Invalid_operation
+ddqua657 round  NaN    sNaN   ->  NaN  Invalid_operation
+ddqua658 round  sNaN 1e-0     ->  NaN  Invalid_operation
+ddqua659 round -0      sNaN   ->  NaN  Invalid_operation
+
+-- propagating NaNs
+ddqua661 round  NaN9 -Inf   ->  NaN9
+-- ddqua662 round  NaN8  919   ->  NaN8
+ddqua663 round  NaN71 Inf   ->  NaN71
+ddqua664 round  NaN6  NaN5  ->  NaN6
+ddqua665 round -Inf   NaN4  ->  NaN4
+ddqua666 round -919   NaN31 ->  NaN31
+ddqua667 round  Inf   NaN2  ->  NaN2
+
+ddqua671 round  sNaN99 -Inf    ->  NaN99 Invalid_operation
+-- ddqua672 round  sNaN98 -11     ->  NaN98 Invalid_operation
+ddqua673 round  sNaN97  NaN    ->  NaN97 Invalid_operation
+ddqua674 round  sNaN16 sNaN94  ->  NaN16 Invalid_operation
+ddqua675 round  NaN95  sNaN93  ->  NaN93 Invalid_operation
+ddqua676 round -Inf    sNaN92  ->  NaN92 Invalid_operation
+ddqua677 round  088    sNaN91  ->  NaN91 Invalid_operation
+ddqua678 round  Inf    sNaN90  ->  NaN90 Invalid_operation
+ddqua679 round  NaN    sNaN88  ->  NaN88 Invalid_operation
+
+ddqua681 round -NaN9 -Inf   -> -NaN9
+-- ddqua682 round -NaN8  919   -> -NaN8
+ddqua683 round -NaN71 Inf   -> -NaN71
+ddqua684 round -NaN6 -NaN5  -> -NaN6
+ddqua685 round -Inf  -NaN4  -> -NaN4
+ddqua686 round -919  -NaN31 -> -NaN31
+ddqua687 round  Inf  -NaN2  -> -NaN2
+
+ddqua691 round -sNaN99 -Inf    -> -NaN99 Invalid_operation
+-- ddqua692 round -sNaN98 -11     -> -NaN98 Invalid_operation
+ddqua693 round -sNaN97  NaN    -> -NaN97 Invalid_operation
+ddqua694 round -sNaN16 sNaN94  -> -NaN16 Invalid_operation
+ddqua695 round -NaN95 -sNaN93  -> -NaN93 Invalid_operation
+ddqua696 round -Inf   -sNaN92  -> -NaN92 Invalid_operation
+ddqua697 round  088   -sNaN91  -> -NaN91 Invalid_operation
+ddqua698 round  Inf   -sNaN90  -> -NaN90 Invalid_operation
+ddqua699 round  NaN   -sNaN88  -> -NaN88 Invalid_operation
+
+-- subnormals and underflow
+ddqua710 round  1.00E-383    1e-383  ->   1E-383    Rounded
+-- ddqua711 round  0.1E-383    2e-384  ->   1E-384   Subnormal
+-- ddqua712 round  0.10E-383   3e-384  ->   1E-384   Subnormal Rounded
+-- ddqua713 round  0.100E-383  4e-384  ->   1E-384   Subnormal Rounded
+-- ddqua714 round  0.01E-383   5e-385  ->   1E-385   Subnormal
+-- next is rounded to Emin
+ddqua715 round  0.999E-383   1e-383  ->   1E-383    Inexact Rounded
+-- ddqua716 round  0.099E-383 10e-384  ->   1E-384   Inexact Rounded Subnormal
+
+ddqua717 round  0.009E-383  1e-385  ->   1E-385   Inexact Rounded Subnormal
+ddqua718 round  0.001E-383  1e-385  ->   0E-385   Inexact Rounded
+ddqua719 round  0.0009E-383 1e-385  ->   0E-385   Inexact Rounded
+ddqua720 round  0.0001E-383 1e-385  ->   0E-385   Inexact Rounded
+
+ddqua730 round -1.00E-383   1e-383  ->  -1E-383     Rounded
+ddqua731 round -0.1E-383    1e-383  ->  -0E-383     Rounded Inexact
+ddqua732 round -0.10E-383   1e-383  ->  -0E-383     Rounded Inexact
+ddqua733 round -0.100E-383  1e-383  ->  -0E-383     Rounded Inexact
+ddqua734 round -0.01E-383   1e-383  ->  -0E-383     Inexact Rounded
+-- next is rounded to Emin
+-- ddqua735 round -0.999E-383 90e-383  ->  -1E-383     Inexact Rounded
+ddqua736 round -0.099E-383 -1e-383  ->  -0E-383     Inexact Rounded
+ddqua737 round -0.009E-383 -1e-383  ->  -0E-383     Inexact Rounded
+ddqua738 round -0.001E-383 -0e-383  ->  -0E-383     Inexact Rounded
+ddqua739 round -0.0001E-383 0e-383  ->  -0E-383     Inexact Rounded
+
+ddqua740 round -1.00E-383   1e-384 ->  -1.0E-383   Rounded
+ddqua741 round -0.1E-383    1e-384 ->  -1E-384    Subnormal
+ddqua742 round -0.10E-383   1e-384 ->  -1E-384    Subnormal Rounded
+ddqua743 round -0.100E-383  1e-384 ->  -1E-384    Subnormal Rounded
+ddqua744 round -0.01E-383   1e-384 ->  -0E-384    Inexact Rounded
+-- next is rounded to Emin
+ddqua745 round -0.999E-383  1e-384 ->  -1.0E-383   Inexact Rounded
+ddqua746 round -0.099E-383  1e-384 ->  -1E-384    Inexact Rounded Subnormal
+ddqua747 round -0.009E-383  1e-384 ->  -0E-384    Inexact Rounded
+ddqua748 round -0.001E-383  1e-384 ->  -0E-384    Inexact Rounded
+ddqua749 round -0.0001E-383 1e-384 ->  -0E-384    Inexact Rounded
+
+ddqua750 round -1.00E-383   1e-385 ->  -1.00E-383
+ddqua751 round -0.1E-383    1e-385 ->  -1.0E-384  Subnormal
+ddqua752 round -0.10E-383   1e-385 ->  -1.0E-384  Subnormal
+ddqua753 round -0.100E-383  1e-385 ->  -1.0E-384  Subnormal Rounded
+ddqua754 round -0.01E-383   1e-385 ->  -1E-385    Subnormal
+-- next is rounded to Emin
+ddqua755 round -0.999E-383  1e-385 ->  -1.00E-383  Inexact Rounded
+ddqua756 round -0.099E-383  1e-385 ->  -1.0E-384  Inexact Rounded Subnormal
+ddqua757 round -0.009E-383  1e-385 ->  -1E-385    Inexact Rounded Subnormal
+ddqua758 round -0.001E-383  1e-385 ->  -0E-385    Inexact Rounded
+ddqua759 round -0.0001E-383 1e-385 ->  -0E-385    Inexact Rounded
+
+ddqua760 round -1.00E-383   1e-386 ->  -1.000E-383
+ddqua761 round -0.1E-383    1e-386 ->  -1.00E-384  Subnormal
+ddqua762 round -0.10E-383   1e-386 ->  -1.00E-384  Subnormal
+ddqua763 round -0.100E-383  1e-386 ->  -1.00E-384  Subnormal
+ddqua764 round -0.01E-383   1e-386 ->  -1.0E-385   Subnormal
+ddqua765 round -0.999E-383  1e-386 ->  -9.99E-384  Subnormal
+ddqua766 round -0.099E-383  1e-386 ->  -9.9E-385   Subnormal
+ddqua767 round -0.009E-383  1e-386 ->  -9E-386     Subnormal
+ddqua768 round -0.001E-383  1e-386 ->  -1E-386     Subnormal
+ddqua769 round -0.0001E-383 1e-386 ->  -0E-386     Inexact Rounded
+
+-- More from Fung Lee
+-- ddqua1021 round  8.666666666666000E+384  1.000000000000000E+384 ->  8.666666666666000E+384
+-- ddqua1022 round -8.666666666666000E+384  1.000000000000000E+384 -> -8.666666666666000E+384
+-- ddqua1027 round 8.666666666666000E+323  1E+31    -> NaN Invalid_operation
+ddqua1029 round 8.66666666E+3           1E+3     -> 9E+3 Inexact Rounded
+
+
+--ddqua1030 round 8.666666666666000E+384 1E+384   -> 9.000000000000000E+384 Rounded Inexact
+--ddqua1031 round 8.666666666666000E+384 1E+384   -> 8.666666666666000E+384 Rounded
+--ddqua1032 round 8.666666666666000E+384 1E+383   -> 8.666666666666000E+384 Rounded
+--ddqua1033 round 8.666666666666000E+384 1E+382   -> 8.666666666666000E+384 Rounded
+--ddqua1034 round 8.666666666666000E+384 1E+381   -> 8.666666666666000E+384 Rounded
+--ddqua1035 round 8.666666666666000E+384 1E+380   -> 8.666666666666000E+384 Rounded
+
+-- -- Int and uInt32 edge values for testing conversions
+-- ddqua1040 round -2147483646     0 -> -2147483646
+-- ddqua1041 round -2147483647     0 -> -2147483647
+-- ddqua1042 round -2147483648     0 -> -2147483648
+-- ddqua1043 round -2147483649     0 -> -2147483649
+-- ddqua1044 round  2147483646     0 ->  2147483646
+-- ddqua1045 round  2147483647     0 ->  2147483647
+-- ddqua1046 round  2147483648     0 ->  2147483648
+-- ddqua1047 round  2147483649     0 ->  2147483649
+-- ddqua1048 round  4294967294     0 ->  4294967294
+-- ddqua1049 round  4294967295     0 ->  4294967295
+-- ddqua1050 round  4294967296     0 ->  4294967296
+-- ddqua1051 round  4294967297     0 ->  4294967297
+
+-- -- Rounding swathe
+-- rounding: half_even
+-- ddqua1100 round  1.2300    1.00    ->  1.23  Rounded
+-- ddqua1101 round  1.2301    1.00    ->  1.23  Inexact Rounded
+-- ddqua1102 round  1.2310    1.00    ->  1.23  Inexact Rounded
+-- ddqua1103 round  1.2350    1.00    ->  1.24  Inexact Rounded
+-- ddqua1104 round  1.2351    1.00    ->  1.24  Inexact Rounded
+-- ddqua1105 round  1.2450    1.00    ->  1.24  Inexact Rounded
+-- ddqua1106 round  1.2451    1.00    ->  1.25  Inexact Rounded
+-- ddqua1107 round  1.2360    1.00    ->  1.24  Inexact Rounded
+-- ddqua1108 round  1.2370    1.00    ->  1.24  Inexact Rounded
+-- ddqua1109 round  1.2399    1.00    ->  1.24  Inexact Rounded
+
+-- rounding: half_up
+-- ddqua1200 round  1.2300    1.00    ->  1.23  Rounded
+-- ddqua1201 round  1.2301    1.00    ->  1.23  Inexact Rounded
+-- ddqua1202 round  1.2310    1.00    ->  1.23  Inexact Rounded
+-- ddqua1203 round  1.2350    1.00    ->  1.24  Inexact Rounded
+-- ddqua1204 round  1.2351    1.00    ->  1.24  Inexact Rounded
+-- ddqua1205 round  1.2450    1.00    ->  1.25  Inexact Rounded
+-- ddqua1206 round  1.2451    1.00    ->  1.25  Inexact Rounded
+-- ddqua1207 round  1.2360    1.00    ->  1.24  Inexact Rounded
+-- ddqua1208 round  1.2370    1.00    ->  1.24  Inexact Rounded
+-- ddqua1209 round  1.2399    1.00    ->  1.24  Inexact Rounded
+
+-- rounding: half_down
+-- ddqua1300 round  1.2300    1.00    ->  1.23  Rounded
+-- ddqua1301 round  1.2301    1.00    ->  1.23  Inexact Rounded
+-- ddqua1302 round  1.2310    1.00    ->  1.23  Inexact Rounded
+-- ddqua1303 round  1.2350    1.00    ->  1.23  Inexact Rounded
+-- ddqua1304 round  1.2351    1.00    ->  1.24  Inexact Rounded
+-- ddqua1305 round  1.2450    1.00    ->  1.24  Inexact Rounded
+-- ddqua1306 round  1.2451    1.00    ->  1.25  Inexact Rounded
+-- ddqua1307 round  1.2360    1.00    ->  1.24  Inexact Rounded
+-- ddqua1308 round  1.2370    1.00    ->  1.24  Inexact Rounded
+-- ddqua1309 round  1.2399    1.00    ->  1.24  Inexact Rounded
+
+-- rounding: up
+-- ddqua1400 round  1.2300    1.00    ->  1.23  Rounded
+-- ddqua1401 round  1.2301    1.00    ->  1.24  Inexact Rounded
+-- ddqua1402 round  1.2310    1.00    ->  1.24  Inexact Rounded
+-- ddqua1403 round  1.2350    1.00    ->  1.24  Inexact Rounded
+-- ddqua1404 round  1.2351    1.00    ->  1.24  Inexact Rounded
+-- ddqua1405 round  1.2450    1.00    ->  1.25  Inexact Rounded
+-- ddqua1406 round  1.2451    1.00    ->  1.25  Inexact Rounded
+-- ddqua1407 round  1.2360    1.00    ->  1.24  Inexact Rounded
+-- ddqua1408 round  1.2370    1.00    ->  1.24  Inexact Rounded
+-- ddqua1409 round  1.2399    1.00    ->  1.24  Inexact Rounded
+-- ddqua1411 round -1.2399    1.00    -> -1.24  Inexact Rounded
+
+-- rounding: down
+-- ddqua1500 round  1.2300    1.00    ->  1.23  Rounded
+-- ddqua1501 round  1.2301    1.00    ->  1.23  Inexact Rounded
+-- ddqua1502 round  1.2310    1.00    ->  1.23  Inexact Rounded
+-- ddqua1503 round  1.2350    1.00    ->  1.23  Inexact Rounded
+-- ddqua1504 round  1.2351    1.00    ->  1.23  Inexact Rounded
+-- ddqua1505 round  1.2450    1.00    ->  1.24  Inexact Rounded
+-- ddqua1506 round  1.2451    1.00    ->  1.24  Inexact Rounded
+-- ddqua1507 round  1.2360    1.00    ->  1.23  Inexact Rounded
+-- ddqua1508 round  1.2370    1.00    ->  1.23  Inexact Rounded
+-- ddqua1509 round  1.2399    1.00    ->  1.23  Inexact Rounded
+-- ddqua1511 round -1.2399    1.00    -> -1.23  Inexact Rounded
+
+-- rounding: ceiling
+-- ddqua1600 round  1.2300    1.00    ->  1.23  Rounded
+-- ddqua1601 round  1.2301    1.00    ->  1.24  Inexact Rounded
+-- ddqua1602 round  1.2310    1.00    ->  1.24  Inexact Rounded
+-- ddqua1603 round  1.2350    1.00    ->  1.24  Inexact Rounded
+-- ddqua1604 round  1.2351    1.00    ->  1.24  Inexact Rounded
+-- ddqua1605 round  1.2450    1.00    ->  1.25  Inexact Rounded
+-- ddqua1606 round  1.2451    1.00    ->  1.25  Inexact Rounded
+-- ddqua1607 round  1.2360    1.00    ->  1.24  Inexact Rounded
+-- ddqua1608 round  1.2370    1.00    ->  1.24  Inexact Rounded
+-- ddqua1609 round  1.2399    1.00    ->  1.24  Inexact Rounded
+-- ddqua1611 round -1.2399    1.00    -> -1.23  Inexact Rounded
+
+-- rounding: floor
+-- ddqua1700 round  1.2300    1.00    ->  1.23  Rounded
+-- ddqua1701 round  1.2301    1.00    ->  1.23  Inexact Rounded
+-- ddqua1702 round  1.2310    1.00    ->  1.23  Inexact Rounded
+-- ddqua1703 round  1.2350    1.00    ->  1.23  Inexact Rounded
+-- ddqua1704 round  1.2351    1.00    ->  1.23  Inexact Rounded
+-- ddqua1705 round  1.2450    1.00    ->  1.24  Inexact Rounded
+-- ddqua1706 round  1.2451    1.00    ->  1.24  Inexact Rounded
+-- ddqua1707 round  1.2360    1.00    ->  1.23  Inexact Rounded
+-- ddqua1708 round  1.2370    1.00    ->  1.23  Inexact Rounded
+-- ddqua1709 round  1.2399    1.00    ->  1.23  Inexact Rounded
+-- ddqua1711 round -1.2399    1.00    -> -1.24  Inexact Rounded
+
+-- rounding: 05up
+-- ddqua1800 round  1.2000    1.00    ->  1.20  Rounded
+-- ddqua1801 round  1.2001    1.00    ->  1.21  Inexact Rounded
+-- ddqua1802 round  1.2010    1.00    ->  1.21  Inexact Rounded
+-- ddqua1803 round  1.2050    1.00    ->  1.21  Inexact Rounded
+-- ddqua1804 round  1.2051    1.00    ->  1.21  Inexact Rounded
+-- ddqua1807 round  1.2060    1.00    ->  1.21  Inexact Rounded
+-- ddqua1808 round  1.2070    1.00    ->  1.21  Inexact Rounded
+-- ddqua1809 round  1.2099    1.00    ->  1.21  Inexact Rounded
+-- ddqua1811 round -1.2099    1.00    -> -1.21  Inexact Rounded
+
+-- ddqua1900 round  1.2100    1.00    ->  1.21  Rounded
+-- ddqua1901 round  1.2101    1.00    ->  1.21  Inexact Rounded
+-- ddqua1902 round  1.2110    1.00    ->  1.21  Inexact Rounded
+-- ddqua1903 round  1.2150    1.00    ->  1.21  Inexact Rounded
+-- ddqua1904 round  1.2151    1.00    ->  1.21  Inexact Rounded
+-- ddqua1907 round  1.2160    1.00    ->  1.21  Inexact Rounded
+-- ddqua1908 round  1.2170    1.00    ->  1.21  Inexact Rounded
+-- ddqua1909 round  1.2199    1.00    ->  1.21  Inexact Rounded
+-- ddqua1911 round -1.2199    1.00    -> -1.21  Inexact Rounded
+
+-- ddqua2000 round  1.2400    1.00    ->  1.24  Rounded
+-- ddqua2001 round  1.2401    1.00    ->  1.24  Inexact Rounded
+-- ddqua2002 round  1.2410    1.00    ->  1.24  Inexact Rounded
+-- ddqua2003 round  1.2450    1.00    ->  1.24  Inexact Rounded
+-- ddqua2004 round  1.2451    1.00    ->  1.24  Inexact Rounded
+-- ddqua2007 round  1.2460    1.00    ->  1.24  Inexact Rounded
+-- ddqua2008 round  1.2470    1.00    ->  1.24  Inexact Rounded
+-- ddqua2009 round  1.2499    1.00    ->  1.24  Inexact Rounded
+-- ddqua2011 round -1.2499    1.00    -> -1.24  Inexact Rounded
+
+-- ddqua2100 round  1.2500    1.00    ->  1.25  Rounded
+-- ddqua2101 round  1.2501    1.00    ->  1.26  Inexact Rounded
+-- ddqua2102 round  1.2510    1.00    ->  1.26  Inexact Rounded
+-- ddqua2103 round  1.2550    1.00    ->  1.26  Inexact Rounded
+-- ddqua2104 round  1.2551    1.00    ->  1.26  Inexact Rounded
+-- ddqua2107 round  1.2560    1.00    ->  1.26  Inexact Rounded
+-- ddqua2108 round  1.2570    1.00    ->  1.26  Inexact Rounded
+-- ddqua2109 round  1.2599    1.00    ->  1.26  Inexact Rounded
+-- ddqua2111 round -1.2599    1.00    -> -1.26  Inexact Rounded
+
+-- ddqua2200 round  1.2600    1.00    ->  1.26  Rounded
+-- ddqua2201 round  1.2601    1.00    ->  1.26  Inexact Rounded
+-- ddqua2202 round  1.2610    1.00    ->  1.26  Inexact Rounded
+-- ddqua2203 round  1.2650    1.00    ->  1.26  Inexact Rounded
+-- ddqua2204 round  1.2651    1.00    ->  1.26  Inexact Rounded
+-- ddqua2207 round  1.2660    1.00    ->  1.26  Inexact Rounded
+-- ddqua2208 round  1.2670    1.00    ->  1.26  Inexact Rounded
+-- ddqua2209 round  1.2699    1.00    ->  1.26  Inexact Rounded
+-- ddqua2211 round -1.2699    1.00    -> -1.26  Inexact Rounded
+
+-- ddqua2300 round  1.2900    1.00    ->  1.29  Rounded
+-- ddqua2301 round  1.2901    1.00    ->  1.29  Inexact Rounded
+-- ddqua2302 round  1.2910    1.00    ->  1.29  Inexact Rounded
+-- ddqua2303 round  1.2950    1.00    ->  1.29  Inexact Rounded
+-- ddqua2304 round  1.2951    1.00    ->  1.29  Inexact Rounded
+-- ddqua2307 round  1.2960    1.00    ->  1.29  Inexact Rounded
+-- ddqua2308 round  1.2970    1.00    ->  1.29  Inexact Rounded
+-- ddqua2309 round  1.2999    1.00    ->  1.29  Inexact Rounded
+-- ddqua2311 round -1.2999    1.00    -> -1.29  Inexact Rounded
+
+-- Null tests
+rounding:    half_even
+ddqua998 round 10    # -> NaN Invalid_operation
+ddqua999 round  # 1e10 -> NaN Invalid_operation
