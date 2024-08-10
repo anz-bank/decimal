@@ -6,9 +6,9 @@ import (
 	"strconv"
 )
 
-var _ fmt.Formatter = Decimal64{}
+var _ fmt.Formatter = Zero64
 var _ fmt.Scanner = (*Decimal64)(nil)
-var _ fmt.Stringer = Decimal64{}
+var _ fmt.Stringer = Zero64
 
 func appendFrac64(buf []byte, n, limit uint64) []byte {
 	for n > 0 {
@@ -102,11 +102,18 @@ func (d Decimal64) append(buf []byte, format byte, width, prec int) []byte {
 formatBlock:
 	switch format {
 	case 'e', 'E':
+		// normalise subnormals
+		exp, significand = unsubnormal(exp, significand)
+
 		whole := significand / decimal64Base
 		buf = append(buf, byte('0'+whole))
 		frac := significand - decimal64Base*whole
 		if frac > 0 {
 			buf = appendFrac64(append(buf, '.'), frac, decimal64Base/10)
+		}
+
+		if significand == 0 {
+			return buf
 		}
 
 		exp += 15
@@ -149,7 +156,9 @@ formatBlock:
 		}
 		return buf
 	case 'g', 'G':
-		if exp < -decimal64Digits-4 || prec >= 0 && exp > prec {
+		if exp < -decimal64Digits-3 ||
+			prec >= 0 && exp > prec ||
+			prec < 0 && exp > -decimal64Digits+6 {
 			format -= 'g' - 'e'
 		} else {
 			format -= 'g' - 'f'

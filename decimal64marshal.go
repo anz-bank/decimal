@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-var _ encoding.TextMarshaler = Decimal64{}
+var _ encoding.TextMarshaler = Zero64
 var _ encoding.TextUnmarshaler = (*Decimal64)(nil)
 
 // MarshalText implements the encoding.TextMarshaler interface.
@@ -26,7 +26,7 @@ func (d *Decimal64) UnmarshalText(text []byte) error {
 	return err
 }
 
-var _ encoding.BinaryMarshaler = Decimal64{}
+var _ encoding.BinaryMarshaler = Zero64
 var _ encoding.BinaryUnmarshaler = (*Decimal64)(nil)
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface.
@@ -38,7 +38,8 @@ func (d Decimal64) MarshalBinary() ([]byte, error) {
 
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
 func (d *Decimal64) UnmarshalBinary(data []byte) error {
-	d.bits = binary.BigEndian.Uint64(data)
+	bits := binary.BigEndian.Uint64(data)
 	// TODO: Check for out of bounds significand.
+	*d = new64(bits)
 	return nil
 }

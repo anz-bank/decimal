@@ -38,6 +38,23 @@ func TestDecimal64String(t *testing.T) {
 	}
 }
 
+func TestDecimal64StringEdgeCases(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, "123456", MustParse64("123456").String())
+	require.Equal(t, "-123456", MustParse64("-123456").String())
+	require.Equal(t, "1.234567e+6", MustParse64("1234567").String())
+	require.Equal(t, "-1.234567e+6", MustParse64("-1234567").String())
+	require.Equal(t, "0.0001", MustParse64("0.0001").String())
+	require.Equal(t, "-0.0001", MustParse64("-0.0001").String())
+	require.Equal(t, "1e-5", MustParse64("0.00001").String())
+	require.Equal(t, "-1e-5", MustParse64("-0.00001").String())
+	require.Equal(t, "9.999999999999999e+384", MustParse64("9.999999999999999e+384").String())
+	require.Equal(t, "-9.999999999999999e+384", MustParse64("-9.999999999999999e+384").String())
+	require.Equal(t, "1e-398", MustParse64("1e-398").String())
+	require.Equal(t, "-1e-398", MustParse64("-1e-398").String())
+}
+
 func BenchmarkDecimal64String(b *testing.B) {
 	d := New64FromInt64(123456789)
 	for i := 0; i <= b.N; i++ {
@@ -116,7 +133,7 @@ func TestDecimal64FormatPrec(t *testing.T) {
 
 	// Add five digits to the significand so we round at a 2.
 	pi = pi.Add(New64FromInt64(10_100_000_000))
-	assert.Equal(t, "10100100103.14159", fmt.Sprintf("%v", pi))
+	assert.Equal(t, "1.010010010314159e+10", fmt.Sprintf("%v", pi))
 	assert.Equal(t, "10100100103.141590", fmt.Sprintf("%f", pi))
 	assert.Equal(t, "10100100103", fmt.Sprintf("%.0f", pi))
 	assert.Equal(t, "10100100103.1", fmt.Sprintf("%.1f", pi))

@@ -151,7 +151,7 @@ func TestDecimal64isZero(t *testing.T) {
 	require := require.New(t)
 
 	require.Equal(true, Zero64.IsZero())
-	require.Equal(true, Decimal64{bits: Zero64.bits | neg64}.IsZero())
+	require.Equal(true, NegZero64.IsZero())
 	require.Equal(false, One64.IsZero())
 }
 

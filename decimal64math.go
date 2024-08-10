@@ -5,7 +5,7 @@ func (d Decimal64) Abs() Decimal64 {
 	if d.IsNaN() {
 		return d
 	}
-	return Decimal64{bits: ^neg64 & uint64(d.bits)}.debug()
+	return new64(^neg64 & uint64(d.bits))
 }
 
 // Add computes d + e with default rounding
@@ -168,7 +168,7 @@ func (d Decimal64) Neg() Decimal64 {
 	if d.IsNaN() {
 		return d
 	}
-	return Decimal64{bits: neg64 ^ d.bits}.debug()
+	return new64(neg64 ^ d.bits)
 }
 
 // Logb return the integral log10 of d.
@@ -196,7 +196,7 @@ func (d Decimal64) Logb() Decimal64 {
 
 // CopySign copies d, but with the sign taken from e.
 func (d Decimal64) CopySign(e Decimal64) Decimal64 {
-	return Decimal64{bits: d.bits&^neg64 | e.bits&neg64}.debug()
+	return new64(d.bits&^neg64 | e.bits&neg64)
 }
 
 // Quo computes d / e.
@@ -456,10 +456,10 @@ func (d Decimal64) NextPlus() Decimal64 {
 	case sign == 1:
 		switch {
 		case significand > decimal64Base:
-			return Decimal64{bits: d.bits - 1}.debug()
+			return new64(d.bits - 1)
 		case exp == -398:
 			if significand > 1 {
-				return Decimal64{bits: d.bits - 1}.debug()
+				return new64(d.bits - 1)
 			}
 			return Zero64
 		default:
@@ -468,7 +468,7 @@ func (d Decimal64) NextPlus() Decimal64 {
 	default:
 		switch {
 		case significand < 10*decimal64Base-1:
-			return Decimal64{bits: d.bits + 1}.debug()
+			return new64(d.bits + 1)
 		case exp == 369:
 			return Infinity64
 		default:
@@ -493,10 +493,10 @@ func (d Decimal64) NextMinus() Decimal64 {
 	case sign == 0:
 		switch {
 		case significand > decimal64Base:
-			return Decimal64{bits: d.bits - 1}.debug()
+			return new64(d.bits - 1)
 		case exp == -398:
 			if significand > 1 {
-				return Decimal64{bits: d.bits - 1}.debug()
+				return new64(d.bits - 1)
 			}
 			return Zero64
 		default:
@@ -505,11 +505,114 @@ func (d Decimal64) NextMinus() Decimal64 {
 	default:
 		switch {
 		case significand < 10*decimal64Base-1:
-			return Decimal64{bits: d.bits + 1}.debug()
+			return new64(d.bits + 1)
 		case exp == 369:
 			return NegInfinity64
 		default:
 			return newFromParts(sign, exp+1, decimal64Base)
 		}
 	}
+}
+
+// Round rounds a number to a given power of ten value. The e argument should be
+// a power of ten value, such as 1, 10, 100, 1000, etc.
+func (d Decimal64) Round(e Decimal64) Decimal64 {
+	return DefaultContext.Round(d, e)
+}
+
+func (ctx Context64) Round(d, e Decimal64) Decimal64 {
+	var dp decParts
+	dp.unpack(d)
+	var ep decParts
+	ep.unpack(e)
+	return ctx.roundRef(&dp, &ep)
+}
+
+func (ctx Context64) roundRef(dp, ep *decParts) Decimal64 {
+	if nan, is := checkNan(dp, ep); is {
+		return nan
+	}
+	if dp.fl == flInf || ep.fl == flInf {
+		if dp.fl == flInf && ep.fl == flInf {
+			return dp.original
+		}
+		return QNaN64
+	}
+
+	dexp, dsignificand := unsubnormal(dp.exp, dp.significand.lo)
+	eexp, _ := unsubnormal(ep.exp, ep.significand.lo)
+
+	delta := dexp - eexp
+	if delta < -1 { // -1 avoids rounding range
+		return Zero64
+	}
+	if delta > 14 {
+		return dp.original
+	}
+	p := powersOf10[14-delta]
+	s, grew := ctx.round(dsignificand, p)
+	exp := dexp
+	if grew {
+		s /= 10
+		if exp++; exp > expMax {
+			return infinities[dp.sign]
+		}
+	}
+	exp, s = resubnormal(exp, s)
+	return newFromParts(dp.sign, exp, s)
+}
+
+func (d Decimal64) ToIntegral() Decimal64 {
+	return DefaultContext.ToIntegral(d)
+}
+
+var decPartsOne64 decParts = unpack(One64)
+
+func (ctx Context64) ToIntegral(d Decimal64) Decimal64 {
+	var dp decParts
+	dp.unpack(d)
+	if dp.fl != flNormal || dp.exp >= 0 {
+		return d
+	}
+	return ctx.roundRef(&dp, &decPartsOne64)
+}
+
+func (ctx Context64) round(s, p uint64) (uint64, bool) {
+	p5 := p * 5
+	p10 := p5 * 2
+	div := s / p10
+	rem := s - p10*div
+	if rem == 0 {
+		return s, false
+	}
+	s -= rem
+	up := false
+	switch ctx.roundingMode {
+	case roundHalfUp:
+		up = rem >= p5
+	case roundHalfEven:
+		up = rem > p5 || rem == p5 && div%2 == 1
+	}
+	if up {
+		return s + p10, div == 0
+	}
+	return s, false
+}
+
+func unsubnormal(exp int, significand uint64) (int, uint64) {
+	if significand != 0 {
+		for significand < decimal64Base {
+			significand *= 10
+			exp--
+		}
+	}
+	return exp, significand
+}
+
+func resubnormal(exp int, significand uint64) (int, uint64) {
+	for exp < -expOffset || significand >= 10*decimal64Base {
+		significand /= 10
+		exp++
+	}
+	return exp, significand
 }

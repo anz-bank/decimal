@@ -5,7 +5,7 @@ import (
 )
 
 var _ gob.GobDecoder = (*Decimal64)(nil)
-var _ gob.GobEncoder = Decimal64{}
+var _ gob.GobEncoder = Zero64
 
 // GobDecode implements encoding.GobDecoder.
 func (d *Decimal64) GobDecode(buf []byte) error {

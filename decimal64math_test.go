@@ -3,6 +3,7 @@ package decimal
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -292,6 +293,95 @@ func TestDecimal64Sub(t *testing.T) {
 		func(a, b Decimal64) Decimal64 { return a.Sub(b) },
 		"-",
 	)
+}
+
+func rnd(ctx Context64, x, y uint64) uint64 {
+	ans, _ := ctx.round(x, y)
+	return ans
+}
+
+func TestRoundHalfUp(t *testing.T) {
+	t.Parallel()
+
+	ctx := Context64{roundingMode: roundHalfUp}
+	assert.Equal(t, uint64(10), rnd(ctx, 10, 1))
+	assert.Equal(t, uint64(10), rnd(ctx, 11, 1))
+	assert.Equal(t, uint64(20), rnd(ctx, 15, 1))
+	assert.Equal(t, uint64(20), rnd(ctx, 19, 1))
+	assert.Equal(t, uint64(200), rnd(ctx, 249, 10))
+	assert.Equal(t, uint64(300), rnd(ctx, 250, 10))
+	assert.Equal(t, uint64(300), rnd(ctx, 251, 10))
+	assert.Equal(t, uint64(300), rnd(ctx, 299, 10))
+	assert.Equal(t, uint64(300), rnd(ctx, 300, 10))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1000000000000000, 100000000000000))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1100000000000000, 100000000000000))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1499999999999999, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1500000000000000, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1500000000000001, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1900000000000000, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1999999999999999, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2000000000000000, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2499999999999999, 100000000000000))
+	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 2500000000000000, 100000000000000))
+	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 2500000000000001, 100000000000000))
+	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 2999999999999999, 100000000000000))
+	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 3000000000000000, 100000000000000))
+}
+
+func TestRoundHalfEven(t *testing.T) {
+	t.Parallel()
+
+	ctx := Context64{roundingMode: roundHalfEven}
+	assert.Equal(t, uint64(10), rnd(ctx, 10, 1))
+	assert.Equal(t, uint64(10), rnd(ctx, 11, 1))
+	assert.Equal(t, uint64(20), rnd(ctx, 15, 1))
+	assert.Equal(t, uint64(20), rnd(ctx, 19, 1))
+	assert.Equal(t, uint64(200), rnd(ctx, 249, 10))
+	assert.Equal(t, uint64(200), rnd(ctx, 250, 10))
+	assert.Equal(t, uint64(300), rnd(ctx, 251, 10))
+	assert.Equal(t, uint64(300), rnd(ctx, 299, 10))
+	assert.Equal(t, uint64(300), rnd(ctx, 300, 10))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1000000000000000, 100000000000000))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1100000000000000, 100000000000000))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1499999999999999, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1500000000000000, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1500000000000001, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1900000000000000, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1999999999999999, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2000000000000000, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2499999999999999, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2500000000000000, 100000000000000))
+	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 2500000000000001, 100000000000000))
+	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 2999999999999999, 100000000000000))
+	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 3000000000000000, 100000000000000))
+}
+
+func TestRoundHDown(t *testing.T) {
+	t.Parallel()
+
+	ctx := Context64{roundingMode: roundDown}
+	assert.Equal(t, uint64(10), rnd(ctx, 10, 1))
+	assert.Equal(t, uint64(10), rnd(ctx, 11, 1))
+	assert.Equal(t, uint64(10), rnd(ctx, 15, 1))
+	assert.Equal(t, uint64(10), rnd(ctx, 19, 1))
+	assert.Equal(t, uint64(200), rnd(ctx, 249, 10))
+	assert.Equal(t, uint64(200), rnd(ctx, 250, 10))
+	assert.Equal(t, uint64(200), rnd(ctx, 251, 10))
+	assert.Equal(t, uint64(200), rnd(ctx, 299, 10))
+	assert.Equal(t, uint64(300), rnd(ctx, 300, 10))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1000000000000000, 100000000000000))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1100000000000000, 100000000000000))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1499999999999999, 100000000000000))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1500000000000000, 100000000000000))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1500000000000001, 100000000000000))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1900000000000000, 100000000000000))
+	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1999999999999999, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2000000000000000, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2499999999999999, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2500000000000000, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2500000000000001, 100000000000000))
+	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2999999999999999, 100000000000000))
+	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 3000000000000000, 100000000000000))
 }
 
 func benchmarkDecimal64Data() []Decimal64 {
