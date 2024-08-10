@@ -5,7 +5,7 @@ func (d Decimal64) Abs() Decimal64 {
 	if d.IsNaN() {
 		return d
 	}
-	return Decimal64{bits: ^neg64 & uint64(d.bits)}.debug()
+	return new64(^neg64 & uint64(d.bits))
 }
 
 // Add computes d + e with default rounding
@@ -168,7 +168,7 @@ func (d Decimal64) Neg() Decimal64 {
 	if d.IsNaN() {
 		return d
 	}
-	return Decimal64{bits: neg64 ^ d.bits}.debug()
+	return new64(neg64 ^ d.bits)
 }
 
 // Logb return the integral log10 of d.
@@ -196,7 +196,7 @@ func (d Decimal64) Logb() Decimal64 {
 
 // CopySign copies d, but with the sign taken from e.
 func (d Decimal64) CopySign(e Decimal64) Decimal64 {
-	return Decimal64{bits: d.bits&^neg64 | e.bits&neg64}.debug()
+	return new64(d.bits&^neg64 | e.bits&neg64)
 }
 
 // Quo computes d / e.
@@ -456,10 +456,10 @@ func (d Decimal64) NextPlus() Decimal64 {
 	case sign == 1:
 		switch {
 		case significand > decimal64Base:
-			return Decimal64{bits: d.bits - 1}.debug()
+			return new64(d.bits - 1)
 		case exp == -398:
 			if significand > 1 {
-				return Decimal64{bits: d.bits - 1}.debug()
+				return new64(d.bits - 1)
 			}
 			return Zero64
 		default:
@@ -468,7 +468,7 @@ func (d Decimal64) NextPlus() Decimal64 {
 	default:
 		switch {
 		case significand < 10*decimal64Base-1:
-			return Decimal64{bits: d.bits + 1}.debug()
+			return new64(d.bits + 1)
 		case exp == 369:
 			return Infinity64
 		default:
@@ -493,10 +493,10 @@ func (d Decimal64) NextMinus() Decimal64 {
 	case sign == 0:
 		switch {
 		case significand > decimal64Base:
-			return Decimal64{bits: d.bits - 1}.debug()
+			return new64(d.bits - 1)
 		case exp == -398:
 			if significand > 1 {
-				return Decimal64{bits: d.bits - 1}.debug()
+				return new64(d.bits - 1)
 			}
 			return Zero64
 		default:
@@ -505,7 +505,7 @@ func (d Decimal64) NextMinus() Decimal64 {
 	default:
 		switch {
 		case significand < 10*decimal64Base-1:
-			return Decimal64{bits: d.bits + 1}.debug()
+			return new64(d.bits + 1)
 		case exp == 369:
 			return NegInfinity64
 		default:

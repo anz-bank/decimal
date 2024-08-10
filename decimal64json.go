@@ -2,7 +2,7 @@ package decimal
 
 import "encoding/json"
 
-var _ json.Marshaler = Decimal64{}
+var _ json.Marshaler = Zero64
 var _ json.Unmarshaler = (*Decimal64)(nil)
 
 // MarshalText implements the encoding.TextMarshaler interface.

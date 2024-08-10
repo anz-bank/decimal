@@ -31,14 +31,6 @@ const (
 	roundDown
 )
 
-// Decimal64 represents an IEEE 754 64-bit floating point decimal number.
-// It uses the binary representation method.
-// Decimal64 is intentionally a struct to ensure users don't accidentally cast it to uint64
-type Decimal64 struct {
-	bits      uint64
-	debugInfo //nolint:unused
-}
-
 // Context64 stores the rounding type for arithmetic operations.
 type Context64 struct {
 	roundingMode roundingMode
@@ -192,12 +184,12 @@ func newFromParts(sign int, exp int, significand uint64) Decimal64 {
 	if significand < 0x8<<50 {
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
-		return Decimal64{bits: s | uint64(exp+expOffset)<<(63-10) | significand}.debug()
+		return new64(s | uint64(exp+expOffset)<<(63-10) | significand)
 	}
 	// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 	//     EE ∈ {00, 01, 10}
 	significand &= 0x8<<50 - 1
-	return Decimal64{bits: s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand}.debug()
+	return new64(s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand)
 }
 
 func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
@@ -357,7 +349,7 @@ func (d Decimal64) IsInt() bool {
 
 // quiet returns a quiet form of d, which must be a NaN.
 func (d Decimal64) quiet() Decimal64 {
-	return Decimal64{bits: d.bits &^ (2 << 56)}.debug()
+	return new64(d.bits &^ (2 << 56))
 }
 
 // IsSubnormal returns true iff d is a subnormal.
