@@ -303,7 +303,7 @@ func rnd(ctx Context64, x, y uint64) uint64 {
 func TestRoundHalfUp(t *testing.T) {
 	t.Parallel()
 
-	ctx := Context64{roundingMode: roundHalfUp}
+	ctx := Context64{Rounding: HalfUp}
 	assert.Equal(t, uint64(10), rnd(ctx, 10, 1))
 	assert.Equal(t, uint64(10), rnd(ctx, 11, 1))
 	assert.Equal(t, uint64(20), rnd(ctx, 15, 1))
@@ -331,7 +331,7 @@ func TestRoundHalfUp(t *testing.T) {
 func TestRoundHalfEven(t *testing.T) {
 	t.Parallel()
 
-	ctx := Context64{roundingMode: roundHalfEven}
+	ctx := Context64{Rounding: HalfEven}
 	assert.Equal(t, uint64(10), rnd(ctx, 10, 1))
 	assert.Equal(t, uint64(10), rnd(ctx, 11, 1))
 	assert.Equal(t, uint64(20), rnd(ctx, 15, 1))
@@ -359,7 +359,7 @@ func TestRoundHalfEven(t *testing.T) {
 func TestRoundHDown(t *testing.T) {
 	t.Parallel()
 
-	ctx := Context64{roundingMode: roundDown}
+	ctx := Context64{Rounding: Down}
 	assert.Equal(t, uint64(10), rnd(ctx, 10, 1))
 	assert.Equal(t, uint64(10), rnd(ctx, 11, 1))
 	assert.Equal(t, uint64(10), rnd(ctx, 15, 1))

@@ -1,5 +1,11 @@
 package decimal
 
+// Equal indicates whether two numbers are equal.
+// It is equivalent to d.Cmp(e) == 0.
+func (d Decimal64) Equal(e Decimal64) bool {
+	return d.Cmp(e) == 0
+}
+
 // Abs computes ||d||.
 func (d Decimal64) Abs() Decimal64 {
 	if d.IsNaN() {
@@ -8,29 +14,34 @@ func (d Decimal64) Abs() Decimal64 {
 	return new64(^neg64 & uint64(d.bits))
 }
 
-// Add computes d + e with default rounding
+// Add computes d + e.
+// It uses [DefaultContext64] to call [Context64.Add].
 func (d Decimal64) Add(e Decimal64) Decimal64 {
-	return DefaultContext.Add(d, e)
+	return DefaultContext64.Add(d, e)
 }
 
-// FMA computes d*e + f with default rounding.
+// FMA computes d × e + f.
+// It uses [DefaultContext64] to call [Context64.FMA].
 func (d Decimal64) FMA(e, f Decimal64) Decimal64 {
-	return DefaultContext.FMA(d, e, f)
+	return DefaultContext64.FMA(d, e, f)
 }
 
-// Mul computes d * e with default rounding.
+// Mul computes d × e.
+// It uses [DefaultContext64] to call [Context64.Mul].
 func (d Decimal64) Mul(e Decimal64) Decimal64 {
-	return DefaultContext.Mul(d, e)
+	return DefaultContext64.Mul(d, e)
 }
 
 // Sub returns d - e.
+// It uses [DefaultContext64] to call [Context64.Sub].
 func (d Decimal64) Sub(e Decimal64) Decimal64 {
-	return d.Add(e.Neg())
+	return DefaultContext64.Sub(d, e)
 }
 
-// Quo computes d / e with default rounding.
+// Quo computes d ÷ e.
+// It uses [DefaultContext64] to call [Context64.Quo].
 func (d Decimal64) Quo(e Decimal64) Decimal64 {
-	return DefaultContext.Quo(d, e)
+	return DefaultContext64.Quo(d, e)
 }
 
 // Cmp returns:
@@ -200,6 +211,7 @@ func (d Decimal64) CopySign(e Decimal64) Decimal64 {
 }
 
 // Quo computes d / e.
+// Rounding rules are applied as per the context.
 func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 	var dp decParts
 	dp.unpack(d)
@@ -253,10 +265,10 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 	} else {
 		rndStatus = eq5
 	}
-	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
+	ans.significand.lo = ctx.Rounding.round(ans.significand.lo, rndStatus)
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
-		ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
+		ans.significand.lo = ctx.Rounding.round(ans.significand.lo, rndStatus)
 	}
 	if ans.exp >= -expOffset && ans.significand.lo != 0 {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
@@ -338,7 +350,7 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
 	}
-	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
+	ans.significand.lo = ctx.Rounding.round(ans.significand.lo, rndStatus)
 	if ans.exp >= -expOffset && ans.significand.lo != 0 {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	}
@@ -346,6 +358,11 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 		return infinities[ans.sign]
 	}
 	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
+}
+
+// Add computes d + e
+func (ctx Context64) Sub(d, e Decimal64) Decimal64 {
+	return d.Add(e.Neg())
 }
 
 // FMA computes d*e + f
@@ -394,7 +411,7 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
 	}
-	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, rndStatus)
+	ans.significand.lo = ctx.Rounding.round(ans.significand.lo, rndStatus)
 	if ans.exp >= -expOffset && ans.significand.lo != 0 {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	}
@@ -433,7 +450,7 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	} else if ans.exp < 1-expMax {
 		roundStatus = ans.rescale(-expOffset)
 	}
-	ans.significand.lo = ctx.roundingMode.round(ans.significand.lo, roundStatus)
+	ans.significand.lo = ctx.Rounding.round(ans.significand.lo, roundStatus)
 	if ans.significand.lo > maxSig || ans.exp > expMax {
 		return infinities[ans.sign]
 	}
@@ -514,12 +531,15 @@ func (d Decimal64) NextMinus() Decimal64 {
 	}
 }
 
-// Round rounds a number to a given power of ten value. The e argument should be
-// a power of ten value, such as 1, 10, 100, 1000, etc.
+// Round rounds a number to a given power-of-10 value.
+// The e argument should be a power of ten, such as 1, 10, 100, 1000, etc.
+// It uses [DefaultContext64] to call [Context64.Round].
 func (d Decimal64) Round(e Decimal64) Decimal64 {
-	return DefaultContext.Round(d, e)
+	return DefaultContext64.Round(d, e)
 }
 
+// Round rounds a number to a given power of ten value.
+// The e argument should be a power of ten, such as 1, 10, 100, 1000, etc.
 func (ctx Context64) Round(d, e Decimal64) Decimal64 {
 	var dp decParts
 	dp.unpack(d)
@@ -562,12 +582,15 @@ func (ctx Context64) roundRef(dp, ep *decParts) Decimal64 {
 	return newFromParts(dp.sign, exp, s)
 }
 
+// ToIntegral rounds d to a nearby integer.
+// It uses [DefaultContext64] to call [Context64.ToIntegral].
 func (d Decimal64) ToIntegral() Decimal64 {
-	return DefaultContext.ToIntegral(d)
+	return DefaultContext64.ToIntegral(d)
 }
 
 var decPartsOne64 decParts = unpack(One64)
 
+// ToIntegral rounds d to a nearby integer.
 func (ctx Context64) ToIntegral(d Decimal64) Decimal64 {
 	var dp decParts
 	dp.unpack(d)
@@ -587,10 +610,10 @@ func (ctx Context64) round(s, p uint64) (uint64, bool) {
 	}
 	s -= rem
 	up := false
-	switch ctx.roundingMode {
-	case roundHalfUp:
+	switch ctx.Rounding {
+	case HalfUp:
 		up = rem >= p5
-	case roundHalfEven:
+	case HalfEven:
 		up = rem > p5 || rem == p5 && div%2 == 1
 	}
 	if up {
