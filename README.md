@@ -1,7 +1,7 @@
 # decimal
 
-This library implements fixed-precision decimal numbers based on IEEE 754R standard;
-<https://ieeexplore.ieee.org/document/4674342>.
+This library implements fixed-precision decimal numbers based on the IEEE 754-2019 standard;
+<https://ieeexplore.ieee.org/document/8766229>.
 More info can be found at:
 <http://speleotrove.com/decimal/>
 
@@ -43,17 +43,22 @@ func main() {
 
 ### Formatting
 
-`Decimal64` provides a range of ways to present numbers, both for human and
-machine consumption.
+`Decimal64` provides numerous ways to present numbers for human and machine
+consumption.
 
 `Decimal64` implements the following conventional interfaces:
 
 - `fmt`: `Formatter`, `Scanner` and `Stringer`
-  - It currently supports specifying a precision argument, e.g., `%.10f` for the `f` and `F` verbs, while support `g` and `G` is [on the board](https://github.com/anz-bank/decimal/issues/72), as is [support for a width argument](https://github.com/anz-bank/decimal/issues/72).
+  - It currently supports specifying a precision argument, e.g., `%.10f` for the
+    `f` and `F` verbs, while support for `g` and `G` is [planned](https://github.com/anz-bank/decimal/issues/72), as is [support for width specifiers](https://github.com/anz-bank/decimal/issues/72).
 - `json`: `Marshaller` and `Unmarshaller`
 - `encoding`: `BinaryMarshaler`, `BinaryUnmarshaler`, `TextMarshaler` and `TextUnmarshaler`
 - `encoging/gob`: `GobEncoder` and `GobDecoder`
-- thus enabling the use of decimal numbers in the `fmt.Printf` family.
+
+The following methods provide more direct access to the internal methods used to
+implement `fmt.Formatter`. (For maximum control, use `fmt.Printf` &co or invoke
+the `fmt.Formatter` interface directly.)
+
 - `Decimal64.Append` formats straight into a `[]byte` buffer.
 - `Decimal64.Text` formats in the same way, but returns a `string`.
 
@@ -95,6 +100,10 @@ Most implementations of a decimal floating point datatype implement an *arbitrar
 This library is different. It uses a 64-bit decimal datatype as specified in the IEEE-754R standard. This sacrifices the ability to represent arbitrarily large numbers, but is much faster than arbitrary precision libraries.
 There are two main reasons for this:
 
-1. The fixed-size data type is a `uint64` under the hood and never requires
-   heap allocation.
-2. All the algorithms can hard-code assumptions about the number of bits to work with. In fact, many of the operations work on the entire number as a single unit using 64-bit integer arithmetic and, on the occasions it needs to use more, 128 bits always suffices.
+1. The fixed-size data type is a `uint64` under the hood and never requires heap
+   allocation.
+2. All the algorithms can hard-code assumptions about the number of bits to work
+   with.
+   In fact, many of the operations work on the entire number as a single unit
+   using 64-bit integer arithmetic and, on the occasions it needs to use more,
+   128 bits always suffices.
