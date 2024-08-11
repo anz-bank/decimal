@@ -141,11 +141,11 @@ func TestFromSuite(t *testing.T) {
 func setRoundingFromString(s string) Context64 {
 	switch s {
 	case "half_even":
-		return Context64{roundHalfEven}
+		return Context64{HalfEven}
 	case "half_up":
-		return Context64{roundHalfUp}
+		return Context64{HalfUp}
 	case "default":
-		return DefaultContext
+		return DefaultContext64
 	default:
 		panic("Rounding not supported" + s)
 	}
