@@ -122,17 +122,17 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 
 	significand, sExp := parseUint(mantissa)
 	if significand == 0 {
-		*d = zeroes[sign]
+		*d = zeroes64[sign]
 		return nil
 	}
 
 	exponent, _ := parseUint(exp)
 	exponent *= int64(1 - 2*expSign)
 	if exponent > 1000 {
-		*d = infinities[sign]
+		*d = infinities64[sign]
 		return nil
 	} else if exponent < -1000 {
-		*d = zeroes[sign]
+		*d = zeroes64[sign]
 		return nil
 	}
 	exponent += int64(sExp - len(frac))

@@ -10,6 +10,11 @@ var _ fmt.Formatter = Zero64
 var _ fmt.Scanner = (*Decimal64)(nil)
 var _ fmt.Stringer = Zero64
 
+// DefaultFormatContext64 is the default context use for formatting Decimal64.
+// Unlike [DefaultContext64], it uses HalfEven rounding to conform to standard
+// Go formatting for float types.
+var DefaultFormatContext64 = Context64{Rounding: HalfEven}
+
 func appendFrac64(buf []byte, n, limit uint64) []byte {
 	for n > 0 {
 		msd := n / limit
@@ -41,14 +46,9 @@ func appendFrac64Prec(buf []byte, n uint64, prec int) []byte {
 	n += 10 * decimal64Base
 	if prec < 16 {
 		unit := powersOf10[max(0, 16-prec)]
-		rem := n % unit
 		n /= unit
-		if rem > unit/2 || rem == unit/2 && n%2 == 1 {
-			n++
-		}
 	}
 
-	// p/2 adds 5 to the digit past the desired precision in order to round up.
 	buflen := len(buf)
 	prefix := buf[buflen-1]
 	buf = strconv.AppendUint(buf[:buflen-1], n, 10)
@@ -77,13 +77,17 @@ func appendUint64New(buf []byte, n, limit uint64) []byte {
 
 // Append appends the text representation of d to buf.
 func (d Decimal64) Append(buf []byte, format byte, prec int) []byte {
-	return d.append(buf, format, -1, prec)
+	return DefaultFormatContext64.append(d, buf, rune(format), -1, prec)
 }
 
 var dotSuffix = []byte{'.'}
 
+func precScale(prec int) Decimal64 {
+	return newFromPartsRaw(0, -15-max(0, prec), decimal64Base)
+}
+
 // Append appends the text representation of d to buf.
-func (d Decimal64) append(buf []byte, format byte, width, prec int) []byte {
+func (ctx Context64) append(d Decimal64, buf []byte, format rune, width, prec int) []byte {
 	flav, sign, exp, significand := d.parts()
 	if sign == 1 {
 		buf = append(buf, '-')
@@ -118,7 +122,7 @@ formatBlock:
 
 		exp += 15
 		if exp != 0 {
-			buf = append(buf, format)
+			buf = append(buf, byte(format))
 			if exp < 0 {
 				buf = append(buf, '-')
 				exp = -exp
@@ -129,6 +133,10 @@ formatBlock:
 		}
 		return buf
 	case 'f', 'F':
+		if 0 <= prec && prec <= 16 {
+			_, _, _, significand = ctx.roundRaw(d, precScale(prec)).parts()
+		}
+
 		exponent, whole, frac := expWholeFrac(exp, significand)
 		if whole > 0 {
 			buf = appendUint64New(buf, whole, decimal64Base)
@@ -165,20 +173,27 @@ formatBlock:
 		}
 		goto formatBlock
 	default:
-		return append(buf, '%', format)
+		return append(buf, '%', byte(format))
 	}
 }
 
 // Format implements fmt.Formatter.
 func (d Decimal64) Format(s fmt.State, format rune) {
+	DefaultFormatContext64.format(d, s, format)
+}
+
+// format implements fmt.Formatter.
+func (ctx Context64) format(d Decimal64, s fmt.State, format rune) {
 	width, hasWidth := s.Width()
 	if !hasWidth {
 		width = -1
 	}
+
 	prec, hasPrec := s.Precision()
 	if !hasPrec {
 		prec = -1
 	}
+
 	switch format {
 	case 'e', 'E', 'f', 'F':
 		if !hasPrec {
@@ -191,16 +206,46 @@ func (d Decimal64) Format(s fmt.State, format rune) {
 		fmt.Fprintf(s, "%%!%c(*decimal.Decimal64=%s)", format, d.String())
 		return
 	}
-	s.Write(d.append(make([]byte, 0, 16), byte(format), width, prec)) //nolint:errcheck
+
+	s.Write(ctx.append(d, make([]byte, 0, 16), format, width, prec)) //nolint:errcheck
 }
 
 // String returns a string representation of d.
 func (d Decimal64) String() string {
-	return d.Text('g', -1)
+	return DefaultFormatContext64.str(d)
+}
+
+func (ctx Context64) str(d Decimal64) string {
+	return ctx.text(d, 'g', -1, -1)
 }
 
 // Text converts the floating-point number x to a string according to the given
 // format and precision prec.
 func (d Decimal64) Text(format byte, prec int) string {
-	return string(d.Append(make([]byte, 0, 16), format, prec))
+	return DefaultFormatContext64.text(d, rune(format), -1, prec)
+}
+
+func (ctx Context64) text(d Decimal64, format rune, width, prec int) string {
+	return string(ctx.append(d, make([]byte, 0, 16), format, width, prec))
+}
+
+type Contextual struct {
+	ctx Context64
+	d   Decimal64
+}
+
+func (c Contextual) String() string {
+	return c.ctx.str(c.d)
+}
+
+func (c Contextual) Format(s fmt.State, format rune) {
+	c.ctx.format(c.d, s, format)
+}
+
+func (c Contextual) Text(format rune, width, prec int) string {
+	return c.ctx.text(c.d, format, width, prec)
+}
+
+func (ctx Context64) With(d Decimal64) Contextual {
+	return Contextual{ctx, d}
 }

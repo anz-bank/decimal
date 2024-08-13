@@ -10,6 +10,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test64PrecScal(t *testing.T) {
+	t.Parallel()
+
+	test := func(s string, prec int) {
+		t.Helper()
+		expected := MustParse64(s)
+		actual := new64(precScale(prec).bits)
+		assert.Equal(t, expected, actual)
+	}
+
+	test("1", 0)
+	test("0.1", 1)
+	test("0.01", 2)
+	test("0.001", 3)
+	test("0.0001", 4)
+}
+
 func TestDecimal64String(t *testing.T) {
 	require := require.New(t)
 
@@ -87,91 +104,118 @@ func TestDecimal64FormatPrec(t *testing.T) {
 	t.Parallel()
 	pi := MustParse64("3.1415926535897932384626433")
 
+	test := func(expected string, prec int, input Decimal64) {
+		t.Helper()
+		buf := string(DefaultFormatContext64.append(input, nil, 'f', -1, prec))
+		assert.Equal(t, expected, string(buf))
+	}
+
 	assert.Equal(t, "3.141592653589793", fmt.Sprintf("%v", pi))
 	assert.Equal(t, "3.141593", fmt.Sprintf("%f", pi))
-	assert.Equal(t, "3", fmt.Sprintf("%.0f", pi))
-	assert.Equal(t, "3.1", fmt.Sprintf("%.1f", pi))
-	assert.Equal(t, "3.14", fmt.Sprintf("%.2f", pi))
-	assert.Equal(t, "3.142", fmt.Sprintf("%.3f", pi))
-	assert.Equal(t, "3.141593", fmt.Sprintf("%.6f", pi))
-	assert.Equal(t, "3.141592654", fmt.Sprintf("%.9f", pi))
-	assert.Equal(t, "3.1415926536", fmt.Sprintf("%.10f", pi))
-	assert.Equal(t, "3.141592653589793", fmt.Sprintf("%.15f", pi))
-	assert.Equal(t, "3.14159265358979300000", fmt.Sprintf("%.20f", pi))
-	assert.Equal(t, "3.1415926535897930"+strings.Repeat("0", 64), fmt.Sprintf("%.80f", pi))
-	assert.Equal(t, "3.1415926535897930"+strings.Repeat("0", 100), fmt.Sprintf("%.116f", pi))
+	test("3", 0, pi)
+	test("3.1", 1, pi)
+	test("3.14", 2, pi)
+	test("3.142", 3, pi)
+	test("3.141593", 6, pi)
+	test("3.141592654", 9, pi)
+	test("3.1415926536", 10, pi)
+	test("3.141592653589793", 15, pi)
+	test("3.14159265358979300000", 20, pi)
+	test("3.1415926535897930"+strings.Repeat("0", 64), 80, pi)
+	test("3.1415926535897930"+strings.Repeat("0", 100), 116, pi)
 
 	pi = pi.Add(New64FromInt64(100))
 	assert.Equal(t, "103.1415926535898", fmt.Sprintf("%v", pi))
 	assert.Equal(t, "103.141593", fmt.Sprintf("%f", pi))
-	assert.Equal(t, "103", fmt.Sprintf("%.0f", pi))
-	assert.Equal(t, "103.1", fmt.Sprintf("%.1f", pi))
-	assert.Equal(t, "103.14", fmt.Sprintf("%.2f", pi))
-	assert.Equal(t, "103.142", fmt.Sprintf("%.3f", pi))
-	assert.Equal(t, "103.141593", fmt.Sprintf("%.6f", pi))
-	assert.Equal(t, "103.141592654", fmt.Sprintf("%.9f", pi))
-	assert.Equal(t, "103.1415926536", fmt.Sprintf("%.10f", pi))
-	assert.Equal(t, "103.141592653589800", fmt.Sprintf("%.15f", pi))
-	assert.Equal(t, "103.14159265358980000000", fmt.Sprintf("%.20f", pi))
-	assert.Equal(t, "103.1415926535898000"+strings.Repeat("0", 64), fmt.Sprintf("%.80f", pi))
-	assert.Equal(t, "103.1415926535898000"+strings.Repeat("0", 100), fmt.Sprintf("%.116f", pi))
+	test("103", 0, pi)
+	test("103.1", 1, pi)
+	test("103.14", 2, pi)
+	test("103.142", 3, pi)
+	test("103.141593", 6, pi)
+	test("103.141592654", 9, pi)
+	test("103.1415926536", 10, pi)
+	test("103.141592653589800", 15, pi)
+	test("103.14159265358980000000", 20, pi)
+	test("103.1415926535898000"+strings.Repeat("0", 64), 80, pi)
+	test("103.1415926535898000"+strings.Repeat("0", 100), 116, pi)
 
 	pi = pi.Add(New64FromInt64(100_000))
 	assert.Equal(t, "100103.1415926536", fmt.Sprintf("%v", pi))
 	assert.Equal(t, "100103.141593", fmt.Sprintf("%f", pi))
-	assert.Equal(t, "100103", fmt.Sprintf("%.0f", pi))
-	assert.Equal(t, "100103.1", fmt.Sprintf("%.1f", pi))
-	assert.Equal(t, "100103.14", fmt.Sprintf("%.2f", pi))
-	assert.Equal(t, "100103.142", fmt.Sprintf("%.3f", pi))
-	assert.Equal(t, "100103.141593", fmt.Sprintf("%.6f", pi))
-	assert.Equal(t, "100103.141592654", fmt.Sprintf("%.9f", pi))
-	assert.Equal(t, "100103.1415926536", fmt.Sprintf("%.10f", pi))
-	assert.Equal(t, "100103.141592653600000", fmt.Sprintf("%.15f", pi))
-	assert.Equal(t, "100103.14159265360000000000", fmt.Sprintf("%.20f", pi))
-	assert.Equal(t, "100103.1415926536000000"+strings.Repeat("0", 64), fmt.Sprintf("%.80f", pi))
-	assert.Equal(t, "100103.1415926536000000"+strings.Repeat("0", 100), fmt.Sprintf("%.116f", pi))
+	test("100103", 0, pi)
+	test("100103.1", 1, pi)
+	test("100103.14", 2, pi)
+	test("100103.142", 3, pi)
+	test("100103.141593", 6, pi)
+	test("100103.141592654", 9, pi)
+	test("100103.1415926536", 10, pi)
+	test("100103.141592653600000", 15, pi)
+	test("100103.14159265360000000000", 20, pi)
+	test("100103.1415926536000000"+strings.Repeat("0", 64), 80, pi)
+	test("100103.1415926536000000"+strings.Repeat("0", 100), 116, pi)
 
-	// Add five digits to the significand so we round at a 2.
+	// Add five digits to the significand so that we round at a 2.
 	pi = pi.Add(New64FromInt64(10_100_000_000))
 	assert.Equal(t, "1.010010010314159e+10", fmt.Sprintf("%v", pi))
 	assert.Equal(t, "10100100103.141590", fmt.Sprintf("%f", pi))
-	assert.Equal(t, "10100100103", fmt.Sprintf("%.0f", pi))
-	assert.Equal(t, "10100100103.1", fmt.Sprintf("%.1f", pi))
-	assert.Equal(t, "10100100103.14", fmt.Sprintf("%.2f", pi))
-	assert.Equal(t, "10100100103.142", fmt.Sprintf("%.3f", pi))
-	assert.Equal(t, "10100100103.141590", fmt.Sprintf("%.6f", pi))
-	assert.Equal(t, "10100100103.141590000", fmt.Sprintf("%.9f", pi))
-	assert.Equal(t, "10100100103.1415900000", fmt.Sprintf("%.10f", pi))
-	assert.Equal(t, "10100100103.141590000000000", fmt.Sprintf("%.15f", pi))
-	assert.Equal(t, "10100100103.14159000000000000000", fmt.Sprintf("%.20f", pi))
-	assert.Equal(t, "10100100103.1415900000000000"+strings.Repeat("0", 64), fmt.Sprintf("%.80f", pi))
-	assert.Equal(t, "10100100103.1415900000000000"+strings.Repeat("0", 100), fmt.Sprintf("%.116f", pi))
+	test("10100100103", 0, pi)
+	test("10100100103.1", 1, pi)
+	test("10100100103.14", 2, pi)
+	test("10100100103.142", 3, pi)
+	test("10100100103.141590", 6, pi)
+	test("10100100103.141590000", 9, pi)
+	test("10100100103.1415900000", 10, pi)
+	test("10100100103.141590000000000", 15, pi)
+	test("10100100103.14159000000000000000", 20, pi)
+	test("10100100103.1415900000000000"+strings.Repeat("0", 64), 80, pi)
+	test("10100100103.1415900000000000"+strings.Repeat("0", 100), 116, pi)
 }
 
 func TestDecimal64FormatPrecEdgeCases(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct{ expected, input string }{
-		{"0.062", "0.0625"},
-		{"0.063", "0.062500001"},
-		{"0.062", "0.0625000000000000000000000000000000001"},
-		{"-0.062", "-0.0625"},
-		{"-0.063", "-0.062500001"},
-		{"-0.062", "-0.0625000000000000000000000000000000001"},
-		{"0.188", "0.1875"},
-		{"0.188", "0.187500001"},
-		{"0.188", "0.1875000000000000000000000000000000001"},
-		{"-0.188", "-0.1875"},
-		{"-0.188", "-0.187500001"},
-		{"-0.188", "-0.1875000000000000000000000000000000001"},
+	test := func(expected, input string) {
+		n, err := Parse64(input)
+		require.NoError(t, err)
+		assert.Equal(t, expected, fmt.Sprintf("%.3f", n))
 	}
-	for i, test := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			n, err := Parse64(test.input)
-			require.NoError(t, err)
-			assert.Equal(t, test.expected, fmt.Sprintf("%.3f", n))
-		})
+
+	test("0.062", "0.0625")
+	test("0.063", "0.062500001")
+	test("0.062", "0.0625000000000000000000000000000000001")
+	test("-0.062", "-0.0625")
+	test("-0.063", "-0.062500001")
+	test("-0.062", "-0.0625000000000000000000000000000000001")
+	test("0.188", "0.1875")
+	test("0.188", "0.187500001")
+	test("0.188", "0.1875000000000000000000000000000000001")
+	test("-0.188", "-0.1875")
+	test("-0.188", "-0.187500001")
+	test("-0.188", "-0.1875000000000000000000000000000000001")
+}
+
+func TestDecimal64FormatPrecEdgeCasesHalfUp(t *testing.T) {
+	t.Parallel()
+
+	ctx := Context64{Rounding: HalfUp}
+	test := func(expected, input string) {
+		n, err := Parse64(input)
+		require.NoError(t, err)
+		assert.Equal(t, expected, ctx.With(n).Text('f', -1, 3))
 	}
+
+	test("0.063", "0.0625")
+	test("0.063", "0.062500001")
+	test("0.063", "0.0625000000000000000000000000000000001")
+	test("-0.063", "-0.0625")
+	test("-0.063", "-0.062500001")
+	test("-0.063", "-0.0625000000000000000000000000000000001")
+	test("0.188", "0.1875")
+	test("0.188", "0.187500001")
+	test("0.188", "0.1875000000000000000000000000000000001")
+	test("-0.188", "-0.1875")
+	test("-0.188", "-0.187500001")
+	test("-0.188", "-0.1875000000000000000000000000000000001")
 }
 
 func TestDecimal64FormatPrecEdgeCases2(t *testing.T) {
@@ -183,7 +227,6 @@ func TestDecimal64FormatPrecEdgeCases2(t *testing.T) {
 		assert.Equal(t, expected, string(data))
 	}
 
-	test("0.062", MustParse64("0.0625"), 3)
 	test("10000.0000000000", MustParse64("1e4"), 10)
 	test("10000000000.0000000000", MustParse64("1e10"), 10)
 	test("100000000000.0000000000", MustParse64("1e11"), 10)
@@ -217,33 +260,6 @@ func TestDecimal64FormatPrecEdgeCases2(t *testing.T) {
 	test("-inf", NegInfinity64, 10)
 	test("-inf", NegInfinity64.NextMinus(), 10)
 	test("-9999999999999999000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0000000000", NegInfinity64.NextPlus(), 10)
-}
-
-func TestDecimal64FormatPrecEdgeCasesHalfAway(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct{ expected, input string }{
-		{"0.063", "0.0625"},
-		{"0.063", "0.062500001"},
-		{"0.063", "0.0625000000000000000000000000000000001"},
-		{"-0.063", "-0.0625"},
-		{"-0.063", "-0.062500001"},
-		{"-0.063", "-0.0625000000000000000000000000000000001"},
-		{"0.188", "0.1875"},
-		{"0.188", "0.187500001"},
-		{"0.188", "0.1875000000000000000000000000000000001"},
-		{"-0.188", "-0.1875"},
-		{"-0.188", "-0.187500001"},
-		{"-0.188", "-0.1875000000000000000000000000000000001"},
-	}
-	for i, test := range tests {
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			n, err := Parse64(test.input)
-			require.NoError(t, err)
-			n = n.Abs().NextPlus().CopySign(n)
-			assert.Equal(t, test.expected, fmt.Sprintf("%.3f", n.Float64()))
-		})
-	}
 }
 
 func TestDecimal64Format2(t *testing.T) {
