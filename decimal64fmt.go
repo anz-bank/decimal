@@ -203,7 +203,7 @@ func (ctx Context64) format(d Decimal64, s fmt.State, format rune) {
 	case 'v':
 		format = 'g'
 	default:
-		fmt.Fprintf(s, "%%!%c(*decimal.Decimal64=%s)", format, d.String())
+		fmt.Fprintf(s, "%%!%c(decimal.Decimal64=%s)", format, d.String())
 		return
 	}
 
@@ -229,6 +229,9 @@ func (ctx Context64) text(d Decimal64, format rune, width, prec int) string {
 	return string(ctx.append(d, make([]byte, 0, 16), format, width, prec))
 }
 
+// Contextual binds a [Decimal64] to a [Context64] for greater control of formatting.
+// It implements [fmt.Stringer] and [fmt.Formatter] on behalf of the number,
+// using the context to control formatting.
 type Contextual struct {
 	ctx Context64
 	d   Decimal64

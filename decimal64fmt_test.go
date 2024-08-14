@@ -104,14 +104,21 @@ func TestDecimal64FormatPrec(t *testing.T) {
 	t.Parallel()
 	pi := MustParse64("3.1415926535897932384626433")
 
-	test := func(expected string, prec int, input Decimal64) {
+	test := func(expected string, prec int, n Decimal64) {
 		t.Helper()
-		buf := string(DefaultFormatContext64.append(input, nil, 'f', -1, prec))
+		buf := string(DefaultFormatContext64.append(n, nil, 'f', -1, prec))
 		assert.Equal(t, expected, string(buf))
+		assert.Equal(t, expected, fmt.Sprintf("%.*f", prec, n))
+		assert.Equal(t, expected, n.Text('f', prec))
 	}
 
+	assert.Equal(t, "3.141592653589793", pi.String())
+	assert.Equal(t, "3.141592653589793", Context64{Rounding: HalfEven}.With(pi).String())
+	assert.Equal(t, "3.141592653589793", Context64{Rounding: HalfUp}.With(pi).String())
 	assert.Equal(t, "3.141592653589793", fmt.Sprintf("%v", pi))
 	assert.Equal(t, "3.141593", fmt.Sprintf("%f", pi))
+	assert.Equal(t, "%!q(decimal.Decimal64=3.141592653589793)", fmt.Sprintf("%q", pi))
+
 	test("3", 0, pi)
 	test("3.1", 1, pi)
 	test("3.14", 2, pi)
@@ -202,6 +209,7 @@ func TestDecimal64FormatPrecEdgeCasesHalfUp(t *testing.T) {
 		n, err := Parse64(input)
 		require.NoError(t, err)
 		assert.Equal(t, expected, ctx.With(n).Text('f', -1, 3))
+		assert.Equal(t, expected, fmt.Sprintf("%.3f", ctx.With(n)))
 	}
 
 	test("0.063", "0.0625")

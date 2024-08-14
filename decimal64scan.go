@@ -7,11 +7,19 @@ import (
 	"unicode"
 )
 
+var DefaultScanContext64 = DefaultFormatContext64
+
 // Parse64 parses a string representation of a number as a Decimal64.
+// It uses [DefaultScanContext64].
 func Parse64(s string) (Decimal64, error) {
+	return DefaultScanContext64.Parse(s)
+}
+
+// Parse64 parses a string representation of a number as a Decimal64.
+func (ctx Context64) Parse(s string) (Decimal64, error) {
 	state := stringScanner{reader: strings.NewReader(s)}
 	var d Decimal64
-	if err := d.Scan(&state, 'e'); err != nil {
+	if err := ctx.Scan(&d, &state, 'e'); err != nil {
 		return d, err
 	}
 
@@ -26,8 +34,15 @@ func Parse64(s string) (Decimal64, error) {
 
 // MustParse64 parses a string as a Decimal64 and returns the value or
 // panics if the string doesn't represent a valid Decimal64.
+// It uses [DefaultScanContext64].
 func MustParse64(s string) Decimal64 {
-	d, err := Parse64(s)
+	return DefaultScanContext64.MustParse(s)
+}
+
+// MustParse64 parses a string as a Decimal64 and returns the value or
+// panics if the string doesn't represent a valid Decimal64.
+func (ctx Context64) MustParse(s string) Decimal64 {
+	d, err := ctx.Parse(s)
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +50,13 @@ func MustParse64(s string) Decimal64 {
 }
 
 // Scan implements fmt.Scanner.
+// It uses [DefaultScanContext64].
 func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
+	return DefaultScanContext64.Scan(d, state, verb)
+}
+
+// Scan scans a string into a Decimal64, applying context rounding.
+func (ctx Context64) Scan(d *Decimal64, state fmt.ScanState, verb rune) error {
 	*d = SNaN64
 	sign, err := scanSign(state)
 	if err != nil {
@@ -57,12 +78,18 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 		return nil
 	case "nan", "qnan":
 		payload, _ := tokenString(state, unicode.IsDigit)
-		payloadInt, _ := parseUint(payload)
+		payloadInt, _, err := ctx.parseUint(payload)
+		if err != nil {
+			return err
+		}
 		*d = newPayloadNan(sign, flQNaN, uint64(payloadInt))
 		return nil
 	case "snan":
 		payload, _ := tokenString(state, unicode.IsDigit)
-		payloadInt, _ := parseUint(payload)
+		payloadInt, _, err := ctx.parseUint(payload)
+		if err != nil {
+			return err
+		}
 		*d = newPayloadNan(sign, flSNaN, uint64(payloadInt))
 		return nil
 	default:
@@ -115,18 +142,21 @@ func (d *Decimal64) Scan(state fmt.ScanState, verb rune) error {
 	if mantissa == "" {
 		return fmt.Errorf("mantissa missing")
 	}
-	mantissa = strings.TrimLeft(mantissa, "0")
-	if mantissa == "" {
-		mantissa = "0"
-	}
 
-	significand, sExp := parseUint(mantissa)
+	significand, sExp, err := ctx.parseUint(mantissa)
+	if err != nil {
+		return err
+	}
 	if significand == 0 {
 		*d = zeroes64[sign]
 		return nil
 	}
 
-	exponent, _ := parseUint(exp)
+	uexponent, _, err := ctx.parseUint(exp)
+	if err != nil {
+		return err
+	}
+	exponent := int64(uexponent)
 	exponent *= int64(1 - 2*expSign)
 	if exponent > 1000 {
 		*d = infinities64[sign]
@@ -146,17 +176,39 @@ func notDecimal64() error {
 	return fmt.Errorf("not a valid Decimal64")
 }
 
-func parseUint(s string) (int64, int) {
-	var a int64
+func allZeros(s string) bool {
+	for _, c := range s {
+		if c != '0' {
+			return false
+		}
+	}
+	return true
+}
+
+func (ctx Context64) parseUint(s string) (uint64, int, error) {
+	var a uint64
 	var exp int
 	for i, c := range s {
-		if a >= int64(decimal64Base) {
+		if a >= decimal64Base {
+			switch ctx.Rounding {
+			case HalfUp:
+				if c >= '5' {
+					a++
+				}
+			case HalfEven:
+				if c > '5' || c == '5' && (a%2 == 1 || !allZeros(s[i+1:])) {
+					a++
+				}
+			case Down:
+			default:
+				return 0, 0, fmt.Errorf("unsupported rounding mode: %v", ctx.Rounding)
+			}
 			exp = len(s) - i
 			break
 		}
-		a = 10*a + int64(c-'0')
+		a = 10*a + uint64(c-'0')
 	}
-	return a, exp
+	return a, exp, nil
 }
 
 func tokenString(state fmt.ScanState, f func(r rune) bool) (string, error) {

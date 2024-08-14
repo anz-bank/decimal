@@ -1,6 +1,7 @@
 package decimal
 
 import (
+	"fmt"
 	"math"
 	"math/bits"
 )
@@ -38,6 +39,19 @@ const (
 	// Down rounds towards zero.
 	Down
 )
+
+func (r Rounding) String() string {
+	switch r {
+	case HalfUp:
+		return "HalfUp"
+	case HalfEven:
+		return "HalfEven"
+	case Down:
+		return "Down"
+	default:
+		return fmt.Sprintf("Unknown rounding mode %d", r)
+	}
+}
 
 // Context64 may be used to tune the behaviour of arithmetic operations.
 type Context64 struct {

@@ -584,9 +584,7 @@ func (ctx Context64) roundRefRaw(dp, ep *decParts) Decimal64 {
 	exp := dexp
 	if grew {
 		s /= 10
-		if exp++; exp > expMax {
-			return infinitiesRaw[dp.sign]
-		}
+		exp++ // Cannot max out because final digit never rounds up.
 	}
 	exp, s = resubnormal(exp, s)
 	return newFromPartsRaw(dp.sign, exp, s)
