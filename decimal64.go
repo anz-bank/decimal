@@ -63,7 +63,7 @@ type Context64 struct {
 	// Signal bool
 }
 
-var tenToThe = []uint64{
+var tenToThe = [...]uint64{
 	1,
 	10,
 	100,

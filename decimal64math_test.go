@@ -243,13 +243,13 @@ func TestDecimal64QuoInf(t *testing.T) {
 
 func TestDecimal64MulPo10(t *testing.T) {
 	r := require.New(t)
-	for i, u := range powersOf10U128 {
-		for j, v := range powersOf10U128 {
+	for i, u := range tenToThe128 {
+		for j, v := range tenToThe128 {
 			k := i + j
-			if !(k < len(powersOf10U128)) {
+			if !(k < len(tenToThe128)) {
 				continue
 			}
-			w := powersOf10U128[k]
+			w := tenToThe128[k]
 			if !(w.hi == 0 && w.lo < decimal64Base) {
 				continue
 			}

@@ -41,10 +41,10 @@ func (dp *decParts) matchScales128(ep *decParts) {
 	expDiff := ep.exp - dp.exp
 	if (ep.significand != uint128T{0, 0}) {
 		if expDiff < 0 {
-			dp.significand = dp.significand.mul(powerOfTen128(expDiff))
+			dp.significand = dp.significand.mul(tenToThe128[-expDiff])
 			dp.exp += expDiff
 		} else if expDiff > 0 {
-			ep.significand = ep.significand.mul(powerOfTen128(expDiff))
+			ep.significand = ep.significand.mul(tenToThe128[expDiff])
 			ep.exp -= expDiff
 		}
 	}
@@ -52,13 +52,13 @@ func (dp *decParts) matchScales128(ep *decParts) {
 
 func (dp *decParts) matchSignificandDigits(ep *decParts) {
 	expDiff := ep.significand.numDecimalDigits() - dp.significand.numDecimalDigits()
-	if expDiff >= 0 {
-		dp.significand = dp.significand.mul(powerOfTen128(expDiff + 1))
-		dp.exp -= expDiff + 1
+	if expDiff < 0 {
+		ep.significand = ep.significand.mul(tenToThe128[-expDiff-1])
+		ep.exp -= -expDiff - 1
 		return
 	}
-	ep.significand = ep.significand.mul(powerOfTen128(-expDiff - 1))
-	ep.exp -= -expDiff - 1
+	dp.significand = dp.significand.mul(tenToThe128[expDiff+1])
+	dp.exp -= expDiff + 1
 }
 
 func (dp *decParts) roundToLo() discardedDigit {

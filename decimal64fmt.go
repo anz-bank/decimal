@@ -15,7 +15,10 @@ var _ fmt.Stringer = Zero64
 // Go formatting for float types.
 var DefaultFormatContext64 = Context64{Rounding: HalfEven}
 
-var zeros = []byte("0000000000000000")
+var zeros = [16]byte{
+	'0', '0', '0', '0', '0', '0', '0', '0',
+	'0', '0', '0', '0', '0', '0', '0', '0',
+}
 
 type appender struct {
 	buf  []byte
@@ -68,7 +71,7 @@ func (a *appender) Zeros(n int) *appender {
 	}
 	l := len(zeros)
 	for ; n > l; n -= l {
-		a.Append(zeros...)
+		a.Append(zeros[:]...)
 	}
 	return a.Append(zeros[:n]...)
 }
