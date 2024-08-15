@@ -58,18 +58,26 @@ func TestDecimal64String(t *testing.T) {
 func TestDecimal64StringEdgeCases(t *testing.T) {
 	t.Parallel()
 
-	require.Equal(t, "123456", MustParse64("123456").String())
-	require.Equal(t, "-123456", MustParse64("-123456").String())
-	require.Equal(t, "1.234567e+6", MustParse64("1234567").String())
-	require.Equal(t, "-1.234567e+6", MustParse64("-1234567").String())
-	require.Equal(t, "0.0001", MustParse64("0.0001").String())
-	require.Equal(t, "-0.0001", MustParse64("-0.0001").String())
-	require.Equal(t, "1e-5", MustParse64("0.00001").String())
-	require.Equal(t, "-1e-5", MustParse64("-0.00001").String())
-	require.Equal(t, "9.999999999999999e+384", MustParse64("9.999999999999999e+384").String())
-	require.Equal(t, "-9.999999999999999e+384", MustParse64("-9.999999999999999e+384").String())
-	require.Equal(t, "1e-398", MustParse64("1e-398").String())
-	require.Equal(t, "-1e-398", MustParse64("-1e-398").String())
+	test := func(expected, source string) {
+		t.Helper()
+		assert.Equal(t, strings.TrimSpace(expected), MustParse64(strings.TrimSpace(source)).String())
+	}
+	test(" 123456", "123456")
+	test("-123456", "-123456")
+	test(" 1.234567e+6", "1234567")
+	test("-1.234567e+6", "-1234567")
+	test(" 0.0001", "0.0001")
+	test("-0.0001", "-0.0001")
+	test(" 1e-5", "0.00001")
+	test("-1e-5", "-0.00001")
+	test(" 9.999999999999999e+384", "9.999999999999999e+384")
+	test("-9.999999999999999e+384", "-9.999999999999999e+384")
+	test(" 1e-398", " 1e-398")
+	test("-1e-398", "-1e-398")
+
+	// regression for prefix-zeros-after-dot bug
+	test("  1.666666666666667", "  1.666666666666667")
+	test("0.01666666666666667", "0.01666666666666667")
 }
 
 func BenchmarkDecimal64String(b *testing.B) {
