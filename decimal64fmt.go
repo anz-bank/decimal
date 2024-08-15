@@ -153,8 +153,14 @@ formatBlock:
 			}
 			buf = append(buf, '.')
 			if exponent < 0 {
-				p += exponent
-				buf = appendZeros(buf, min(-exponent, prec))
+				x := -exponent
+				if prec != -1 {
+					if x > prec {
+						x = prec
+					}
+					p += exponent
+				}
+				buf = appendZeros(buf, x)
 			}
 			buf = appendFrac64Prec(buf, frac, p)
 			if prec == -1 {

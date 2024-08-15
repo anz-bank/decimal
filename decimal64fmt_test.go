@@ -74,6 +74,10 @@ func TestDecimal64StringEdgeCases(t *testing.T) {
 	test("-9.999999999999999e+384", "-9.999999999999999e+384")
 	test(" 1e-398", " 1e-398")
 	test("-1e-398", "-1e-398")
+
+	// regression for prefix-zeros-after-dot bug
+	test("  1.666666666666667", "  1.666666666666667")
+	test("0.01666666666666667", "0.01666666666666667")
 }
 
 func BenchmarkDecimal64String(b *testing.B) {
