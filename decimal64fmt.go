@@ -17,91 +17,124 @@ var DefaultFormatContext64 = Context64{Rounding: HalfEven}
 
 var zeros = []byte("0000000000000000")
 
-type appender []byte
-
-func newAppender() *appender {
-	a := make(appender, 0, 16)
-	return &a
+type appender struct {
+	buf  []byte
+	wid  int
+	prec int
+	flag func(int) bool
 }
 
-func (buf *appender) Append(data ...byte) *appender {
-	*buf = append(*buf, data...)
-	return buf
+func newAppender(buf []byte, wid, prec int, flag func(int) bool) *appender {
+	if flag == nil {
+		flag = func(i int) bool { return false }
+	}
+	return &appender{
+		buf:  buf,
+		wid:  wid,
+		prec: prec,
+		flag: flag,
+	}
 }
 
-func (buf *appender) Zeros(n int) *appender {
+func (a *appender) Bytes() []byte {
+	return a.buf
+}
+
+func (a *appender) Write(b []byte) (n int, err error) {
+	a.buf = append(a.buf, b...)
+	return len(b), nil
+}
+
+func (a *appender) Width() (wid int, ok bool) {
+	return a.wid, a.wid >= 0
+}
+
+func (a *appender) Precision() (prec int, ok bool) {
+	return a.prec, a.prec >= 0
+}
+
+func (a *appender) Flag(c int) bool {
+	return a.flag(c)
+}
+
+func (a *appender) Append(data ...byte) *appender {
+	a.buf = append(a.buf, data...)
+	return a
+}
+
+func (a *appender) Zeros(n int) *appender {
 	if n <= 0 {
-		return buf
+		return a
 	}
 	l := len(zeros)
 	for ; n > l; n -= l {
-		buf.Append(zeros...)
+		a.Append(zeros...)
 	}
-	return buf.Append(zeros[:n]...)
+	return a.Append(zeros[:n]...)
 }
 
-func (buf *appender) DotZeros(n int) *appender {
+func (a *appender) DotZeros(n int) *appender {
 	if n > 0 {
-		buf.Append('.').Zeros(n)
+		a.Append('.').Zeros(n)
 	}
-	return buf
+	return a
 }
 
-func (buf *appender) Uint64(n, limit uint64) *appender {
+func (a *appender) Uint64(n, limit uint64) *appender {
 	zeroPrefix := false
 	for limit > 0 {
 		msd := n / limit
 		if msd > 0 || zeroPrefix {
-			buf.Append(byte('0' + msd))
+			a.Append(byte('0' + msd))
 			zeroPrefix = true
 		}
 		n -= limit * msd
 		limit /= 10
 	}
-	return buf
+	return a
 }
 
-func (buf *appender) Uint64New(n uint64) *appender {
-	*buf = strconv.AppendUint(*buf, n, 10)
-	return buf
+func (a *appender) Uint64New(n uint64) *appender {
+	a.buf = strconv.AppendUint(a.buf, n, 10)
+	return a
 }
 
-func (buf *appender) Digits(n uint64, width, prec int) *appender {
+func (a *appender) Digits(n uint64, width, prec int) *appender {
 	if width > prec {
 		n /= tenToThe[width-prec]
 		width = prec
 	}
-	start := len(*buf)
-	buf.Append(make([]byte, width)...)
-	slot := (*buf)[start:]
+	start := len(a.buf)
+	a.Append(make([]byte, width)...)
+	slot := (a.buf)[start:]
 	for i := width - 1; i >= 0; i-- {
 		d := n / 10
 		slot[i] = byte('0' + n - 10*d)
 		n = d
 	}
-	buf.Zeros(prec - width)
-	return buf
+	a.Zeros(prec - width)
+	return a
 }
 
-func (buf *appender) Frac64(n, limit uint64) *appender {
+func (a *appender) Frac64(n, limit uint64) *appender {
 	for n > 0 {
 		msd := n / limit
-		buf.Append(byte('0' + msd))
+		a.Append(byte('0' + msd))
 		n -= limit * msd
 		limit /= 10
 	}
-	return buf
+	return a
 }
 
-func (buf *appender) TrimTrailingZeros() *appender {
-	*buf = bytes.TrimRight(*buf, "0")
-	return buf
+func (a *appender) TrimTrailingZeros() *appender {
+	a.buf = bytes.TrimRight(a.buf, "0")
+	return a
 }
 
 // Append appends the text representation of d to buf.
 func (d Decimal64) Append(buf []byte, format byte, prec int) []byte {
-	a := appender(buf)
-	return *DefaultFormatContext64.append(d, &a, rune(format), -1, prec)
+	a := newAppender(buf, -1, prec, nil)
+	return DefaultFormatContext64.append(d, a, rune(format)).Bytes()
 }
 
 func precScale(prec int) Decimal64 {
@@ -109,23 +142,20 @@ func precScale(prec int) Decimal64 {
 }
 
 // Append appends the text representation of d to buf.
-func (ctx Context64) append(d Decimal64, buf *appender, format rune, width, prec int) *appender {
-	if buf == nil {
-		buf = newAppender()
-	}
+func (ctx Context64) append(d Decimal64, a *appender, format rune) *appender {
 	flav, sign, exp, significand := d.parts()
 	if sign == 1 {
-		buf.Append('-')
+		a.Append('-')
 	}
 	switch flav {
 	case flQNaN, flSNaN:
-		buf.Append([]byte("NaN")...)
+		a.Append([]byte("NaN")...)
 		if significand != 0 {
-			return buf.Uint64(significand, 10000)
+			return a.Uint64(significand, 10000)
 		}
-		return buf
+		return a
 	case flInf:
-		return buf.Append([]byte("inf")...)
+		return a.Append([]byte("inf")...)
 	}
 
 formatBlock:
@@ -134,73 +164,73 @@ formatBlock:
 		exp, significand = unsubnormal(exp, significand)
 
 		whole := significand / decimal64Base
-		buf.Append(byte('0' + whole))
+		a.Append(byte('0' + whole))
 		frac := significand - decimal64Base*whole
 		if frac > 0 {
-			buf.Append('.').Frac64(frac, decimal64Base/10)
+			a.Append('.').Frac64(frac, decimal64Base/10)
 		}
 
 		if significand == 0 {
-			return buf
+			return a
 		}
 
 		exp += 15
 		if exp != 0 {
-			buf.Append(byte(format))
+			a.Append(byte(format))
 			if exp < 0 {
-				buf.Append('-')
+				a.Append('-')
 				exp = -exp
 			} else {
-				buf.Append('+')
+				a.Append('+')
 			}
-			buf = buf.Uint64(uint64(exp), 1000)
+			a = a.Uint64(uint64(exp), 1000)
 		}
-		return buf
+		return a
 	case 'f', 'F':
-		if 0 <= prec && prec <= 16 {
-			_, _, exp, significand = ctx.roundRaw(d, precScale(prec)).parts()
+		if 0 <= a.prec && a.prec <= 16 {
+			_, _, exp, significand = ctx.roundRaw(d, precScale(a.prec)).parts()
 		}
 
 		if significand == 0 {
-			return buf.Append('0').DotZeros(prec)
+			return a.Append('0').DotZeros(a.prec)
 		}
 
 		exp, significand = unsubnormal(exp, significand)
 
 		// pure integer
 		if exp >= 0 {
-			return buf.Uint64New(significand).Zeros(exp).DotZeros(prec)
+			return a.Uint64New(significand).Zeros(exp).DotZeros(a.prec)
 		}
 
 		// integer part
 		fracDigits := min(-exp, 16)
 		unit := tenToThe[fracDigits]
-		buf = buf.Uint64New(significand / unit).Zeros(exp)
+		a = a.Uint64New(significand / unit).Zeros(exp)
 
 		// empty fractional part
 		if significand%unit == 0 {
-			return buf.DotZeros(prec)
+			return a.DotZeros(a.prec)
 		}
 
-		buf.Append('.')
+		a.Append('.')
 
 		// fractional part
 		prefix := max(0, -exp-16)
-		if prec == -1 {
-			return buf.Zeros(prefix).Digits(significand, fracDigits, 16).TrimTrailingZeros()
+		if a.prec < 0 {
+			return a.Zeros(prefix).Digits(significand, fracDigits, 16).TrimTrailingZeros()
 		}
-		return buf.Zeros(min(prec, prefix)).Digits(significand, fracDigits, prec-prefix)
+		return a.Zeros(min(a.prec, prefix)).Digits(significand, fracDigits, a.prec-prefix)
 	case 'g', 'G':
 		if exp < -decimal64Digits-3 ||
-			prec >= 0 && exp > prec ||
-			prec < 0 && exp > -decimal64Digits+6 {
+			a.prec >= 0 && exp > a.prec ||
+			a.prec < 0 && exp > -decimal64Digits+6 {
 			format -= 'g' - 'e'
 		} else {
 			format -= 'g' - 'f'
 		}
 		goto formatBlock
 	default:
-		return buf.Append('%', byte(format))
+		return a.Append('%', byte(format))
 	}
 }
 
@@ -211,19 +241,11 @@ func (d Decimal64) Format(s fmt.State, format rune) {
 
 // format implements fmt.Formatter.
 func (ctx Context64) format(d Decimal64, s fmt.State, format rune) {
-	width, hasWidth := s.Width()
-	if !hasWidth {
-		width = -1
-	}
-
-	prec, hasPrec := s.Precision()
-	if !hasPrec {
-		prec = -1
-	}
+	prec := optInt(s.Precision())
 
 	switch format {
 	case 'e', 'E', 'f', 'F':
-		if !hasPrec {
+		if prec < 0 {
 			prec = 6
 		}
 	case 'g', 'G':
@@ -234,7 +256,16 @@ func (ctx Context64) format(d Decimal64, s fmt.State, format rune) {
 		return
 	}
 
-	s.Write(*ctx.append(d, newAppender(), format, width, prec)) //nolint:errcheck
+	wid := optInt(s.Width())
+	a := newAppender(make([]byte, 0, 16), wid, prec, nil)
+	s.Write(ctx.append(d, a, format).Bytes()) //nolint:errcheck
+}
+
+func optInt(i int, has bool) int {
+	if has {
+		return i
+	}
+	return -1
 }
 
 // String returns a string representation of d.
@@ -253,7 +284,7 @@ func (d Decimal64) Text(format byte, prec int) string {
 }
 
 func (ctx Context64) text(d Decimal64, format rune, width, prec int) string {
-	return string(*ctx.append(d, newAppender(), format, width, prec))
+	return string(ctx.append(d, newAppender(make([]byte, 0, 16), width, prec, nil), format).Bytes())
 }
 
 // Contextual binds a [Decimal64] to a [Context64] for greater control of formatting.

@@ -116,7 +116,8 @@ func TestDecimal64FormatPrec(t *testing.T) {
 
 	test := func(expected string, prec int, n Decimal64) {
 		t.Helper()
-		buf := string(*DefaultFormatContext64.append(n, nil, 'f', -1, prec))
+		a := newAppender(make([]byte, 0, 16), -1, prec, nil)
+		buf := string(DefaultFormatContext64.append(n, a, 'f').Bytes())
 		assert.Equal(t, expected, string(buf))
 		assert.Equal(t, expected, fmt.Sprintf("%.*f", prec, n))
 		assert.Equal(t, expected, n.Text('f', prec))
