@@ -68,7 +68,7 @@ func (buf *appender) Uint64New(n uint64) *appender {
 
 func (buf *appender) Digits(n uint64, width, prec int) *appender {
 	if width > prec {
-		n /= powersOf10[width-prec]
+		n /= tenToThe[width-prec]
 		width = prec
 	}
 	start := len(*buf)
@@ -174,7 +174,7 @@ formatBlock:
 
 		// integer part
 		fracDigits := min(-exp, 16)
-		unit := powersOf10[fracDigits]
+		unit := tenToThe[fracDigits]
 		buf = buf.Uint64New(significand / unit).Zeros(exp)
 
 		// empty fractional part

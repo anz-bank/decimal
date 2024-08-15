@@ -63,7 +63,7 @@ type Context64 struct {
 	// Signal bool
 }
 
-var powersOf10 = []uint64{
+var tenToThe = []uint64{
 	1,
 	10,
 	100,
@@ -140,14 +140,14 @@ func renormalize(exp int, significand uint64) (int, uint64) {
 			normExp = exp + expOffset
 		}
 		exp -= normExp
-		significand *= powersOf10[normExp]
+		significand *= tenToThe[normExp]
 	} else if normExp < -1 {
 		normExp++
 		if exp-normExp > expMax {
 			normExp = exp - expMax
 		}
 		exp -= normExp
-		significand /= powersOf10[-normExp]
+		significand /= tenToThe[-normExp]
 	}
 	for significand < decimal64Base && exp > -expOffset {
 		exp--
@@ -166,8 +166,8 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 	if expDiff > 19 && significand != 0 {
 		return lt5
 	}
-	remainder := significand % powersOf10[expDiff]
-	midpoint := 5 * powersOf10[expDiff-1]
+	remainder := significand % tenToThe[expDiff]
+	midpoint := 5 * tenToThe[expDiff-1]
 	if remainder == 0 {
 		return eq0
 	} else if remainder < midpoint {
@@ -269,13 +269,13 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 	n := uint128T{significand, 0}
 	exp += 16
 	if exp > 0 {
-		n = n.mul64(powersOf10[exp])
+		n = n.mul64(tenToThe[exp])
 		exp = 0
 	} else {
 		// exp++ till it hits 0 or continuing would throw away digits.
 		for step := 3; step >= 0; step-- {
 			expStep := 1 << uint(step)
-			powerOf10 := powersOf10[expStep]
+			powerOf10 := tenToThe[expStep]
 			for ; n.lo >= powerOf10 && exp <= -expStep; exp += expStep {
 				quo := n.lo / powerOf10
 				rem := n.lo - quo*powerOf10
@@ -447,7 +447,7 @@ func (d Decimal64) Class() string {
 func numDecimalDigits(n uint64) int {
 	numBits := 64 - bits.LeadingZeros64(n)
 	numDigits := numBits * 3 / 10
-	if n < powersOf10[numDigits] {
+	if n < tenToThe[numDigits] {
 		return numDigits
 	}
 	return numDigits + 1

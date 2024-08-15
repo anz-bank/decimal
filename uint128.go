@@ -24,9 +24,9 @@ func powerOfTen128(n int) uint128T {
 	}
 
 	if n > 19 {
-		return umul64(powersOf10[19], powersOf10[n-19])
+		return umul64(tenToThe[19], tenToThe[n-19])
 	}
-	return uint128T{powersOf10[n], 0}
+	return uint128T{tenToThe[n], 0}
 }
 
 func umul64(a, b uint64) uint128T {

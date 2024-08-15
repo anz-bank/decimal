@@ -67,7 +67,7 @@ func (dp *decParts) roundToLo() discardedDigit {
 		var remainder uint64
 		expDiff := dp.significand.numDecimalDigits() - 16
 		dp.exp += expDiff
-		dp.significand, remainder = dp.significand.divrem64(powersOf10[expDiff])
+		dp.significand, remainder = dp.significand.divrem64(tenToThe[expDiff])
 		rndStatus = roundStatus(remainder, 0, expDiff)
 	}
 	return rndStatus
@@ -105,7 +105,7 @@ func (dp *decParts) separation(ep *decParts) int {
 // removeZeros removes zeros and increments the exponent to match.
 func (dp *decParts) removeZeros() {
 	zeros := countTrailingZeros(dp.significand.lo)
-	dp.significand.lo /= powersOf10[zeros]
+	dp.significand.lo /= tenToThe[zeros]
 	dp.exp += zeros
 }
 
@@ -122,7 +122,7 @@ func (dp *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
 		dp.significand.lo, dp.exp = 0, targetExp
 		return
 	}
-	divisor := powersOf10[expDiff]
+	divisor := tenToThe[expDiff]
 	dp.significand.lo = dp.significand.lo / divisor
 	dp.exp = targetExp
 	return

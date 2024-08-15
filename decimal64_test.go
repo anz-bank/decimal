@@ -301,7 +301,7 @@ func TestDecimal64isZero(t *testing.T) {
 
 func TestNumDecimalDigits(t *testing.T) {
 	require := require.New(t)
-	for i, num := range powersOf10 {
+	for i, num := range tenToThe {
 		for j := uint64(1); j < 10 && i < 19; j++ {
 			require.Equal(i+1, numDecimalDigits(num*j))
 		}
