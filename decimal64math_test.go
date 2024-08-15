@@ -384,6 +384,21 @@ func TestRoundHDown(t *testing.T) {
 	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 3000000000000000, 100000000000000))
 }
 
+func TestToIntegral(t *testing.T) {
+	t.Parallel()
+
+	ctx := Context64{Rounding: HalfUp}
+	assert.Equal(t, "0", ctx.ToIntegral(MustParse64("0")).String())
+	assert.Equal(t, "0", ctx.ToIntegral(MustParse64("0.499999999999999")).String())
+	assert.Equal(t, "1", ctx.ToIntegral(MustParse64("1")).String())
+	assert.Equal(t, "1", ctx.ToIntegral(MustParse64("1.49999999999999")).String())
+	assert.Equal(t, "2", ctx.ToIntegral(MustParse64("1.5")).String())
+	assert.Equal(t, "9", ctx.ToIntegral(MustParse64("9.49999999999999")).String())
+	assert.Equal(t, "10", ctx.ToIntegral(MustParse64("9.5")).String())
+	assert.Equal(t, "99", ctx.ToIntegral(MustParse64("99.499999999999")).String())
+	assert.Equal(t, "100", ctx.ToIntegral(MustParse64("99.5")).String())
+}
+
 func benchmarkDecimal64Data() []Decimal64 {
 	return []Decimal64{
 		One64,

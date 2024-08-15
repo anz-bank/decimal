@@ -62,8 +62,8 @@ var Min64 = newFromParts(0, -398, 1)
 // It has the value -1E-398.
 var NegMin64 = newFromParts(1, -398, 1)
 
-var zeroes = []Decimal64{Zero64, NegZero64}
-var infinities = []Decimal64{Infinity64, NegInfinity64}
+var zeroes64 = []Decimal64{Zero64, NegZero64}
+var infinities64 = []Decimal64{Infinity64, NegInfinity64}
 
 // DefaultContext64 is the context that arithmetic functions will use in order to
 // do calculations.

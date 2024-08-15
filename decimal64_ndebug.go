@@ -14,7 +14,5 @@ type Decimal64 struct {
 // The verbose construction below makes it easy to audit accidental raw cosntruction.
 // A search for (?<!\[\])Decimal64\{ must come up empty.
 func new64(bits uint64) Decimal64 {
-	var d Decimal64
-	d.bits = bits
-	return d
+	return new64Raw(bits)
 }

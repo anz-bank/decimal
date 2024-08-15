@@ -1,6 +1,7 @@
 package decimal
 
 import (
+	"fmt"
 	"math"
 	"math/bits"
 )
@@ -38,6 +39,19 @@ const (
 	// Down rounds towards zero.
 	Down
 )
+
+func (r Rounding) String() string {
+	switch r {
+	case HalfUp:
+		return "HalfUp"
+	case HalfEven:
+		return "HalfEven"
+	case Down:
+		return "Down"
+	default:
+		return fmt.Sprintf("Unknown rounding mode %d", r)
+	}
+}
 
 // Context64 may be used to tune the behaviour of arithmetic operations.
 type Context64 struct {
@@ -190,18 +204,26 @@ func countTrailingZeros(n uint64) int {
 	return zeros
 }
 
+func new64Raw(bits uint64) Decimal64 {
+	return Decimal64{bits: bits}
+}
+
 func newFromParts(sign int, exp int, significand uint64) Decimal64 {
+	return new64(newFromPartsRaw(sign, exp, significand).bits)
+}
+
+func newFromPartsRaw(sign int, exp int, significand uint64) Decimal64 {
 	s := uint64(sign) << 63
 
 	if significand < 0x8<<50 {
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
-		return new64(s | uint64(exp+expOffset)<<(63-10) | significand)
+		return new64Raw(s | uint64(exp+expOffset)<<(63-10) | significand)
 	}
 	// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 	//     EE ∈ {00, 01, 10}
 	significand &= 0x8<<50 - 1
-	return new64(s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand)
+	return new64Raw(s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand)
 }
 
 func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {

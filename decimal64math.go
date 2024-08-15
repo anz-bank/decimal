@@ -226,19 +226,19 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 		if ep.isZero() {
 			return QNaN64
 		}
-		return zeroes[ans.sign]
+		return zeroes64[ans.sign]
 	}
 	if dp.isinf() {
 		if ep.isinf() {
 			return QNaN64
 		}
-		return infinities[ans.sign]
+		return infinities64[ans.sign]
 	}
 	if ep.isinf() {
-		return zeroes[ans.sign]
+		return zeroes64[ans.sign]
 	}
 	if ep.isZero() {
-		return infinities[ans.sign]
+		return infinities64[ans.sign]
 	}
 	dp.matchSignificandDigits(&ep)
 	ans.exp = dp.exp - ep.exp
@@ -274,7 +274,7 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	}
 	if ans.significand.lo > maxSig || ans.exp > expMax {
-		return infinities[ans.sign]
+		return infinities64[ans.sign]
 	}
 	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
 }
@@ -355,7 +355,7 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	}
 	if ans.exp > expMax || ans.significand.lo > maxSig {
-		return infinities[ans.sign]
+		return infinities64[ans.sign]
 	}
 	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
 }
@@ -385,13 +385,13 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 		if ep.isZero() || dp.isZero() {
 			return QNaN64
 		}
-		return infinities[ans.sign]
+		return infinities64[ans.sign]
 	}
 	if ep.significand.lo == 0 || dp.significand.lo == 0 {
 		return f
 	}
 	if fp.fl == flInf {
-		return infinities[fp.sign]
+		return infinities64[fp.sign]
 	}
 
 	var rndStatus discardedDigit
@@ -416,7 +416,7 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	}
 	if ans.exp > expMax || ans.significand.lo > maxSig {
-		return infinities[ans.sign]
+		return infinities64[ans.sign]
 	}
 	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
 }
@@ -436,10 +436,10 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 		if ep.isZero() || dp.isZero() {
 			return QNaN64
 		}
-		return infinities[ans.sign]
+		return infinities64[ans.sign]
 	}
 	if ep.significand.lo == 0 || dp.significand.lo == 0 {
-		return zeroes[ans.sign]
+		return zeroes64[ans.sign]
 	}
 	var roundStatus discardedDigit
 	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
@@ -452,7 +452,7 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	}
 	ans.significand.lo = ctx.Rounding.round(ans.significand.lo, roundStatus)
 	if ans.significand.lo > maxSig || ans.exp > expMax {
-		return infinities[ans.sign]
+		return infinities64[ans.sign]
 	}
 	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
 }
@@ -541,14 +541,23 @@ func (d Decimal64) Round(e Decimal64) Decimal64 {
 // Round rounds a number to a given power of ten value.
 // The e argument should be a power of ten, such as 1, 10, 100, 1000, etc.
 func (ctx Context64) Round(d, e Decimal64) Decimal64 {
+	return new64(ctx.roundRaw(d, e).bits)
+}
+
+func (ctx Context64) roundRaw(d, e Decimal64) Decimal64 {
 	var dp decParts
 	dp.unpack(d)
 	var ep decParts
 	ep.unpack(e)
-	return ctx.roundRef(&dp, &ep)
+	return ctx.roundRefRaw(&dp, &ep)
 }
 
-func (ctx Context64) roundRef(dp, ep *decParts) Decimal64 {
+var (
+	zero64Raw = newFromPartsRaw(0, 0, 0)
+	qNaN64Raw = new64Raw(0x7c << 56)
+)
+
+func (ctx Context64) roundRefRaw(dp, ep *decParts) Decimal64 {
 	if nan, is := checkNan(dp, ep); is {
 		return nan
 	}
@@ -556,7 +565,7 @@ func (ctx Context64) roundRef(dp, ep *decParts) Decimal64 {
 		if dp.fl == flInf && ep.fl == flInf {
 			return dp.original
 		}
-		return QNaN64
+		return qNaN64Raw
 	}
 
 	dexp, dsignificand := unsubnormal(dp.exp, dp.significand.lo)
@@ -564,7 +573,7 @@ func (ctx Context64) roundRef(dp, ep *decParts) Decimal64 {
 
 	delta := dexp - eexp
 	if delta < -1 { // -1 avoids rounding range
-		return Zero64
+		return zero64Raw
 	}
 	if delta > 14 {
 		return dp.original
@@ -574,12 +583,10 @@ func (ctx Context64) roundRef(dp, ep *decParts) Decimal64 {
 	exp := dexp
 	if grew {
 		s /= 10
-		if exp++; exp > expMax {
-			return infinities[dp.sign]
-		}
+		exp++ // Cannot max out because final digit never rounds up.
 	}
 	exp, s = resubnormal(exp, s)
-	return newFromParts(dp.sign, exp, s)
+	return newFromPartsRaw(dp.sign, exp, s)
 }
 
 // ToIntegral rounds d to a nearby integer.
@@ -597,7 +604,7 @@ func (ctx Context64) ToIntegral(d Decimal64) Decimal64 {
 	if dp.fl != flNormal || dp.exp >= 0 {
 		return d
 	}
-	return ctx.roundRef(&dp, &decPartsOne64)
+	return new64(ctx.roundRefRaw(&dp, &decPartsOne64).bits)
 }
 
 func (ctx Context64) round(s, p uint64) (uint64, bool) {

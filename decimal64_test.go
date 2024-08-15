@@ -2,8 +2,10 @@ package decimal
 
 import (
 	"math"
+	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,6 +38,152 @@ func TestNew64FromInt64Big(t *testing.T) {
 	}
 }
 
+func TestDecimal64Parse(t *testing.T) {
+	t.Parallel()
+
+	test := func(expected string, source string) {
+		t.Helper()
+		assert.Equal(t, strings.TrimSpace(expected), MustParse64(source).String())
+	}
+
+	test("0", "0")
+	test("1e-13", "0.0000000000001")
+	test("1e-13", "1e-13")
+	test("1", "1")
+	test("100000", "100000")
+	test("1e+6", "1000000")
+}
+
+func TestDecimal64ParseHalfEvenOdd(t *testing.T) {
+	t.Parallel()
+
+	ctx := Context64{Rounding: HalfEven}
+	test := func(expected string, source string) {
+		t.Helper()
+		assert.Equal(t, strings.TrimSpace(expected), ctx.MustParse(source).String())
+	}
+
+	test("1.000000000000007    ", "1.000000000000007")
+	test("1.000000000000007    ", "1.0000000000000074999999")
+	test("1.000000000000008    ", "1.0000000000000075000000")
+	test("1.000000000000008    ", "1.0000000000000075000001")
+
+	test("1.000000000000007e+11", "100000000000.0007")
+	test("1.000000000000007e+11", "100000000000.00074999999")
+	test("1.000000000000008e+11", "100000000000.00075000000")
+	test("1.000000000000008e+11", "100000000000.00075000001")
+}
+
+func TestDecimal64ParseHalfEvenEven(t *testing.T) {
+	t.Parallel()
+
+	ctx := Context64{Rounding: HalfEven}
+	test := func(expected string, source string) {
+		t.Helper()
+		assert.Equal(t, strings.TrimSpace(expected), ctx.MustParse(source).String())
+	}
+
+	test("1.000000000000008    ", "1.000000000000008")
+	test("1.000000000000008    ", "1.0000000000000084999999")
+	test("1.000000000000008    ", "1.0000000000000085000000")
+	test("1.000000000000009    ", "1.0000000000000085000001")
+
+	test("1.000000000000008e+11", "100000000000.0008")
+	test("1.000000000000008e+11", "100000000000.00084999999")
+	test("1.000000000000008e+11", "100000000000.00085000000")
+	test("1.000000000000009e+11", "100000000000.00085000001")
+}
+
+func TestDecimal64ParseHalfUp(t *testing.T) {
+	t.Parallel()
+
+	ctx := Context64{Rounding: HalfUp}
+	test := func(expected string, source string) {
+		t.Helper()
+		assert.Equal(t, strings.TrimSpace(expected), ctx.MustParse(source).String())
+	}
+
+	test("0", "0")
+	test("1e-13", "0.0000000000001")
+	test("1e-13", "1e-13")
+	test("1", "1")
+	test("100000", "100000")
+	test("1e+6", "1000000")
+
+	test("1.49999999999999 ", "1.49999999999999")
+	test("1.499999999999999", "1.499999999999999")
+	test("1.499999999999999", "1.4999999999999994999999")
+	test("1.5              ", "1.4999999999999995000000")
+	test("1.5              ", "1.4999999999999995000001")
+
+	test("1.99999999999949 ", "1.99999999999949")
+	test("1.999999999999499", "1.999999999999499")
+	test("1.999999999999499", "1.9999999999994994999999")
+	test("1.9999999999995  ", "1.9999999999994995000000")
+	test("1.9999999999995  ", "1.9999999999994995000001")
+
+	test("1.99999999999994 ", "1.99999999999994")
+	test("1.999999999999949", "1.999999999999949")
+	test("1.999999999999949", "1.9999999999999494999999")
+	test("1.99999999999995 ", "1.9999999999999495000000")
+	test("1.99999999999995 ", "1.9999999999999495000001")
+
+	test("10.4999999999999 ", "10.4999999999999")
+	test("10.49999999999999", "10.49999999999999")
+	test("10.49999999999999", "10.499999999999994999999")
+	test("10.5             ", "10.499999999999995000000")
+	test("10.5             ", "10.499999999999995000001")
+
+	test("1.00000000000499e+11 ", "100000000000.499")
+	test("1.000000000004999e+11", "100000000000.4999")
+	test("1.000000000005e+11   ", "100000000000.49999")
+}
+
+func TestDecimal64ParseDown(t *testing.T) {
+	t.Parallel()
+
+	ctx := Context64{Rounding: Down}
+	test := func(expected string, source string) {
+		t.Helper()
+		assert.Equal(t, strings.TrimSpace(expected), ctx.MustParse(source).String())
+	}
+
+	test("0", "0")
+	test("1e-13", "0.0000000000001")
+	test("1e-13", "1e-13")
+	test("1", "1")
+	test("100000", "100000")
+	test("1e+6", "1000000")
+
+	test("1.49999999999999 ", "1.49999999999999")
+	test("1.499999999999999", "1.499999999999999")
+	test("1.499999999999999", "1.4999999999999994999999")
+	test("1.499999999999999", "1.4999999999999995000000")
+	test("1.499999999999999", "1.4999999999999995000001")
+
+	test("1.99999999999949 ", "1.99999999999949")
+	test("1.999999999999499", "1.999999999999499")
+	test("1.999999999999499", "1.9999999999994994999999")
+	test("1.999999999999499", "1.9999999999994995000000")
+	test("1.999999999999499", "1.9999999999994995000001")
+
+	test("1.99999999999994 ", "1.99999999999994")
+	test("1.999999999999949", "1.999999999999949")
+	test("1.999999999999949", "1.9999999999999494999999")
+	test("1.999999999999949", "1.9999999999999495000000")
+	test("1.999999999999949", "1.9999999999999495000001")
+
+	test("10.4999999999999 ", "10.4999999999999")
+	test("10.49999999999999", "10.49999999999999")
+	test("10.49999999999999", "10.499999999999994999999")
+	test("10.49999999999999", "10.499999999999995000000")
+	test("10.49999999999999", "10.499999999999995000001")
+
+	test("1.00000000000499e+11 ", "100000000000.499")
+	test("1.000000000004999e+11", "100000000000.4999")
+	test("1.000000000004999e+11", "100000000000.49999")
+}
+
 func TestDecimal64Float64(t *testing.T) {
 	require := require.New(t)
 
@@ -56,24 +204,20 @@ func TestDecimal64Float64(t *testing.T) {
 }
 
 func TestDecimal64Int64(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
-	require.EqualValues(-1, NegOne64.Int64())
-	require.EqualValues(0, Zero64.Int64())
-	require.EqualValues(-0, NegZero64.Int64())
-	require.EqualValues(1, One64.Int64())
-	require.EqualValues(10, New64FromInt64(10).Int64())
+	assert.EqualValues(t, -1, NegOne64.Int64())
+	assert.EqualValues(t, 0, Zero64.Int64())
+	assert.EqualValues(t, -0, NegZero64.Int64())
+	assert.EqualValues(t, 1, One64.Int64())
+	assert.EqualValues(t, 10, New64FromInt64(10).Int64())
 
-	require.EqualValues(0, QNaN64.Int64())
+	assert.EqualValues(t, 0, QNaN64.Int64())
 
-	require.EqualValues(int64(math.MaxInt64), Infinity64.Int64())
-	require.EqualValues(int64(math.MinInt64), NegInfinity64.Int64())
-
-	googol := MustParse64("1e100")
-	require.EqualValues(int64(math.MaxInt64), googol.Int64())
-
-	long := MustParse64("91234567890123456789e20")
-	require.EqualValues(int64(math.MaxInt64), long.Int64())
+	assert.EqualValues(t, int64(math.MaxInt64), Infinity64.Int64())
+	assert.EqualValues(t, int64(math.MinInt64), NegInfinity64.Int64())
+	assert.EqualValues(t, int64(math.MaxInt64), MustParse64("1e100").Int64())
+	assert.EqualValues(t, int64(math.MaxInt64), MustParse64("91234567890123456789e20").Int64())
 }
 
 func TestDecimal64IsInf(t *testing.T) {
