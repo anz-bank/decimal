@@ -28,29 +28,31 @@ func Test64PrecScal(t *testing.T) {
 }
 
 func TestDecimal64String(t *testing.T) {
-	require := require.New(t)
-
-	require.Equal(strconv.Itoa(0), New64FromInt64(0).String())
+	assert.Equal(t, strconv.Itoa(0), New64FromInt64(0).String())
 	for i := int64(-1000); i <= 1000; i++ {
-		require.Equal(strconv.Itoa(int(i)), New64FromInt64(i).String())
+		assert.Equal(t, strconv.Itoa(int(i)), New64FromInt64(i).String())
 	}
 
 	for f := 1; f < 1000; f += 11 {
 		fdigits := strings.TrimRight(fmt.Sprintf("%03d", f), "0")
 		fraction := New64FromInt64(int64(f)).Quo(New64FromInt64(1000))
 		for i := int64(0); i <= 100; i++ {
-			require.Equal(
-				strconv.Itoa(int(i))+"."+fdigits,
-				New64FromInt64(i).Add(fraction).String(),
-				"%d.%03d", f, i,
-			)
+			require.NotPanics(t, func() {
+				assert.Equal(t,
+					strconv.Itoa(int(i))+"."+fdigits,
+					New64FromInt64(i).Add(fraction).String(),
+					"%d.%03d", f, i,
+				)
+			}, "%d.%03d", f, i)
 		}
 		for i := int64(-100); i < 0; i++ {
-			require.Equal(
-				strconv.Itoa(int(i))+"."+fdigits,
-				New64FromInt64(i).Sub(fraction).String(),
-				"%d.%03d", f, i,
-			)
+			require.NotPanics(t, func() {
+				assert.Equal(t,
+					strconv.Itoa(int(i))+"."+fdigits,
+					New64FromInt64(i).Sub(fraction).String(),
+					"%d.%03d", f, i,
+				)
+			}, "%d.%03d", f, i)
 		}
 	}
 }
@@ -114,7 +116,8 @@ func TestDecimal64FormatPrec(t *testing.T) {
 
 	test := func(expected string, prec int, n Decimal64) {
 		t.Helper()
-		buf := string(DefaultFormatContext64.append(n, nil, 'f', -1, prec))
+		a := newAppender(make([]byte, 0, 16), -1, prec, nil)
+		buf := string(DefaultFormatContext64.append(n, a, 'f').Bytes())
 		assert.Equal(t, expected, string(buf))
 		assert.Equal(t, expected, fmt.Sprintf("%.*f", prec, n))
 		assert.Equal(t, expected, n.Text('f', prec))
@@ -169,7 +172,7 @@ func TestDecimal64FormatPrec(t *testing.T) {
 	test("100103.1415926536000000"+strings.Repeat("0", 64), 80, pi)
 	test("100103.1415926536000000"+strings.Repeat("0", 100), 116, pi)
 
-	// Add five digits to the significand so that we round at a 2.
+	// // Add five digits to the significand so that we round at a 2.
 	pi = pi.Add(New64FromInt64(10_100_000_000))
 	assert.Equal(t, "1.010010010314159e+10", fmt.Sprintf("%v", pi))
 	assert.Equal(t, "10100100103.141590", fmt.Sprintf("%f", pi))
@@ -301,10 +304,9 @@ func TestDecimal64Append(t *testing.T) {
 	}
 
 	for i := int64(-1000); i <= 1000; i++ {
-		assert.Equal(t,
-			strconv.FormatInt(i, 10),
-			string(New64FromInt64(i).Append([]byte{}, 'g', 0)),
-		)
+		d := New64FromInt64(i)
+		f := d.Append([]byte{}, 'g', 0)
+		assert.Equal(t, strconv.FormatInt(i, 10), string(f), "%d", i)
 	}
 
 	assertAppend("NaN", QNaN64, 'g', 0)
