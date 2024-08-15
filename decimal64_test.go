@@ -204,20 +204,20 @@ func TestDecimal64Float64(t *testing.T) {
 }
 
 func TestDecimal64Int64(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
-	require.EqualValues(-1, NegOne64.Int64())
-	require.EqualValues(0, Zero64.Int64())
-	require.EqualValues(-0, NegZero64.Int64())
-	require.EqualValues(1, One64.Int64())
-	require.EqualValues(10, New64FromInt64(10).Int64())
+	assert.EqualValues(t, -1, NegOne64.Int64())
+	assert.EqualValues(t, 0, Zero64.Int64())
+	assert.EqualValues(t, -0, NegZero64.Int64())
+	assert.EqualValues(t, 1, One64.Int64())
+	assert.EqualValues(t, 10, New64FromInt64(10).Int64())
 
-	require.EqualValues(0, QNaN64.Int64())
+	assert.EqualValues(t, 0, QNaN64.Int64())
 
-	require.EqualValues(math.MaxInt64, Infinity64.Int64())
-	require.EqualValues(math.MinInt64, NegInfinity64.Int64())
-	require.EqualValues(math.MaxInt64, MustParse64("1e100").Int64())
-	require.EqualValues(math.MaxInt64, MustParse64("91234567890123456789e20").Int64())
+	assert.EqualValues(t, int64(math.MaxInt64), Infinity64.Int64())
+	assert.EqualValues(t, int64(math.MinInt64), NegInfinity64.Int64())
+	assert.EqualValues(t, int64(math.MaxInt64), MustParse64("1e100").Int64())
+	assert.EqualValues(t, int64(math.MaxInt64), MustParse64("91234567890123456789e20").Int64())
 }
 
 func TestDecimal64IsInf(t *testing.T) {
