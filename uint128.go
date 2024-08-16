@@ -9,12 +9,15 @@ type uint128T struct {
 }
 
 func (a uint128T) numDecimalDigits() int {
-	bitSize := 129 - a.leadingZeros()
-	numDigits := int(bitSize * 3 / 10)
-	if a.lt(tenToThe128[numDigits]) {
-		return numDigits
+	if a.hi == 0 {
+		return numDecimalDigits(a.lo)
 	}
-	return numDigits + 1
+	bitSize := 129 - uint(bits.LeadingZeros64(a.hi))
+	numDigitsEst := int(bitSize * 3 / 10)
+	if a.lt(tenToThe128[numDigitsEst]) {
+		return numDigitsEst
+	}
+	return numDigitsEst + 1
 }
 
 var tenToThe128 = func() [39]uint128T {
@@ -66,18 +69,6 @@ func (a uint128T) divBy10() uint128T {
 	r := a.sub(q.mulBy10())
 	return q.add(uint128T{(r.lo + 6) >> 4, 0})
 }
-
-// func (a uint128T) ge(b uint128T) bool {
-// 	return !a.lt(b)
-// }
-
-func (a uint128T) gt(b uint128T) bool {
-	return b.lt(a)
-}
-
-// func (a uint128T) le(b uint128T) bool {
-// 	return !b.lt(a)
-// }
 
 func (a uint128T) leadingZeros() uint {
 	if a.hi > 0 {

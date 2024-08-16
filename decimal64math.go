@@ -1,5 +1,7 @@
 package decimal
 
+import "math/bits"
+
 // Equal indicates whether two numbers are equal.
 // It is equivalent to d.Cmp(e) == 0.
 func (d Decimal64) Equal(e Decimal64) bool {
@@ -240,43 +242,43 @@ func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 	if ep.isZero() {
 		return infinities64[ans.sign]
 	}
-	dp.matchSignificandDigits(&ep)
-	ans.exp = dp.exp - ep.exp
-	for {
-		for dp.significand.gt(ep.significand) {
-			dp.significand = dp.significand.sub(ep.significand)
-			ans.significand = ans.significand.add(uint128T{1, 0})
-		}
-		if dp.significand == (uint128T{}) || ans.significand.numDecimalDigits() == 16 {
-			break
-		}
-		ans.significand = ans.significand.mulBy10()
-		dp.significand = dp.significand.mulBy10()
-		ans.exp--
+
+	const ampl = 1000
+	hi, lo := bits.Mul64(dp.significand.lo, ampl*decimal64Base)
+	q, _ := bits.Div64(hi, lo, ep.significand.lo)
+	exp := dp.exp - ep.exp - 15
+
+	for q < ampl*decimal64Base && exp > -expOffset {
+		q *= 10
+		exp--
 	}
-	var rndStatus discardedDigit
-	dp.significand = dp.significand.mul64(2)
-	if dp.significand == (uint128T{}) {
-		rndStatus = eq0
-	} else if dp.significand.gt(ep.significand) {
-		rndStatus = gt5
-	} else if dp.significand.lt(ep.significand) {
-		rndStatus = lt5
-	} else {
-		rndStatus = eq5
+	for q >= 10*ampl*decimal64Base {
+		q /= 10
+		exp++
 	}
-	ans.significand.lo = ctx.Rounding.round(ans.significand.lo, rndStatus)
-	if ans.exp < -expOffset {
-		rndStatus = ans.rescale(-expOffset)
-		ans.significand.lo = ctx.Rounding.round(ans.significand.lo, rndStatus)
+	for exp < -expOffset {
+		q /= 10
+		exp++
 	}
-	if ans.exp >= -expOffset && ans.significand.lo != 0 {
-		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
-	}
-	if ans.significand.lo > maxSig || ans.exp > expMax {
+	if exp > expMax {
 		return infinities64[ans.sign]
 	}
-	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
+
+	switch ctx.Rounding {
+	case HalfUp:
+		q = (q + ampl/2) / ampl
+	case HalfEven:
+		d := q / ampl
+		rem := q - d*ampl
+		q = d
+		if rem > ampl/2 || rem == ampl/2 && d%2 == 1 {
+			q++
+		}
+	case Down:
+		q /= ampl
+	}
+
+	return newFromParts(ans.sign, exp, q)
 }
 
 // Sqrt computes √d.
@@ -357,7 +359,7 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	if ans.exp > expMax || ans.significand.lo > maxSig {
 		return infinities64[ans.sign]
 	}
-	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
+	return ans.decimal64()
 }
 
 // Add computes d + e
@@ -418,7 +420,7 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	if ans.exp > expMax || ans.significand.lo > maxSig {
 		return infinities64[ans.sign]
 	}
-	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
+	return ans.decimal64()
 }
 
 // Mul computes d * e
@@ -454,7 +456,7 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	if ans.significand.lo > maxSig || ans.exp > expMax {
 		return infinities64[ans.sign]
 	}
-	return newFromParts(ans.sign, ans.exp, ans.significand.lo)
+	return ans.decimal64()
 }
 
 // NextPlus returns the next value above d.

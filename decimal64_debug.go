@@ -3,6 +3,8 @@
 
 package decimal
 
+import "fmt"
+
 // Decimal64 represents an IEEE 754 64-bit floating point decimal number.
 // It uses the binary representation method.
 // Decimal64 is intentionally a struct to ensure users don't accidentally cast it to uint64.
@@ -31,4 +33,14 @@ func new64(bits uint64) Decimal64 {
 	d.bits = d.bits
 
 	return d
+}
+
+func checkSignificandIsNormal(significand uint64) {
+	if decimal64Base > significand {
+		panic(fmt.Errorf("Failed logic check: %d <= %d", decimal64Base, significand))
+	}
+
+	if significand >= 10*decimal64Base {
+		panic(fmt.Errorf("Failed logic check: %d < %d", significand, 10*decimal64Base))
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -61,7 +62,7 @@ func TestFromSuite(t *testing.T) {
 		"dectest/ddAdd.decTest",
 		"dectest/ddClass.decTest",
 		"dectest/ddCompare.decTest",
-		"dectest/ddCopysign.decTest",
+		"dectest/ddCopySign.decTest",
 		"dectest/ddDivide.decTest",
 		"dectest/ddFMA.decTest",
 		"dectest/ddLogB.decTest",
@@ -75,39 +76,48 @@ func TestFromSuite(t *testing.T) {
 		"dectest/ddNextPlus.decTest",
 		"dectest/ddPlus.decTest",
 		"dectest/ddRound.decTest",
+		"dectest/ddScaleB.decTest",
 		"dectest/ddSubtract.decTest",
 		"dectest/ddToIntegral.decTest",
 
 		// Future
 		// "dectest/ddBase.decTest",
+		// "dectest/ddCompareTotal.decTest",
+		// "dectest/ddCompareTotalMag.decTest",
+		// "dectest/ddCopyAbs.decTest", // QAbs
+		// "dectest/ddCopyNegate.decTest", // QNeg
+		// "dectest/ddDivideInt.decTest",
 		// "dectest/ddNextToward.decTest",
 		// "dectest/ddRemainder.decTest",
 		// "dectest/ddRemainderNear.decTest",
-		// "dectest/ddScaleB.decTest",
+
+		// Wat?
+		// "dectest/ddEncode.decTest",
 
 		// Not planned
+		// -- bitwise
 		// "dectest/ddAnd.decTest",
-		// "dectest/ddCanonical.decTest",
-		// "dectest/ddCompareSig.decTest",
-		// "dectest/ddCompareTotal.decTest",
-		// "dectest/ddCompareTotalMag.decTest",
-		// "dectest/ddCopy.decTest",
-		// "dectest/ddCopyAbs.decTest",
-		// "dectest/ddCopyNegate.decTest",
-		// "dectest/ddDivideInt.decTest",
-		// "dectest/ddEncode.decTest",
 		// "dectest/ddInvert.decTest",
 		// "dectest/ddOr.decTest",
-		// "dectest/ddQuantize.decTest",
-		// "dectest/ddReduce.decTest",
 		// "dectest/ddRotate.decTest",
-		// "dectest/ddSameQuantum.decTest",
 		// "dectest/ddShift.decTest",
 		// "dectest/ddXor.decTest",
+		//
+		// -- signalling
+		// "dectest/ddCompareSig.decTest",
+		//
+		// -- nop
+		// "dectest/ddCopy.decTest",
+		//
+		// -- repr
+		// "dectest/ddCanonical.decTest",
+		// "dectest/ddQuantize.decTest",
+		// "dectest/ddReduce.decTest",
+		// "dectest/ddSameQuantum.decTest",
 	} {
 		file := file
 		t.Run(file, func(t *testing.T) {
-			t.Parallel()
+			// t.Parallel()
 
 			f, _ := os.Open(file)
 			scanner := bufio.NewScanner(f)
@@ -130,7 +140,10 @@ func TestFromSuite(t *testing.T) {
 					t.Run(testVal.name, func(t *testing.T) {
 						dec64vals, err := convertToDec64(testVal)
 						require.NoError(t, err)
-						runTest(t, scannedContext, dec64vals, testVal)
+						if !runTest(t, scannedContext, dec64vals, testVal) {
+							runtime.Breakpoint()
+							runTest(t, scannedContext, dec64vals, testVal)
+						}
 					})
 				}
 			}
@@ -322,6 +335,8 @@ func execOp(ctx Context64, a, b, c Decimal64, op string) opResult {
 		return opResult{result: a}
 	// case "quantize":
 	// 	return opResult{result: ctx.Quantize(a, b)}
+	case "scaleb":
+		return opResult{result: a.ScaleB(b)}
 	case "round":
 		return opResult{result: ctx.Round(a, b)}
 	case "tointegralx":
