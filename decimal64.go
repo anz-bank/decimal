@@ -109,16 +109,39 @@ func signalNaN64() {
 	panic("sNaN64")
 }
 
-func checkSignificandIsNormal(significand uint64) {
-	logicCheck(decimal64Base <= significand, "%d <= %d", decimal64Base, significand)
-	logicCheck(significand < 10*decimal64Base, "%d < %d", significand, 10*decimal64Base)
+var small64s = [...]Decimal64{
+	new64FromInt64(-10),
+	new64FromInt64(-9),
+	new64FromInt64(-8),
+	new64FromInt64(-7),
+	new64FromInt64(-6),
+	new64FromInt64(-5),
+	new64FromInt64(-4),
+	new64FromInt64(-3),
+	new64FromInt64(-2),
+	NegOne64,
+	Zero64,
+	One64,
+	new64FromInt64(2),
+	new64FromInt64(3),
+	new64FromInt64(4),
+	new64FromInt64(5),
+	new64FromInt64(6),
+	new64FromInt64(7),
+	new64FromInt64(8),
+	new64FromInt64(9),
+	new64FromInt64(10),
 }
 
 // New64FromInt64 returns a new Decimal64 with the given value.
-func New64FromInt64(value int64) Decimal64 {
-	if value == 0 {
-		return Zero64
+func New64FromInt64(i int64) Decimal64 {
+	if i >= -10 && i <= 10 {
+		return small64s[10+i]
 	}
+	return new64FromInt64(i)
+}
+
+func new64FromInt64(value int64) Decimal64 {
 	sign := 0
 	if value < 0 {
 		sign = 1
@@ -182,21 +205,25 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 // TODO: make this more efficent
 func countTrailingZeros(n uint64) int {
 	zeros := 0
-	if n%10000000000000000 == 0 {
+	q := n / 1_0000_0000_0000_0000
+	if n == q*1_0000_0000_0000_0000 {
 		zeros += 16
-		n /= 10000000000000000
+		n = q
 	}
-	if n%100000000 == 0 {
+	q = n / 1_0000_0000
+	if n == q*1_0000_0000 {
 		zeros += 8
-		n /= 100000000
+		n = q
 	}
-	if n%10000 == 0 {
+	q = n / 10000
+	if n == q*10000 {
 		zeros += 4
-		n /= 10000
+		n = q
 	}
-	if n%100 == 0 {
+	q = n / 100
+	if n == q*100 {
 		zeros += 2
-		n /= 100
+		n = q
 	}
 	if n%10 == 0 {
 		zeros++
@@ -315,28 +342,36 @@ func (d Decimal64) Float64() float64 {
 
 // Int64 returns an int64 representation of d, clamped to [[math.MinInt64], [math.MaxInt64]].
 func (d Decimal64) Int64() int64 {
+	i, _ := d.Int64x()
+	return i
+}
+
+// Int64 returns an int64 representation of d, clamped to [[math.MinInt64],
+// [math.MaxInt64]].
+// The second return value, exact indicates whether New64FromInt64(i) == d.
+func (d Decimal64) Int64x() (i int64, exact bool) {
 	fl, sign, exp, significand := d.parts()
 	switch fl {
 	case flInf:
 		if sign == 0 {
-			return math.MaxInt64
+			return math.MaxInt64, false
 		}
-		return math.MinInt64
+		return math.MinInt64, false
 	case flQNaN:
-		return 0
+		return 0, false
 	case flSNaN:
 		signalNaN64()
-		return 0
+		return 0, false
 	}
-	exp, whole, _ := expWholeFrac(exp, significand)
+	exp, whole, frac := expWholeFrac(exp, significand)
 	for exp > 0 && whole < math.MaxInt64/10 {
 		exp--
 		whole *= 10
 	}
 	if exp > 0 {
-		return math.MaxInt64
+		return math.MaxInt64, false
 	}
-	return int64(1-2*sign) * int64(whole)
+	return int64(1-2*sign) * int64(whole), frac == 0
 }
 
 // IsZero returns true if the Decimal encodes a zero value.
@@ -403,6 +438,62 @@ func (d Decimal64) Sign() int {
 // Signbit indicates whether d is negative or -0.
 func (d Decimal64) Signbit() bool {
 	return d.bits>>63 == 1
+}
+
+func (d Decimal64) ScaleB(e Decimal64) Decimal64 {
+	var dp decParts
+	dp.unpack(d)
+	var ep decParts
+	ep.unpack(e)
+	if r, nan := checkNan(&dp, &ep); nan {
+		return r
+	}
+
+	if dp.fl != flNormal || dp.isZero() {
+		return d
+	}
+	if ep.fl != flNormal {
+		return QNaN64
+	}
+
+	i, exact := e.Int64x()
+	if !exact {
+		return QNaN64
+	}
+	return scaleBInt(&dp, int(i))
+}
+
+func (d Decimal64) ScaleBInt(i int) Decimal64 {
+	var dp decParts
+	dp.unpack(d)
+	if dp.fl != flNormal || dp.isZero() {
+		return d
+	}
+	return scaleBInt(&dp, i)
+}
+
+func scaleBInt(dp *decParts, i int) Decimal64 {
+	dp.exp += i
+
+	for dp.significand.lo < decimal64Base && dp.exp > -expOffset {
+		dp.exp--
+		dp.significand.lo *= 10
+	}
+
+	switch {
+	case dp.exp > expMax:
+		return Infinity64.CopySign(dp.original)
+	case dp.exp < -expOffset:
+		for dp.exp < -expOffset {
+			dp.exp++
+			dp.significand.lo /= 10
+		}
+		if dp.significand.lo == 0 {
+			return Zero64.CopySign(dp.original)
+		}
+	}
+
+	return dp.decimal64()
 }
 
 // Class returns a string representing the number's 'type' that the decimal is.

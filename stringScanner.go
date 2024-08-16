@@ -2,7 +2,6 @@ package decimal
 
 import (
 	"bytes"
-	"io"
 	"strings"
 	"unicode"
 )
@@ -43,13 +42,13 @@ func (s *stringScanner) Token(skipSpace bool, f func(rune) bool) (token []byte, 
 	for {
 		r, _, err := s.ReadRune()
 		if err != nil {
-			logicCheck(err == io.EOF, "%v == io.EOF", err)
 			break
 		}
 		// A dirty hack to recognise ∞, which UTF-8-encodes as [226, 136, 158]
 		if !f(r) {
-			err := s.UnreadRune()
-			logicCheck(err == nil, "%v", err)
+			if err := s.UnreadRune(); err != nil {
+				panic(err)
+			}
 			break
 		}
 		buf.WriteRune(r)

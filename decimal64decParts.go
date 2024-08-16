@@ -15,6 +15,10 @@ func unpack(d Decimal64) decParts {
 	return dp
 }
 
+func (dp *decParts) decimal64() Decimal64 {
+	return newFromParts(dp.sign, dp.exp, dp.significand.lo)
+}
+
 // add128 adds two decParts with full precision in 128 bits of significand
 func (dp *decParts) add128(ep *decParts) decParts {
 	dp.matchScales128(ep)
@@ -24,7 +28,7 @@ func (dp *decParts) add128(ep *decParts) decParts {
 		ans.sign = dp.sign
 		ans.significand = dp.significand.add(ep.significand)
 	} else {
-		if ep.significand.gt(dp.significand) {
+		if dp.significand.lt(ep.significand) {
 			ans.sign = ep.sign
 			ans.significand = ep.significand.sub(dp.significand)
 		} else if ep.significand.lt(dp.significand) {
@@ -50,24 +54,14 @@ func (dp *decParts) matchScales128(ep *decParts) {
 	}
 }
 
-func (dp *decParts) matchSignificandDigits(ep *decParts) {
-	expDiff := ep.significand.numDecimalDigits() - dp.significand.numDecimalDigits()
-	if expDiff < 0 {
-		ep.significand = ep.significand.mul(tenToThe128[-expDiff-1])
-		ep.exp -= -expDiff - 1
-		return
-	}
-	dp.significand = dp.significand.mul(tenToThe128[expDiff+1])
-	dp.exp -= expDiff + 1
-}
-
 func (dp *decParts) roundToLo() discardedDigit {
 	var rndStatus discardedDigit
-	if dp.significand.numDecimalDigits() > 16 {
+
+	if dsig := dp.significand; dsig.hi > 0 || dsig.lo >= 10*decimal64Base {
 		var remainder uint64
-		expDiff := dp.significand.numDecimalDigits() - 16
+		expDiff := dsig.numDecimalDigits() - 16
 		dp.exp += expDiff
-		dp.significand, remainder = dp.significand.divrem64(tenToThe[expDiff])
+		dp.significand, remainder = dsig.divrem64(tenToThe[expDiff])
 		rndStatus = roundStatus(remainder, 0, expDiff)
 	}
 	return rndStatus

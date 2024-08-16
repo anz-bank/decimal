@@ -1,6 +1,8 @@
 package decimal
 
 import (
+	"fmt"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -173,7 +175,6 @@ func TestDecimal64MulInf(t *testing.T) {
 }
 
 func checkDecimal64QuoByF(t *testing.T, f int64) {
-	require := require.New(t)
 	for i := int64(-1000 * f); i <= 1000*f; i += f {
 		for j := int64(-100); j <= 100; j++ {
 			var e Decimal64
@@ -195,18 +196,50 @@ func checkDecimal64QuoByF(t *testing.T, f int64) {
 				t.Log("e", e.bits, eFlavor, eSign, eExp, eSignificand)
 				t.Log("q", q.bits, qFlavor, qSign, qExp, qSignificand)
 			}
-			require.Equal(e, q, "%d / %d ≠ %v (expecting %v)", k, j, q, e)
+			if !assert.Equal(t, e, q, "%d / %d ≠ %v (expecting %v)", k, j, q, e) {
+				runtime.Breakpoint()
+				n.Quo(d)
+				t.FailNow()
+			}
 		}
 	}
 }
 
 func TestDecimal64Quo(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping TestDecimal64Quo in short mode.")
 	}
+
 	checkDecimal64QuoByF(t, 1)
 	checkDecimal64QuoByF(t, 7)
 	checkDecimal64QuoByF(t, 13)
+}
+
+func TestDecimal64Scale(t *testing.T) {
+	t.Parallel()
+
+	const limit = 380
+
+	for i := -limit; i <= limit; i += 3 {
+		x := Pi64.ScaleBInt(i)
+		for j := -limit; j <= limit; j += 5 {
+			y := E64.ScaleBInt(j)
+			expected := "1.155727349790922"
+			exp := i - j
+			switch {
+			case exp == 0:
+			case -383 <= exp && exp <= 384:
+				expected += fmt.Sprintf("e%+d", exp)
+			default:
+				// TODO: subnormals and infinities
+				continue
+			}
+			actual := x.Quo(y).Text('e', -1)
+			require.Equal(t, expected, actual, "i = %v, j = %v", i, j)
+		}
+	}
 }
 
 func TestDecimal64QuoNaN(t *testing.T) {
@@ -478,13 +511,20 @@ func TestAddOverflow(t *testing.T) {
 }
 
 func TestQuoOverflow(t *testing.T) {
-	require := require.New(t)
-	require.Equal(Infinity64, MustParse64("1e384").Quo(MustParse64(".01")))
-	require.Equal(NegInfinity64, MustParse64("1e384").Quo(MustParse64("-.01")))
-	require.Equal(NegInfinity64, MustParse64("-1e384").Quo(MustParse64(".01")))
-	require.Equal(NegInfinity64, MustParse64("-1e384").Quo(MustParse64("0")))
-	require.Equal(QNaN64, Zero64.Quo(Zero64))
-	require.Equal(Zero64, Zero64.Quo(MustParse64("100")))
+	test := func(expected Decimal64, num, denom string) {
+		n := MustParse64(num)
+		d := MustParse64(denom)
+		if !assert.Equal(t, expected, n.Quo(d)) {
+			runtime.Breakpoint()
+			n.Quo(d)
+		}
+	}
+	test(Infinity64, "1e384", ".01")
+	test(NegInfinity64, "1e384", "-.01")
+	test(NegInfinity64, "-1e384", ".01")
+	test(NegInfinity64, "-1e384", "0")
+	test(QNaN64, "0", "0")
+	test(Zero64, "0", "100")
 }
 
 func TestMul(t *testing.T) {

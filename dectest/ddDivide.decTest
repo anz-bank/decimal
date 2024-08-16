@@ -859,4 +859,3 @@ dddiv4099 divide  6134869538966967   6134869538985986  ->  0.9999999999968999  I
 -- Null tests
 dddiv9998 divide 10  # -> NaN Invalid_operation
 dddiv9999 divide  # 10 -> NaN Invalid_operation
-

@@ -2,7 +2,6 @@ package decimal
 
 import (
 	"fmt"
-	"io"
 	"strings"
 	"unicode"
 )
@@ -28,7 +27,6 @@ func (ctx Context64) Parse(s string) (Decimal64, error) {
 	if err == nil {
 		return d, fmt.Errorf("expected end of string, found %c", r)
 	}
-	logicCheck(err == io.EOF, "%v == io.EOF", err)
 	return d, nil
 }
 

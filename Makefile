@@ -33,3 +33,7 @@ lint: build-linux
 		-v `go env GOMODCACHE`:/go/pkg/mod \
 		golangci/golangci-lint:v1.60.1-alpine \
 		golangci-lint run
+
+.PHONY: profile
+profile:
+	go test -cpuprofile cpu.prof -count=10 && go tool pprof -http=:8080 cpu.prof

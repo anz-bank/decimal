@@ -16,3 +16,5 @@ type Decimal64 struct {
 func new64(bits uint64) Decimal64 {
 	return new64Raw(bits)
 }
+
+func checkSignificandIsNormal(significand uint64) {}
