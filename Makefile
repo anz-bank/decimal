@@ -11,17 +11,26 @@ test-debug:
 
 .PHONY: build-linux
 build-linux:
-	GOOS=linux $(MAKE) build build-32bit
+	GOOS=linux $(MAKE) build
 
+# Prime Go caches for docker golangci-lint.
 .PHONY: build
-build-64bit:
-	go test -c -o decimal.$@.test . && rm -f decimal.$@.test
-	go test -c -o decimal.$@.debug.test -tags=decimal_debug . && rm -f decimal.$@.debug.test
+build: build-64-bit build-32-bit
 
-.PHONY: build-32bit
-build-32bit:
-	GOARCH=arm go test -c -o decimal.$@.test . && rm -f decimal.$@.test
-	GOARCH=arm go test -c -o decimal.$@.debug.test -tags=decimal_debug . && rm -f decimal.$@.debug.test
+.PHONY: build-32-bit build-64-bit
+build-32-bit: decimal.32.release.test decimal.32.debug.test
+build-64-bit: decimal.64.release.test decimal.64.debug.test
+
+GOARCH.32=arm
+GOARCH.64=
+
+.INTERMEDIATE: decimal.32.release.test decimal.64.release.test
+decimal.%.release.test:
+	GOARCH=$(GOARCH.$*) go test -c -o $@ .
+
+.INTERMEDIATE: decimal.32.debug.test decimal.64.debug.test
+decimal.%.debug.test:
+	GOARCH=$(GOARCH.$*) go test -c -o $@ -tags=decimal_debug .
 
 # Dependency on build-linux primes Go caches.
 .PHONY: lint
@@ -35,5 +44,23 @@ lint: build-linux
 		golangci-lint run
 
 .PHONY: profile
-profile:
-	go test -cpuprofile cpu.prof -count=10 && go tool pprof -http=:8080 cpu.prof
+profile: cpu.prof
+	go tool pprof -http=:8080 $<
+
+.INTERMEDIATE: cpu.prof
+cpu.prof:
+	go test -cpuprofile $@ -count=10
+
+.PHONY: bench
+bench: bench.txt
+	cat $<
+
+bench-stat: bench.stat
+	cat $<
+
+bench.stat: bench.txt
+	[ -f bench.old ] || git show @:$< > bench.old || (rm -f $@; false)
+	benchstat bench.old $< > $@ || (rm -f $@; false)
+
+bench.txt:
+	go test -run=^$$ -bench=. -benchmem -count=10 > $@ || (rm -f $@; false)
