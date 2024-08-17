@@ -262,10 +262,12 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 			fl = flInf
 		case 2:
 			fl = flQNaN
-			significand = d.bits & (1<<53 - 1)
+			significand = d.bits & (1<<51 - 1)
+			return
 		case 3:
 			fl = flSNaN
-			significand = d.bits & (1<<53 - 1)
+			significand = d.bits & (1<<51 - 1)
+			return
 		}
 	case 12, 13, 14:
 		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
