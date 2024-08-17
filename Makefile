@@ -3,11 +3,11 @@ all: test test-debug build-linux lint
 
 .PHONY: test
 test:
-	go test
+	go test $(GOTESTFLAGS)
 
 .PHONY: test-debug
 test-debug:
-	go test -tags=decimal_debug
+	go test $(GOTESTFLAGS) -tags=decimal_debug
 
 .PHONY: build-linux
 build-linux:
@@ -26,11 +26,11 @@ GOARCH.64=
 
 .INTERMEDIATE: decimal.32.release.test decimal.64.release.test
 decimal.%.release.test:
-	GOARCH=$(GOARCH.$*) go test -c -o $@ .
+	GOARCH=$(GOARCH.$*) go test -c -o $@ $(GOTESTFLAGS) .
 
 .INTERMEDIATE: decimal.32.debug.test decimal.64.debug.test
 decimal.%.debug.test:
-	GOARCH=$(GOARCH.$*) go test -c -o $@ -tags=decimal_debug .
+	GOARCH=$(GOARCH.$*) go test -c -o $@ -tags=decimal_debug $(GOTESTFLAGS) .
 
 # Dependency on build-linux primes Go caches.
 .PHONY: lint
@@ -49,7 +49,7 @@ profile: cpu.prof
 
 .INTERMEDIATE: cpu.prof
 cpu.prof:
-	go test -cpuprofile $@ -count=10
+	go test -cpuprofile $@ -count=10 $(GOTESTFLAGS)
 
 .PHONY: bench
 bench: bench.txt
@@ -62,5 +62,5 @@ bench.stat: bench.txt
 	[ -f bench.old ] || git show @:$< > bench.old || (rm -f $@; false)
 	benchstat bench.old $< > $@ || (rm -f $@; false)
 
-bench.txt:
-	go test -run=^$$ -bench=. -benchmem -count=10 > $@ || (rm -f $@; false)
+bench.txt: test
+	go test -run=^$$ -bench=. -benchmem -count=10 $(GOTESTFLAGS) > $@ || (rm -f $@; false)
