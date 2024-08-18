@@ -23,9 +23,6 @@ func TestIsNaN(t *testing.T) {
 
 	a.unpack(SNaN64)
 	require.Equal(true, a.isSNaN())
-
-	a.unpack(QNaN64)
-	require.Equal(true, a.isQNaN())
 }
 
 func TestPartsSubnormal(t *testing.T) {

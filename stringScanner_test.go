@@ -11,7 +11,7 @@ import (
 func TestStringScannerSkipSpace(t *testing.T) {
 	require := require.New(t)
 
-	state := &stringScanner{reader: strings.NewReader(" \tx")}
+	state := &scanner{reader: strings.NewReader(" \tx")}
 
 	state.SkipSpace()
 
@@ -26,7 +26,7 @@ func TestStringScannerSkipSpace(t *testing.T) {
 func TestStringScannerTokenSkipSpace(t *testing.T) {
 	require := require.New(t)
 
-	state := &stringScanner{reader: strings.NewReader(" \txyz")}
+	state := &scanner{reader: strings.NewReader(" \txyz")}
 
 	token, err := state.Token(false, unicode.IsLetter)
 	require.NoError(err)
@@ -40,19 +40,19 @@ func TestStringScannerTokenSkipSpace(t *testing.T) {
 func TestStringScannerRead(t *testing.T) {
 	require := require.New(t)
 
-	state := &stringScanner{reader: strings.NewReader("hello world!")}
+	state := &scanner{reader: strings.NewReader("hello world!")}
 
-	hello := make([]byte, 5)
-	world := make([]byte, 10)
+	var hello [5]byte
+	var world [10]byte
 
-	n, err := state.Read(hello)
+	n, err := state.Read(hello[:])
 	require.NoError(err)
 	require.Equal(5, n)
-	require.Equal([]byte("hello"), hello)
+	require.Equal([]byte("hello"), hello[:])
 
 	state.SkipSpace()
 
-	n, err = state.Read(world)
+	n, err = state.Read(world[:])
 	require.NoError(err)
 	require.Equal(6, n)
 	require.Equal([]byte("world!"), world[:n])

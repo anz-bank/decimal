@@ -21,123 +21,78 @@ var zeros = [16]byte{
 }
 
 type appender struct {
-	buf  []byte
-	wid  int
-	prec int
-	flag func(int) bool
+	wid     int
+	prec    int
+	flagger interface{ Flag(int) bool }
 }
 
-func newAppender(buf []byte, wid, prec int, flag func(int) bool) *appender {
-	if flag == nil {
-		flag = func(i int) bool { return false }
-	}
-	return &appender{
-		buf:  buf,
-		wid:  wid,
-		prec: prec,
-		flag: flag,
-	}
+type noFlagsInt int
+
+var noFlags interface{ Flag(int) bool } = noFlagsInt(0)
+
+func (noFlagsInt) Flag(c int) bool {
+	return false
 }
 
-func (a *appender) Bytes() []byte {
-	return a.buf
-}
-
-func (a *appender) Write(b []byte) (n int, err error) {
-	a.buf = append(a.buf, b...)
-	return len(b), nil
-}
-
-func (a *appender) Width() (wid int, ok bool) {
-	return a.wid, a.wid >= 0
-}
-
-func (a *appender) Precision() (prec int, ok bool) {
-	return a.prec, a.prec >= 0
-}
-
-func (a *appender) Flag(c int) bool {
-	return a.flag(c)
-}
-
-func (a *appender) Append(data ...byte) *appender {
-	a.buf = append(a.buf, data...)
-	return a
-}
-
-func (a *appender) Zeros(n int) *appender {
+func appendZeros(buf []byte, n int) []byte {
 	if n <= 0 {
-		return a
+		return buf
 	}
 	l := len(zeros)
 	for ; n > l; n -= l {
-		a.Append(zeros[:]...)
+		buf = append(buf, zeros[:]...)
 	}
-	return a.Append(zeros[:n]...)
+	return append(buf, zeros[:n]...)
 }
 
-func (a *appender) DotZeros(n int) *appender {
+func dotZeros(buf []byte, n int) []byte {
 	if n > 0 {
-		a.Append('.').Zeros(n)
+		buf = append(buf, '.')
+		buf = appendZeros(buf, n)
 	}
-	return a
+	return buf
 }
 
-func (a *appender) Uint64(n, limit uint64) *appender {
+func appendUint64(buf []byte, n, limit uint64) []byte {
+	// TODO: avoid dividing by a variable.
 	zeroPrefix := false
 	for limit > 0 {
 		msd := n / limit
 		if msd > 0 || zeroPrefix {
-			a.Append(byte('0' + msd))
+			buf = append(buf, byte('0'+msd))
 			zeroPrefix = true
 		}
 		n -= limit * msd
 		limit /= 10
 	}
-	return a
+	return buf
 }
 
-func (a *appender) Uint64New(n uint64) *appender {
-	a.buf = strconv.AppendUint(a.buf, n, 10)
-	return a
+func (a *appender) uint64New(buf []byte, n uint64) []byte {
+	return strconv.AppendUint(buf, n, 10)
 }
 
-func (a *appender) Digits(n uint64, width, prec int) *appender {
+func appendFracF(buf []byte, n uint64, width, prec int) []byte {
 	if width > prec {
 		n /= tenToThe[width-prec]
 		width = prec
 	}
-	start := len(a.buf)
-	a.Append(make([]byte, width)...)
-	slot := (a.buf)[start:]
-	for i := width - 1; i >= 0; i-- {
-		d := n / 10
-		slot[i] = byte('0' + n - 10*d)
-		n = d
-	}
-	a.Zeros(prec - width)
-	return a
+	buf = formatBits10(buf, n%tenToThe[width], width)
+	return appendZeros(buf, prec-width)
 }
 
-func (a *appender) Frac64(n, limit uint64) *appender {
-	for n > 0 {
-		msd := n / limit
-		a.Append(byte('0' + msd))
-		n -= limit * msd
-		limit /= 10
+func appendFracE(buf []byte, n uint64) []byte {
+	w := 15
+	for n%10 == 0 {
+		n /= 10
+		w--
 	}
-	return a
-}
-
-func (a *appender) TrimTrailingZeros() *appender {
-	a.buf = bytes.TrimRight(a.buf, "0")
-	return a
+	return formatBits10(buf, n, w)
 }
 
 // Append appends the text representation of d to buf.
 func (d Decimal64) Append(buf []byte, format byte, prec int) []byte {
-	a := newAppender(buf, -1, prec, nil)
-	return DefaultFormatContext64.append(d, a, rune(format)).Bytes()
+	return DefaultFormatContext64.append(d, buf, -1, prec, noFlags, rune(format))
 }
 
 func precScale(prec int) Decimal64 {
@@ -145,123 +100,144 @@ func precScale(prec int) Decimal64 {
 }
 
 // Append appends the text representation of d to buf.
-func (ctx Context64) append(d Decimal64, a *appender, format rune) *appender {
+func (ctx Context64) append(
+	d Decimal64,
+	buf []byte,
+	wid int,
+	prec int,
+	flagger interface{ Flag(int) bool },
+	verb rune,
+) []byte {
+	if buf == nil {
+		buf = make([]byte, 0, 32)
+	}
+	a := appender{wid, prec, flagger}
+
 	flav, sign, exp, significand := d.parts()
 	if sign == 1 {
-		a.Append('-')
+		buf = append(buf, '-')
 	}
 	switch flav {
 	case flQNaN, flSNaN:
-		a.Append([]byte("NaN")...)
+		buf = append(buf, []byte("NaN")...)
 		if significand != 0 {
-			return a.Uint64(significand, 10000)
+			return appendUint64(buf, significand, 10000)
 		}
-		return a
+		return buf
 	case flInf:
-		return a.Append([]byte("inf")...)
+		return append(buf, []byte("inf")...)
 	}
 
 formatBlock:
-	switch format {
+	switch verb {
 	case 'e', 'E':
 		exp, significand = unsubnormal(exp, significand)
 
 		whole := significand / decimal64Base
-		a.Append(byte('0' + whole))
+		buf = append(buf, byte('0'+whole))
 		frac := significand - decimal64Base*whole
 		if frac > 0 {
-			a.Append('.').Frac64(frac, decimal64Base/10)
+			buf = append(buf, '.')
+			buf = appendFracE(buf, frac)
 		}
 
 		if significand == 0 {
-			return a
+			return buf
 		}
 
 		exp += 15
 		if exp != 0 {
-			a.Append(byte(format))
+			buf = append(buf, byte(verb))
 			if exp < 0 {
-				a.Append('-')
+				buf = append(buf, '-')
 				exp = -exp
 			} else {
-				a.Append('+')
+				buf = append(buf, '+')
 			}
-			a = a.Uint64(uint64(exp), 1000)
+			return appendUint64(buf, uint64(exp), 1000)
 		}
-		return a
+		return buf
 	case 'f', 'F':
 		if 0 <= a.prec && a.prec <= 16 {
 			_, _, exp, significand = ctx.roundRaw(d, precScale(a.prec)).parts()
 		}
 
 		if significand == 0 {
-			return a.Append('0').DotZeros(a.prec)
+			buf = append(buf, '0')
+			return dotZeros(buf, a.prec)
 		}
 
 		exp, significand = unsubnormal(exp, significand)
 
 		// pure integer
 		if exp >= 0 {
-			return a.Uint64New(significand).Zeros(exp).DotZeros(a.prec)
+			buf = a.uint64New(buf, significand)
+			buf = appendZeros(buf, exp)
+			return dotZeros(buf, a.prec)
 		}
 
 		// integer part
 		fracDigits := min(-exp, 16)
 		unit := tenToThe[fracDigits]
-		a = a.Uint64New(significand / unit).Zeros(exp)
+		buf = a.uint64New(buf, significand/unit)
+		buf = appendZeros(buf, exp)
 
 		// empty fractional part
 		if significand%unit == 0 {
-			return a.DotZeros(a.prec)
+			return dotZeros(buf, a.prec)
 		}
 
-		a.Append('.')
+		buf = append(buf, '.')
 
 		// fractional part
 		prefix := max(0, -exp-16)
 		if a.prec < 0 {
-			return a.Zeros(prefix).Digits(significand, fracDigits, 16).TrimTrailingZeros()
+			buf = appendZeros(buf, prefix)
+			buf = appendFracF(buf, significand, fracDigits, 16)
+			buf = bytes.TrimRight(buf, "0")
+			return buf
 		}
-		return a.Zeros(min(a.prec, prefix)).Digits(significand, fracDigits, a.prec-prefix)
+		buf = appendZeros(buf, min(a.prec, prefix))
+		return appendFracF(buf, significand, fracDigits, a.prec-prefix)
 	case 'g', 'G':
 		if exp < -decimal64Digits-3 ||
 			a.prec >= 0 && exp > a.prec ||
 			a.prec < 0 && exp > -decimal64Digits+6 {
-			format -= 'g' - 'e'
+			verb -= 'g' - 'e'
 		} else {
-			format -= 'g' - 'f'
+			verb -= 'g' - 'f'
 		}
 		goto formatBlock
 	default:
-		return a.Append('%', byte(format))
+		return append(buf, '%', byte(verb))
 	}
 }
 
 // Format implements fmt.Formatter.
-func (d Decimal64) Format(s fmt.State, format rune) {
-	DefaultFormatContext64.format(d, s, format)
+func (d Decimal64) Format(s fmt.State, verb rune) {
+	DefaultFormatContext64.format(d, s, verb)
 }
 
 // format implements fmt.Formatter.
-func (ctx Context64) format(d Decimal64, s fmt.State, format rune) {
+func (ctx Context64) format(d Decimal64, s fmt.State, verb rune) {
 	prec := optInt(s.Precision())
 
-	switch format {
+	switch verb {
 	case 'e', 'E', 'f', 'F':
 		if prec < 0 {
 			prec = 6
 		}
 	case 'g', 'G':
 	case 'v':
-		format = 'g'
+		verb = 'g'
 	default:
-		fmt.Fprintf(s, "%%!%c(decimal.Decimal64=%s)", format, d.String())
+		fmt.Fprintf(s, "%%!%c(decimal.Decimal64=%s)", verb, d.String())
 		return
 	}
 
 	wid := optInt(s.Width())
-	a := newAppender(make([]byte, 0, 16), wid, prec, nil)
-	s.Write(ctx.append(d, a, format).Bytes()) //nolint:errcheck
+
+	s.Write(ctx.append(d, nil, wid, prec, s, verb)) //nolint:errcheck
 }
 
 func optInt(i int, has bool) int {
@@ -277,6 +253,9 @@ func (d Decimal64) String() string {
 }
 
 func (ctx Context64) str(d Decimal64) string {
+	if s, has := small64Strings[d]; has {
+		return s
+	}
 	return ctx.text(d, 'g', -1, -1)
 }
 
@@ -286,8 +265,9 @@ func (d Decimal64) Text(format byte, prec int) string {
 	return DefaultFormatContext64.text(d, rune(format), -1, prec)
 }
 
-func (ctx Context64) text(d Decimal64, format rune, width, prec int) string {
-	return string(ctx.append(d, newAppender(make([]byte, 0, 16), width, prec, nil), format).Bytes())
+func (ctx Context64) text(d Decimal64, verb rune, width, prec int) string {
+	var buf [32]byte
+	return string(ctx.append(d, buf[:0], width, prec, noFlags, verb))
 }
 
 // Contextual binds a [Decimal64] to a [Context64] for greater control of formatting.
@@ -302,12 +282,12 @@ func (c Contextual) String() string {
 	return c.ctx.str(c.d)
 }
 
-func (c Contextual) Format(s fmt.State, format rune) {
-	c.ctx.format(c.d, s, format)
+func (c Contextual) Format(s fmt.State, verb rune) {
+	c.ctx.format(c.d, s, verb)
 }
 
-func (c Contextual) Text(format rune, width, prec int) string {
-	return c.ctx.text(c.d, format, width, prec)
+func (c Contextual) Text(verb rune, width, prec int) string {
+	return c.ctx.text(c.d, verb, width, prec)
 }
 
 func (ctx Context64) With(d Decimal64) Contextual {

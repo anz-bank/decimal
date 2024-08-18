@@ -309,11 +309,8 @@ func TestNumDecimalDigits(t *testing.T) {
 }
 
 func TestIsSubnormal(t *testing.T) {
-	require := require.New(t)
-
-	require.Equal(true, MustParse64("0.1E-383").IsSubnormal())
-	require.Equal(true, MustParse64("-0.1E-383").IsSubnormal())
-	require.Equal(false, MustParse64("NaN10").IsSubnormal())
-	require.Equal(false, New64FromInt64(42).IsSubnormal())
-
+	require.Equal(t, true, MustParse64("0.1E-383").IsSubnormal())
+	require.Equal(t, true, MustParse64("-0.1E-383").IsSubnormal())
+	require.Equal(t, false, MustParse64("NaN10").IsSubnormal())
+	require.Equal(t, false, New64FromInt64(42).IsSubnormal())
 }

@@ -105,32 +105,59 @@ func (ctx Rounding) round(significand uint64, rndStatus discardedDigit) uint64 {
 	return significand
 }
 
-func signalNaN64() {
-	panic("sNaN64")
+var ErrNaN64 error = Error("sNaN64")
+
+var small64s = []Decimal64{
+	newFromPartsRaw(1, -14, 1*decimal64Base),
+
+	newFromPartsRaw(1, -15, 9*decimal64Base),
+	newFromPartsRaw(1, -15, 8*decimal64Base),
+	newFromPartsRaw(1, -15, 7*decimal64Base),
+	newFromPartsRaw(1, -15, 6*decimal64Base),
+	newFromPartsRaw(1, -15, 5*decimal64Base),
+	newFromPartsRaw(1, -15, 4*decimal64Base),
+	newFromPartsRaw(1, -15, 3*decimal64Base),
+	newFromPartsRaw(1, -15, 2*decimal64Base),
+	newFromPartsRaw(1, -15, 1*decimal64Base),
+
+	// TODO: Decimal64{}?
+	newFromPartsRaw(0, 0, 0),
+
+	newFromPartsRaw(0, -15, 1*decimal64Base),
+	newFromPartsRaw(0, -15, 2*decimal64Base),
+	newFromPartsRaw(0, -15, 3*decimal64Base),
+	newFromPartsRaw(0, -15, 4*decimal64Base),
+	newFromPartsRaw(0, -15, 5*decimal64Base),
+	newFromPartsRaw(0, -15, 6*decimal64Base),
+	newFromPartsRaw(0, -15, 7*decimal64Base),
+	newFromPartsRaw(0, -15, 8*decimal64Base),
+	newFromPartsRaw(0, -15, 9*decimal64Base),
+
+	newFromPartsRaw(0, -14, 1*decimal64Base),
 }
 
-var small64s = [...]Decimal64{
-	new64FromInt64(-10),
-	new64FromInt64(-9),
-	new64FromInt64(-8),
-	new64FromInt64(-7),
-	new64FromInt64(-6),
-	new64FromInt64(-5),
-	new64FromInt64(-4),
-	new64FromInt64(-3),
-	new64FromInt64(-2),
-	NegOne64,
-	Zero64,
-	One64,
-	new64FromInt64(2),
-	new64FromInt64(3),
-	new64FromInt64(4),
-	new64FromInt64(5),
-	new64FromInt64(6),
-	new64FromInt64(7),
-	new64FromInt64(8),
-	new64FromInt64(9),
-	new64FromInt64(10),
+var small64Strings = map[Decimal64]string{
+	small64s[0]:  "-10",
+	small64s[1]:  "-9",
+	small64s[2]:  "-8",
+	small64s[3]:  "-7",
+	small64s[4]:  "-6",
+	small64s[5]:  "-5",
+	small64s[6]:  "-4",
+	small64s[7]:  "-3",
+	small64s[8]:  "-2",
+	small64s[9]:  "-1",
+	small64s[10]: "0",
+	small64s[11]: "1",
+	small64s[12]: "2",
+	small64s[13]: "3",
+	small64s[14]: "4",
+	small64s[15]: "5",
+	small64s[16]: "6",
+	small64s[17]: "7",
+	small64s[18]: "8",
+	small64s[19]: "9",
+	small64s[20]: "10",
 }
 
 // New64FromInt64 returns a new Decimal64 with the given value.
@@ -338,8 +365,7 @@ func (d Decimal64) Float64() float64 {
 	case flQNaN:
 		return math.NaN()
 	}
-	signalNaN64()
-	return 0
+	panic(ErrNaN64)
 }
 
 // Int64 returns an int64 representation of d, clamped to [[math.MinInt64], [math.MaxInt64]].
@@ -362,8 +388,7 @@ func (d Decimal64) Int64x() (i int64, exact bool) {
 	case flQNaN:
 		return 0, false
 	case flSNaN:
-		signalNaN64()
-		return 0, false
+		panic(ErrNaN64)
 	}
 	exp, whole, frac := expWholeFrac(exp, significand)
 	for exp > 0 && whole < math.MaxInt64/10 {
@@ -520,20 +545,15 @@ func (d Decimal64) Class() string {
 		return "NaN"
 	}
 
-	sign := "+"
-	if dp.sign == 1 {
-		sign = "-"
-	}
-
 	switch {
 	case dp.isInf():
-		return sign + "Infinity"
+		return "+Infinity-Infinity"[9*dp.sign : 9*(dp.sign+1)]
 	case dp.isZero():
-		return sign + "Zero"
+		return "+Zero-Zero"[5*dp.sign : 5*(dp.sign+1)]
 	case dp.isSubnormal():
-		return sign + "Subnormal"
+		return "+Subnormal-Subnormal"[10*dp.sign : 10*(dp.sign+1)]
 	}
-	return sign + "Normal"
+	return "+Normal-Normal"[7*dp.sign : 7*(dp.sign+1)]
 }
 
 // numDecimalDigits returns the magnitude (number of digits) of a uint64.

@@ -42,16 +42,24 @@ func TestParse64Inf(t *testing.T) {
 // TODO: Find out what the correct behavior is with bad inputs
 // TODO: Does nan get returned if there are leading/trailing whitespaces?
 func TestParse64BadInputs(t *testing.T) {
-	require := require.New(t)
-	for _, input := range []string{
-		"", " ", "x",
-		"++0", "--0", "+-0", "-+0",
-		"0..", "0..2",
-		"0e", "0ee", "0ee2", "0ex",
-	} {
+	test := func(input string) {
+		t.Helper()
 		d, _ := Parse64(input)
-		require.Equal(SNaN64.IsNaN(), d.IsNaN())
+		require.Equal(t, SNaN64.IsNaN(), d.IsNaN(), "input = %q", input)
 	}
+	test("")
+	test(" ")
+	test("x")
+	test("++0")
+	test("--0")
+	test("+-0")
+	test("-+0")
+	test("0..")
+	test("0..2")
+	test("0e")
+	test("0ee")
+	test("0ee2")
+	test("0ex")
 }
 
 func TestParse64BigExp(t *testing.T) {
@@ -78,7 +86,7 @@ func TestParse64LongMantissa(t *testing.T) {
 func TestDecimal64ScanFlakyScanState(t *testing.T) {
 	requireFailAt := func(text string, failAt int) {
 		state := flakyScanState{
-			actual: &stringScanner{reader: strings.NewReader(text)},
+			actual: &scanner{reader: strings.NewReader(text)},
 			failAt: failAt,
 		}
 		var d Decimal64
@@ -104,7 +112,7 @@ func BenchmarkDecimal64Scan(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		reader.Reset("123456789")
 		var d Decimal64
-		if err := d.Scan(&stringScanner{reader: reader}, 'g'); err != nil {
+		if err := d.Scan(&scanner{reader: reader}, 'g'); err != nil {
 			panic("Benchmarking Scan failed")
 		}
 	}
