@@ -15,7 +15,8 @@ const host32bit = ^uint(0)>>32 == 0
 
 // Adapted from standard library strconv/itoa.go.
 func formatBits10(buf []byte, u uint64, w int) []byte {
-	var a [16]byte
+	// Probably only needs 17, but let's play it safe.
+	var a [32]byte
 	i := len(a)
 
 	if host32bit {
@@ -30,14 +31,15 @@ func formatBits10(buf []byte, u uint64, w int) []byte {
 				is := us % 100 * 2
 				us /= 100
 				i -= 2
+				w -= 2
 				a[i+1] = smallsString[is+1]
 				a[i+0] = smallsString[is+0]
-				w -= 2
 			}
 
 			// us < 10, since it contains the last digit
 			// from the initial 9-digit us.
 			i--
+			w--
 			a[i] = smallsString[us*2+1]
 
 			u = q

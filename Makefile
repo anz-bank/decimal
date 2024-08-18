@@ -1,5 +1,5 @@
 .PHONY: all
-all: test test-debug build-linux lint
+all: test test-debug test-32 build-linux lint
 
 .PHONY: test
 test:
@@ -8,6 +8,10 @@ test:
 .PHONY: test-debug
 test-debug:
 	go test $(GOTESTFLAGS) -tags=decimal_debug
+
+.PHONY: test-32
+test-32:
+	$(DOCKERRUN) -e GOARCH=arm golang:1.23.0 go test $(GOTESTFLAGS)
 
 .PHONY: build-linux
 build-linux:
@@ -32,16 +36,17 @@ decimal.%.release.test:
 decimal.%.debug.test:
 	GOARCH=$(GOARCH.$*) go test -c -o $@ -tags=decimal_debug $(GOTESTFLAGS) .
 
+DOCKERRUN = docker run --rm \
+	-w /app \
+	-v $(PWD):/app \
+	-v `go env GOCACHE`:/root/.cache/go-build \
+	-v `go env GOMODCACHE`:/go/pkg/mod
+
+
 # Dependency on build-linux primes Go caches.
 .PHONY: lint
 lint: build-linux
-	docker run --rm \
-		-w /app \
-		-v $(PWD):/app \
-		-v `go env GOCACHE`:/root/.cache/go-build \
-		-v `go env GOMODCACHE`:/go/pkg/mod \
-		golangci/golangci-lint:v1.60.1-alpine \
-		golangci-lint run
+	$(DOCKERRUN) golangci/golangci-lint:v1.60.1-alpine golangci-lint run
 
 .PHONY: profile
 profile: cpu.prof
