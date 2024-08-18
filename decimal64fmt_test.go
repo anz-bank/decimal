@@ -82,10 +82,28 @@ func TestDecimal64StringEdgeCases(t *testing.T) {
 	test("0.01666666666666667", "0.01666666666666667")
 }
 
+// Non-representative sample, but retained for comparison purposes.
 func BenchmarkDecimal64String(b *testing.B) {
 	d := New64FromInt64(123456789)
 	for i := 0; i <= b.N; i++ {
 		_ = d.String()
+	}
+}
+
+func BenchmarkDecimal64String2(b *testing.B) {
+	dd := []Decimal64{
+		Zero64,
+		Pi64,
+		New64FromInt64(123456789),
+		MustParse64("-12345678901234E-380"),
+		MustParse64("+12345678901234E+380"),
+		QNaN64,
+		Infinity64,
+	}
+	j := 0
+	for i := 0; i <= b.N; i++ {
+		_ = dd[j%len(dd)].String()
+		j++
 	}
 }
 
@@ -106,7 +124,7 @@ func TestDecimal64Format(t *testing.T) {
 func TestDecimal64FormatNaN(t *testing.T) {
 	t.Parallel()
 
-	n := MustParse64("-sNan33")
+	n := MustParse64("-sNaN33")
 	assert.Equal(t, "-NaN33", n.String())
 }
 
@@ -116,9 +134,9 @@ func TestDecimal64FormatPrec(t *testing.T) {
 
 	test := func(expected string, prec int, n Decimal64) {
 		t.Helper()
-		a := newAppender(make([]byte, 0, 16), -1, prec, nil)
-		buf := string(DefaultFormatContext64.append(n, a, 'f').Bytes())
-		assert.Equal(t, expected, string(buf))
+		var buf [32]byte
+		actual := string(DefaultFormatContext64.append(n, buf[:0], -1, prec, noFlags, 'f'))
+		assert.Equal(t, expected, actual)
 		assert.Equal(t, expected, fmt.Sprintf("%.*f", prec, n))
 		assert.Equal(t, expected, n.Text('f', prec))
 	}
@@ -333,8 +351,8 @@ func TestDecimal64Append(t *testing.T) {
 
 func BenchmarkDecimal64Append(b *testing.B) {
 	d := New64FromInt64(123456789)
-	buf := make([]byte, 10)
+	var buf [32]byte
 	for i := 0; i <= b.N; i++ {
-		_ = d.Append(buf, 'g', 0)
+		_ = d.Append(buf[:0], 'g', 0)
 	}
 }

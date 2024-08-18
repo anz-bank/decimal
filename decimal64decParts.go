@@ -79,10 +79,6 @@ func (dp *decParts) isNaN() bool {
 	return dp.fl&(flQNaN|flSNaN) != 0
 }
 
-func (dp *decParts) isQNaN() bool {
-	return dp.fl == flQNaN
-}
-
 func (dp *decParts) isSNaN() bool {
 	return dp.fl == flSNaN
 }
