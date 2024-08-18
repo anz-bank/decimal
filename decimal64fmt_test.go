@@ -82,16 +82,28 @@ func TestDecimal64StringEdgeCases(t *testing.T) {
 	test("0.01666666666666667", "0.01666666666666667")
 }
 
+// Non-representative sample, but retained for comparison purposes.
 func BenchmarkDecimal64String(b *testing.B) {
+	d := New64FromInt64(123456789)
+	for i := 0; i <= b.N; i++ {
+		_ = d.String()
+	}
+}
+
+func BenchmarkDecimal64String2(b *testing.B) {
 	dd := []Decimal64{
 		Zero64,
 		Pi64,
 		New64FromInt64(123456789),
+		MustParse64("-12345678901234E-380"),
+		MustParse64("+12345678901234E+380"),
+		QNaN64,
+		Infinity64,
 	}
+	j := 0
 	for i := 0; i <= b.N; i++ {
-		for _, d := range dd {
-			_ = d.String()
-		}
+		_ = dd[j%len(dd)].String()
+		j++
 	}
 }
 
