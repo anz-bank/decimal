@@ -1,5 +1,9 @@
 .PHONY: all
-all: test test-debug test-32 build-linux lint
+all: test-all build-linux lint
+
+
+.PHONY: test-all
+test-all: test test-debug test-32
 
 .PHONY: test
 test:

@@ -245,7 +245,9 @@ func (tt tries) Match(state fmt.ScanState) (int, error) {
 					if i > 0 {
 						return 0, errNotDecimal64
 					}
-					state.UnreadRune()
+					if err := state.UnreadRune(); err != nil {
+						return 0, err
+					}
 					continue heads
 				}
 			}
@@ -288,8 +290,7 @@ func eatRune(state fmt.ScanState, a, b rune) (int, error) {
 	if r == b {
 		return 1, nil
 	}
-	state.UnreadRune()
-	return -1, nil
+	return -1, state.UnreadRune()
 }
 
 func newPayloadNan(sign int, fl flavor, weight uint64) Decimal64 {
