@@ -8,9 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 type opResult struct {
@@ -138,7 +135,7 @@ func TestFromSuite(t *testing.T) {
 					numTests++
 					t.Run(testVal.name, func(t *testing.T) {
 						dec64vals, err := convertToDec64(testVal)
-						require.NoError(t, err)
+						isnil(t, err)
 						if !runTest(t, scannedContext, dec64vals, testVal) {
 							runTest(t, scannedContext, dec64vals, testVal)
 						}
@@ -275,7 +272,8 @@ func runTest(t *testing.T, context Context64, expected opResult, testValStrings 
 			return true
 		}
 		if actual.text != testValStrings.expectedResult {
-			return assert.Failf(t, "unexpected result", "test:\n%s\ncalculated text: %s", testValStrings, actual.text)
+			t.Errorf("test:\n%s\ncalculated text: %s", testValStrings, actual.text)
+			return false
 		}
 		return true
 	}
@@ -283,12 +281,14 @@ func runTest(t *testing.T, context Context64, expected opResult, testValStrings 
 		e := expected.result.String()
 		a := actual.result.String()
 		if e != a {
-			return assert.Failf(t, "failed NaN test", "test:\n%s\ncalculated result: %v", testValStrings, actual.result)
+			t.Errorf("test:\n%s\ncalculated result: %v", testValStrings, actual.result)
+			return false
 		}
 		return true
 	}
 	if expected.result.Cmp(actual.result) != 0 {
-		return assert.Fail(t, "failed", "test:\n%s\ncalculated result: %v", testValStrings, actual.result)
+		t.Errorf("test:\n%s\ncalculated result: %v", testValStrings, actual.result)
+		return false
 	}
 	return true
 }

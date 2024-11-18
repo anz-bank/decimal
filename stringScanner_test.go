@@ -4,41 +4,39 @@ import (
 	"strings"
 	"testing"
 	"unicode"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestStringScannerSkipSpace(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
 	state := &scanner{reader: strings.NewReader(" \tx")}
 
 	state.SkipSpace()
 
 	r, size, err := state.ReadRune()
-	require.NoError(err)
-	require.Equal(1, size)
-	require.Equal('x', r)
+	isnil(t, err)
+	equal(t, 1, size)
+	equal(t, 'x', r)
 
-	require.NotPanics(func() { state.SkipSpace() })
+	nopanic(t, func() { state.SkipSpace() })
 }
 
 func TestStringScannerTokenSkipSpace(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
 	state := &scanner{reader: strings.NewReader(" \txyz")}
 
 	token, err := state.Token(false, unicode.IsLetter)
-	require.NoError(err)
-	require.Equal([]byte(nil), token)
+	isnil(t, err)
+	equal(t, 0, len(token))
 
 	token, err = state.Token(true, unicode.IsLetter)
-	require.NoError(err)
-	require.Equal([]byte("xyz"), token)
+	isnil(t, err)
+	equal(t, "xyz", string(token))
 }
 
 func TestStringScannerRead(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
 	state := &scanner{reader: strings.NewReader("hello world!")}
 
@@ -46,14 +44,14 @@ func TestStringScannerRead(t *testing.T) {
 	var world [10]byte
 
 	n, err := state.Read(hello[:])
-	require.NoError(err)
-	require.Equal(5, n)
-	require.Equal([]byte("hello"), hello[:])
+	isnil(t, err)
+	equal(t, 5, n)
+	equal(t, "hello", string(hello[:]))
 
 	state.SkipSpace()
 
 	n, err = state.Read(world[:])
-	require.NoError(err)
-	require.Equal(6, n)
-	require.Equal([]byte("world!"), world[:n])
+	isnil(t, err)
+	equal(t, 6, n)
+	equal(t, "world!", string(world[:n]))
 }

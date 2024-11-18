@@ -5,9 +5,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func Test64PrecScal(t *testing.T) {
@@ -17,7 +14,7 @@ func Test64PrecScal(t *testing.T) {
 		t.Helper()
 		expected := MustParse64(s)
 		actual := new64(precScale(prec).bits)
-		assert.Equal(t, expected, actual)
+		equal(t, expected, actual)
 	}
 
 	test("1", 0)
@@ -28,31 +25,31 @@ func Test64PrecScal(t *testing.T) {
 }
 
 func TestDecimal64String(t *testing.T) {
-	assert.Equal(t, strconv.Itoa(0), New64FromInt64(0).String())
+	t.Parallel()
+
+	equal(t, strconv.Itoa(0), New64FromInt64(0).String())
 	for i := int64(-1000); i <= 1000; i++ {
-		assert.Equal(t, strconv.Itoa(int(i)), New64FromInt64(i).String())
+		equal(t, strconv.Itoa(int(i)), New64FromInt64(i).String())
 	}
 
 	for f := 1; f < 1000; f += 11 {
 		fdigits := strings.TrimRight(fmt.Sprintf("%03d", f), "0")
 		fraction := New64FromInt64(int64(f)).Quo(New64FromInt64(1000))
 		for i := int64(0); i <= 100; i++ {
-			require.NotPanics(t, func() {
-				assert.Equal(t,
+			nopanic(t, func() {
+				equal(t,
 					strconv.Itoa(int(i))+"."+fdigits,
 					New64FromInt64(i).Add(fraction).String(),
-					"%d.%03d", f, i,
 				)
-			}, "%d.%03d", f, i)
+			})
 		}
 		for i := int64(-100); i < 0; i++ {
-			require.NotPanics(t, func() {
-				assert.Equal(t,
+			nopanic(t, func() {
+				equal(t,
 					strconv.Itoa(int(i))+"."+fdigits,
 					New64FromInt64(i).Sub(fraction).String(),
-					"%d.%03d", f, i,
 				)
-			}, "%d.%03d", f, i)
+			})
 		}
 	}
 }
@@ -62,7 +59,7 @@ func TestDecimal64StringEdgeCases(t *testing.T) {
 
 	test := func(expected, source string) {
 		t.Helper()
-		assert.Equal(t, strings.TrimSpace(expected), MustParse64(strings.TrimSpace(source)).String())
+		equal(t, strings.TrimSpace(expected), MustParse64(strings.TrimSpace(source)).String())
 	}
 	test(" 123456", "123456")
 	test("-123456", "-123456")
@@ -108,45 +105,42 @@ func BenchmarkDecimal64String2(b *testing.B) {
 }
 
 func TestDecimal64Format(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
 	for i := int64(-1000); i <= 1000; i++ {
-		require.Equal(
-			strconv.FormatInt(i, 10),
-			fmt.Sprintf("%v", New64FromInt64(i)),
-			"%d", i,
-		)
+		equal(t, strconv.FormatInt(i, 10), fmt.Sprintf("%v", New64FromInt64(i)))
 	}
 
-	require.Equal("42", New64FromInt64(42).String())
+	equal(t, "42", New64FromInt64(42).String())
 }
 
 func TestDecimal64FormatNaN(t *testing.T) {
 	t.Parallel()
 
 	n := MustParse64("-sNaN33")
-	assert.Equal(t, "-NaN33", n.String())
+	equal(t, "-NaN33", n.String())
 }
 
 func TestDecimal64FormatPrec(t *testing.T) {
 	t.Parallel()
+
 	pi := MustParse64("3.1415926535897932384626433")
 
 	test := func(expected string, prec int, n Decimal64) {
 		t.Helper()
 		var buf [32]byte
 		actual := string(DefaultFormatContext64.append(n, buf[:0], -1, prec, noFlags, 'f'))
-		assert.Equal(t, expected, actual)
-		assert.Equal(t, expected, fmt.Sprintf("%.*f", prec, n))
-		assert.Equal(t, expected, n.Text('f', prec))
+		equal(t, expected, actual)
+		equal(t, expected, fmt.Sprintf("%.*f", prec, n))
+		equal(t, expected, n.Text('f', prec))
 	}
 
-	assert.Equal(t, "3.141592653589793", pi.String())
-	assert.Equal(t, "3.141592653589793", Context64{Rounding: HalfEven}.With(pi).String())
-	assert.Equal(t, "3.141592653589793", Context64{Rounding: HalfUp}.With(pi).String())
-	assert.Equal(t, "3.141592653589793", fmt.Sprintf("%v", pi))
-	assert.Equal(t, "3.141593", fmt.Sprintf("%f", pi))
-	assert.Equal(t, "%!q(decimal.Decimal64=3.141592653589793)", fmt.Sprintf("%q", pi))
+	equal(t, "3.141592653589793", pi.String())
+	equal(t, "3.141592653589793", Context64{Rounding: HalfEven}.With(pi).String())
+	equal(t, "3.141592653589793", Context64{Rounding: HalfUp}.With(pi).String())
+	equal(t, "3.141592653589793", fmt.Sprintf("%v", pi))
+	equal(t, "3.141593", fmt.Sprintf("%f", pi))
+	equal(t, "%!q(decimal.Decimal64=3.141592653589793)", fmt.Sprintf("%q", pi))
 
 	test("3", 0, pi)
 	test("3.1", 1, pi)
@@ -161,8 +155,8 @@ func TestDecimal64FormatPrec(t *testing.T) {
 	test("3.1415926535897930"+strings.Repeat("0", 100), 116, pi)
 
 	pi = pi.Add(New64FromInt64(100))
-	assert.Equal(t, "103.1415926535898", fmt.Sprintf("%v", pi))
-	assert.Equal(t, "103.141593", fmt.Sprintf("%f", pi))
+	equal(t, "103.1415926535898", fmt.Sprintf("%v", pi))
+	equal(t, "103.141593", fmt.Sprintf("%f", pi))
 	test("103", 0, pi)
 	test("103.1", 1, pi)
 	test("103.14", 2, pi)
@@ -176,8 +170,8 @@ func TestDecimal64FormatPrec(t *testing.T) {
 	test("103.1415926535898000"+strings.Repeat("0", 100), 116, pi)
 
 	pi = pi.Add(New64FromInt64(100_000))
-	assert.Equal(t, "100103.1415926536", fmt.Sprintf("%v", pi))
-	assert.Equal(t, "100103.141593", fmt.Sprintf("%f", pi))
+	equal(t, "100103.1415926536", fmt.Sprintf("%v", pi))
+	equal(t, "100103.141593", fmt.Sprintf("%f", pi))
 	test("100103", 0, pi)
 	test("100103.1", 1, pi)
 	test("100103.14", 2, pi)
@@ -192,8 +186,8 @@ func TestDecimal64FormatPrec(t *testing.T) {
 
 	// // Add five digits to the significand so that we round at a 2.
 	pi = pi.Add(New64FromInt64(10_100_000_000))
-	assert.Equal(t, "1.010010010314159e+10", fmt.Sprintf("%v", pi))
-	assert.Equal(t, "10100100103.141590", fmt.Sprintf("%f", pi))
+	equal(t, "1.010010010314159e+10", fmt.Sprintf("%v", pi))
+	equal(t, "10100100103.141590", fmt.Sprintf("%f", pi))
 	test("10100100103", 0, pi)
 	test("10100100103.1", 1, pi)
 	test("10100100103.14", 2, pi)
@@ -212,8 +206,8 @@ func TestDecimal64FormatPrecEdgeCases(t *testing.T) {
 
 	test := func(expected, input string) {
 		n, err := Parse64(input)
-		require.NoError(t, err)
-		assert.Equal(t, expected, fmt.Sprintf("%.3f", n))
+		isnil(t, err)
+		equal(t, expected, fmt.Sprintf("%.3f", n))
 	}
 
 	test("0.062", "0.0625")
@@ -236,9 +230,9 @@ func TestDecimal64FormatPrecEdgeCasesHalfUp(t *testing.T) {
 	ctx := Context64{Rounding: HalfUp}
 	test := func(expected, input string) {
 		n, err := Parse64(input)
-		require.NoError(t, err)
-		assert.Equal(t, expected, ctx.With(n).Text('f', -1, 3))
-		assert.Equal(t, expected, fmt.Sprintf("%.3f", ctx.With(n)))
+		isnil(t, err)
+		equal(t, expected, ctx.With(n).Text('f', -1, 3))
+		equal(t, expected, fmt.Sprintf("%.3f", ctx.With(n)))
 	}
 
 	test("0.063", "0.0625")
@@ -261,7 +255,7 @@ func TestDecimal64FormatPrecEdgeCases2(t *testing.T) {
 	test := func(expected string, input Decimal64, prec int) {
 		t.Helper()
 		data := input.Append(nil, 'f', prec)
-		assert.Equal(t, expected, string(data))
+		equal(t, expected, string(data))
 	}
 
 	test("10000.0000000000", MustParse64("1e4"), 10)
@@ -303,10 +297,10 @@ func TestDecimal64Format2(t *testing.T) {
 	t.Parallel()
 
 	a := MustParse64("0.0001643835616")
-	require.Equal(t, "0.000164383562", fmt.Sprintf("%.12f", a))
+	equal(t, "0.000164383562", fmt.Sprintf("%.12f", a))
 	b := New64FromInt64(600).Quo(New64FromInt64(10000))
 	b = b.Quo(New64FromInt64(365))
-	require.Equal(t, "0.000164383562", fmt.Sprintf("%.12f", b))
+	equal(t, "0.000164383562", fmt.Sprintf("%.12f", b))
 }
 
 func BenchmarkDecimal64Format(b *testing.B) {
@@ -317,14 +311,16 @@ func BenchmarkDecimal64Format(b *testing.B) {
 }
 
 func TestDecimal64Append(t *testing.T) {
+	t.Parallel()
+
 	assertAppend := func(expected string, d Decimal64, format byte, prec int) {
-		assert.Equal(t, expected, string(d.Append([]byte{}, format, prec)))
+		equal(t, expected, string(d.Append([]byte{}, format, prec)))
 	}
 
 	for i := int64(-1000); i <= 1000; i++ {
 		d := New64FromInt64(i)
 		f := d.Append([]byte{}, 'g', 0)
-		assert.Equal(t, strconv.FormatInt(i, 10), string(f), "%d", i)
+		equal(t, strconv.FormatInt(i, 10), string(f))
 	}
 
 	assertAppend("NaN", QNaN64, 'g', 0)
