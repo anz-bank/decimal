@@ -2,11 +2,8 @@ package decimal
 
 import (
 	"fmt"
-	"runtime"
+	"log"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func checkDecimal64BinOp(
@@ -15,7 +12,6 @@ func checkDecimal64BinOp(
 	actual func(a, b Decimal64) Decimal64,
 	op string,
 ) {
-	r := require.New(t)
 	for i := int64(-100); i <= 100; i++ {
 		a := New64FromInt64(i)
 		for j := int64(-100); j <= 100; j++ {
@@ -23,25 +19,27 @@ func checkDecimal64BinOp(
 			c := actual(a, b)
 			k := c.Int64()
 			e := expected(i, j)
-			r.EqualValues(e, k, "%d %s %d ≠ %d (expecting %d)", i, op, j, k, e)
+			equal(t, e, k)
 		}
 	}
 }
 
 func TestDecimal64Abs(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
-	require.Equal(Zero64, Zero64.Abs())
-	require.Equal(Zero64, NegZero64.Abs())
-	require.Equal(Infinity64, Infinity64.Abs())
-	require.Equal(Infinity64, NegInfinity64.Abs())
+	equal(t, Zero64, Zero64.Abs())
+	equal(t, Zero64, NegZero64.Abs())
+	equal(t, Infinity64, Infinity64.Abs())
+	equal(t, Infinity64, NegInfinity64.Abs())
 
 	fortyTwo := New64FromInt64(42)
-	require.Equal(fortyTwo, fortyTwo.Abs())
-	require.Equal(fortyTwo, New64FromInt64(-42).Abs())
+	equal(t, fortyTwo, fortyTwo.Abs())
+	equal(t, fortyTwo, New64FromInt64(-42).Abs())
 }
 
 func TestDecimal64Add(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping TestDecimal64Add in short mode.")
 	}
@@ -53,65 +51,65 @@ func TestDecimal64Add(t *testing.T) {
 }
 
 func TestDecimal64AddNaN(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
 	fortyTwo := New64FromInt64(42)
 
-	require.Equal(QNaN64, fortyTwo.Add(QNaN64))
-	require.Equal(QNaN64, QNaN64.Add(fortyTwo))
+	equal(t, QNaN64, fortyTwo.Add(QNaN64))
+	equal(t, QNaN64, QNaN64.Add(fortyTwo))
 }
 
 func TestDecimal64AddInf(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
 	fortyTwo := New64FromInt64(42)
 
-	require.Equal(Infinity64, fortyTwo.Add(Infinity64))
-	require.Equal(Infinity64, Infinity64.Add(fortyTwo))
+	equal(t, Infinity64, fortyTwo.Add(Infinity64))
+	equal(t, Infinity64, Infinity64.Add(fortyTwo))
 
-	require.Equal(NegInfinity64, fortyTwo.Add(NegInfinity64))
-	require.Equal(NegInfinity64, NegInfinity64.Add(fortyTwo))
+	equal(t, NegInfinity64, fortyTwo.Add(NegInfinity64))
+	equal(t, NegInfinity64, NegInfinity64.Add(fortyTwo))
 
-	require.Equal(Infinity64, Infinity64.Add(Infinity64))
-	require.Equal(NegInfinity64, NegInfinity64.Add(NegInfinity64))
+	equal(t, Infinity64, Infinity64.Add(Infinity64))
+	equal(t, NegInfinity64, NegInfinity64.Add(NegInfinity64))
 
-	require.Equal(QNaN64, Infinity64.Add(NegInfinity64))
-	require.Equal(QNaN64, NegInfinity64.Add(Infinity64))
+	equal(t, QNaN64, Infinity64.Add(NegInfinity64))
+	equal(t, QNaN64, NegInfinity64.Add(Infinity64))
 }
 
 func TestDecimal64Cmp(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
-	require.Equal(0, NegOne64.Cmp(NegOne64))
+	equal(t, 0, NegOne64.Cmp(NegOne64))
 
-	require.Equal(0, Zero64.Cmp(Zero64))
-	require.Equal(0, Zero64.Cmp(NegZero64))
-	require.Equal(0, NegZero64.Cmp(Zero64))
-	require.Equal(0, NegZero64.Cmp(NegZero64))
+	equal(t, 0, Zero64.Cmp(Zero64))
+	equal(t, 0, Zero64.Cmp(NegZero64))
+	equal(t, 0, NegZero64.Cmp(Zero64))
+	equal(t, 0, NegZero64.Cmp(NegZero64))
 
-	require.Equal(0, One64.Cmp(One64))
-	require.Equal(-1, NegOne64.Cmp(Zero64))
-	require.Equal(-1, NegOne64.Cmp(NegZero64))
-	require.Equal(-1, NegOne64.Cmp(One64))
-	require.Equal(-1, Zero64.Cmp(One64))
-	require.Equal(-1, NegZero64.Cmp(One64))
-	require.Equal(1, Zero64.Cmp(NegOne64))
-	require.Equal(1, NegZero64.Cmp(NegOne64))
-	require.Equal(1, One64.Cmp(NegOne64))
-	require.Equal(1, One64.Cmp(Zero64))
-	require.Equal(1, One64.Cmp(NegZero64))
+	equal(t, 0, One64.Cmp(One64))
+	equal(t, -1, NegOne64.Cmp(Zero64))
+	equal(t, -1, NegOne64.Cmp(NegZero64))
+	equal(t, -1, NegOne64.Cmp(One64))
+	equal(t, -1, Zero64.Cmp(One64))
+	equal(t, -1, NegZero64.Cmp(One64))
+	equal(t, 1, Zero64.Cmp(NegOne64))
+	equal(t, 1, NegZero64.Cmp(NegOne64))
+	equal(t, 1, One64.Cmp(NegOne64))
+	equal(t, 1, One64.Cmp(Zero64))
+	equal(t, 1, One64.Cmp(NegZero64))
 }
 
 func TestDecimal64CmpNaN(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
-	require.Equal(-2, QNaN64.Cmp(QNaN64))
-	require.Equal(-2, Zero64.Cmp(QNaN64))
-	require.Equal(-2, QNaN64.Cmp(Zero64))
+	equal(t, -2, QNaN64.Cmp(QNaN64))
+	equal(t, -2, Zero64.Cmp(QNaN64))
+	equal(t, -2, QNaN64.Cmp(Zero64))
 }
 
 func TestDecimal64MulThreeByOneTenthByTen(t *testing.T) {
-	r := require.New(t)
+	t.Parallel()
 
 	// float 3*0.1*10 ≠ 3
 	fltThree := 3.0
@@ -119,8 +117,8 @@ func TestDecimal64MulThreeByOneTenthByTen(t *testing.T) {
 	fltOne := 1.0
 	fltOneTenth := fltOne / fltTen
 	fltProduct := fltThree * fltOneTenth * fltTen
-	r.Equal(fltTen*fltOneTenth, fltOne)
-	r.NotEqual(fltThree, fltProduct)
+	equal(t, fltTen*fltOneTenth, fltOne)
+	notequal(t, fltThree, fltProduct)
 
 	// decimal 3*0.1*10 = 3
 	decThree := New64FromInt64(3)
@@ -128,11 +126,13 @@ func TestDecimal64MulThreeByOneTenthByTen(t *testing.T) {
 	decOne := New64FromInt64(1)
 	decOneTenth := decOne.Quo(decTen)
 	decProduct := decThree.Mul(decOneTenth).Mul(decTen)
-	r.Equal(decTen.Mul(decOneTenth), decOne)
-	r.Equal(decThree, decProduct)
+	equalD64(t, decTen.Mul(decOneTenth), decOne)
+	equalD64(t, decThree, decProduct)
 }
 
 func TestDecimal64Mul(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping TestDecimal64Mul in short mode.")
 	}
@@ -144,34 +144,34 @@ func TestDecimal64Mul(t *testing.T) {
 }
 
 func TestDecimal64MulNaN(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
 	fortyTwo := New64FromInt64(42)
 
-	require.Equal(QNaN64, fortyTwo.Mul(QNaN64))
-	require.Equal(QNaN64, QNaN64.Mul(fortyTwo))
+	equal(t, QNaN64, fortyTwo.Mul(QNaN64))
+	equal(t, QNaN64, QNaN64.Mul(fortyTwo))
 }
 
 func TestDecimal64MulInf(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
 	fortyTwo := New64FromInt64(42)
 	negFortyTwo := New64FromInt64(-42)
 
-	require.Equal(Infinity64, fortyTwo.Mul(Infinity64))
-	require.Equal(Infinity64, Infinity64.Mul(fortyTwo))
-	require.Equal(NegInfinity64, negFortyTwo.Mul(Infinity64))
-	require.Equal(NegInfinity64, Infinity64.Mul(negFortyTwo))
+	equal(t, Infinity64, fortyTwo.Mul(Infinity64))
+	equal(t, Infinity64, Infinity64.Mul(fortyTwo))
+	equal(t, NegInfinity64, negFortyTwo.Mul(Infinity64))
+	equal(t, NegInfinity64, Infinity64.Mul(negFortyTwo))
 
-	require.Equal(NegInfinity64, fortyTwo.Mul(NegInfinity64))
-	require.Equal(NegInfinity64, NegInfinity64.Mul(fortyTwo))
-	require.Equal(Infinity64, negFortyTwo.Mul(NegInfinity64))
-	require.Equal(Infinity64, NegInfinity64.Mul(negFortyTwo))
+	equal(t, NegInfinity64, fortyTwo.Mul(NegInfinity64))
+	equal(t, NegInfinity64, NegInfinity64.Mul(fortyTwo))
+	equal(t, Infinity64, negFortyTwo.Mul(NegInfinity64))
+	equal(t, Infinity64, NegInfinity64.Mul(negFortyTwo))
 
-	require.Equal(Infinity64, Infinity64.Mul(Infinity64))
-	require.Equal(Infinity64, NegInfinity64.Mul(NegInfinity64))
-	require.Equal(NegInfinity64, Infinity64.Mul(NegInfinity64))
-	require.Equal(NegInfinity64, NegInfinity64.Mul(Infinity64))
+	equal(t, Infinity64, Infinity64.Mul(Infinity64))
+	equal(t, Infinity64, NegInfinity64.Mul(NegInfinity64))
+	equal(t, NegInfinity64, Infinity64.Mul(NegInfinity64))
+	equal(t, NegInfinity64, NegInfinity64.Mul(Infinity64))
 }
 
 func checkDecimal64QuoByF(t *testing.T, f int64) {
@@ -196,8 +196,7 @@ func checkDecimal64QuoByF(t *testing.T, f int64) {
 				t.Log("e", e.bits, eFlavor, eSign, eExp, eSignificand)
 				t.Log("q", q.bits, qFlavor, qSign, qExp, qSignificand)
 			}
-			if !assert.Equal(t, e, q, "%d / %d ≠ %v (expecting %v)", k, j, q, e) {
-				runtime.Breakpoint()
+			if !equal(t, e, q) {
 				n.Quo(d)
 				t.FailNow()
 			}
@@ -237,45 +236,46 @@ func TestDecimal64Scale(t *testing.T) {
 				continue
 			}
 			actual := x.Quo(y).Text('e', -1)
-			require.Equal(t, expected, actual, "i = %v, j = %v", i, j)
+			equal(t, expected, actual)
 		}
 	}
 }
 
 func TestDecimal64QuoNaN(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
 	fortyTwo := New64FromInt64(42)
 
-	require.Equal(QNaN64, fortyTwo.Quo(QNaN64))
-	require.Equal(QNaN64, QNaN64.Quo(fortyTwo))
+	equal(t, QNaN64, fortyTwo.Quo(QNaN64))
+	equal(t, QNaN64, QNaN64.Quo(fortyTwo))
 
 }
 
 func TestDecimal64QuoInf(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
 	fortyTwo := New64FromInt64(42)
 	negFortyTwo := New64FromInt64(-42)
 
-	require.Equal(Zero64, fortyTwo.Quo(Infinity64))
-	require.Equal(Infinity64, Infinity64.Quo(fortyTwo))
-	require.Equal(NegZero64, negFortyTwo.Quo(Infinity64))
-	require.Equal(NegInfinity64, Infinity64.Quo(negFortyTwo))
+	equal(t, Zero64, fortyTwo.Quo(Infinity64))
+	equal(t, Infinity64, Infinity64.Quo(fortyTwo))
+	equal(t, NegZero64, negFortyTwo.Quo(Infinity64))
+	equal(t, NegInfinity64, Infinity64.Quo(negFortyTwo))
 
-	require.Equal(NegZero64, fortyTwo.Quo(NegInfinity64))
-	require.Equal(NegInfinity64, NegInfinity64.Quo(fortyTwo))
-	require.Equal(Zero64, negFortyTwo.Quo(NegInfinity64))
-	require.Equal(Infinity64, NegInfinity64.Quo(negFortyTwo))
+	equal(t, NegZero64, fortyTwo.Quo(NegInfinity64))
+	equal(t, NegInfinity64, NegInfinity64.Quo(fortyTwo))
+	equal(t, Zero64, negFortyTwo.Quo(NegInfinity64))
+	equal(t, Infinity64, NegInfinity64.Quo(negFortyTwo))
 
-	require.Equal(QNaN64, Infinity64.Quo(Infinity64))
-	require.Equal(QNaN64, NegInfinity64.Quo(NegInfinity64))
-	require.Equal(QNaN64, Infinity64.Quo(NegInfinity64))
-	require.Equal(QNaN64, NegInfinity64.Quo(Infinity64))
+	equal(t, QNaN64, Infinity64.Quo(Infinity64))
+	equal(t, QNaN64, NegInfinity64.Quo(NegInfinity64))
+	equal(t, QNaN64, Infinity64.Quo(NegInfinity64))
+	equal(t, QNaN64, NegInfinity64.Quo(Infinity64))
 }
 
 func TestDecimal64MulPo10(t *testing.T) {
-	r := require.New(t)
+	t.Parallel()
+
 	for i, u := range tenToThe128 {
 		for j, v := range tenToThe128 {
 			k := i + j
@@ -288,39 +288,45 @@ func TestDecimal64MulPo10(t *testing.T) {
 			}
 			e := New64FromInt64(int64(w.lo))
 			a := New64FromInt64(int64(u.lo)).Mul(New64FromInt64(int64(v.lo)))
-			r.EqualValues(e, a, "%v * %v ≠ %v (expecting %v)", u, v, a, e)
+			equalD64(t, e, a, "%v * %v ≠ %v (expecting %v)", u, v, a, e)
 		}
 	}
 }
 
 func TestDecimal64Sqrt(t *testing.T) {
-	r := require.New(t)
+	t.Parallel()
+
 	for i := int64(0); i < 100000000; i = i*19/17 + 1 {
 		i2 := i * i
 		e := New64FromInt64(i)
 		n := New64FromInt64(i2)
 		a := n.Sqrt()
-		r.EqualValues(e, a, "√%v != %v (expected %v)", n, a, e)
+		equalD64(t, e, a, "√%v != %v (expected %v)", n, a, e)
 	}
 }
 
 func TestDecimal64SqrtNeg(t *testing.T) {
-	require.EqualValues(t, QNaN64, New64FromInt64(-1).Sqrt())
+	t.Parallel()
+
+	equal(t, QNaN64, New64FromInt64(-1).Sqrt())
 }
 
 func TestDecimal64SqrtNaN(t *testing.T) {
-	require := require.New(t)
-	require.Equal(QNaN64, QNaN64.Sqrt())
+	t.Parallel()
+
+	equal(t, QNaN64, QNaN64.Sqrt())
 }
 
 func TestDecimal64SqrtInf(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
-	require.Equal(Infinity64, Infinity64.Sqrt())
-	require.Equal(QNaN64, NegInfinity64.Sqrt())
+	equal(t, Infinity64, Infinity64.Sqrt())
+	equal(t, QNaN64, NegInfinity64.Sqrt())
 }
 
 func TestDecimal64Sub(t *testing.T) {
+	t.Parallel()
+
 	checkDecimal64BinOp(t,
 		func(a, b int64) int64 { return a - b },
 		func(a, b Decimal64) Decimal64 { return a.Sub(b) },
@@ -337,99 +343,99 @@ func TestRoundHalfUp(t *testing.T) {
 	t.Parallel()
 
 	ctx := Context64{Rounding: HalfUp}
-	assert.Equal(t, uint64(10), rnd(ctx, 10, 1))
-	assert.Equal(t, uint64(10), rnd(ctx, 11, 1))
-	assert.Equal(t, uint64(20), rnd(ctx, 15, 1))
-	assert.Equal(t, uint64(20), rnd(ctx, 19, 1))
-	assert.Equal(t, uint64(200), rnd(ctx, 249, 10))
-	assert.Equal(t, uint64(300), rnd(ctx, 250, 10))
-	assert.Equal(t, uint64(300), rnd(ctx, 251, 10))
-	assert.Equal(t, uint64(300), rnd(ctx, 299, 10))
-	assert.Equal(t, uint64(300), rnd(ctx, 300, 10))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1000000000000000, 100000000000000))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1100000000000000, 100000000000000))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1499999999999999, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1500000000000000, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1500000000000001, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1900000000000000, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1999999999999999, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2000000000000000, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2499999999999999, 100000000000000))
-	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 2500000000000000, 100000000000000))
-	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 2500000000000001, 100000000000000))
-	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 2999999999999999, 100000000000000))
-	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 3000000000000000, 100000000000000))
+	equal(t, uint64(10), rnd(ctx, 10, 1))
+	equal(t, uint64(10), rnd(ctx, 11, 1))
+	equal(t, uint64(20), rnd(ctx, 15, 1))
+	equal(t, uint64(20), rnd(ctx, 19, 1))
+	equal(t, uint64(200), rnd(ctx, 249, 10))
+	equal(t, uint64(300), rnd(ctx, 250, 10))
+	equal(t, uint64(300), rnd(ctx, 251, 10))
+	equal(t, uint64(300), rnd(ctx, 299, 10))
+	equal(t, uint64(300), rnd(ctx, 300, 10))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1000000000000000, 100000000000000))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1100000000000000, 100000000000000))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1499999999999999, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 1500000000000000, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 1500000000000001, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 1900000000000000, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 1999999999999999, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 2000000000000000, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 2499999999999999, 100000000000000))
+	equal(t, uint64(3000000000000000), rnd(ctx, 2500000000000000, 100000000000000))
+	equal(t, uint64(3000000000000000), rnd(ctx, 2500000000000001, 100000000000000))
+	equal(t, uint64(3000000000000000), rnd(ctx, 2999999999999999, 100000000000000))
+	equal(t, uint64(3000000000000000), rnd(ctx, 3000000000000000, 100000000000000))
 }
 
 func TestRoundHalfEven(t *testing.T) {
 	t.Parallel()
 
 	ctx := Context64{Rounding: HalfEven}
-	assert.Equal(t, uint64(10), rnd(ctx, 10, 1))
-	assert.Equal(t, uint64(10), rnd(ctx, 11, 1))
-	assert.Equal(t, uint64(20), rnd(ctx, 15, 1))
-	assert.Equal(t, uint64(20), rnd(ctx, 19, 1))
-	assert.Equal(t, uint64(200), rnd(ctx, 249, 10))
-	assert.Equal(t, uint64(200), rnd(ctx, 250, 10))
-	assert.Equal(t, uint64(300), rnd(ctx, 251, 10))
-	assert.Equal(t, uint64(300), rnd(ctx, 299, 10))
-	assert.Equal(t, uint64(300), rnd(ctx, 300, 10))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1000000000000000, 100000000000000))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1100000000000000, 100000000000000))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1499999999999999, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1500000000000000, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1500000000000001, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1900000000000000, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 1999999999999999, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2000000000000000, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2499999999999999, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2500000000000000, 100000000000000))
-	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 2500000000000001, 100000000000000))
-	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 2999999999999999, 100000000000000))
-	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 3000000000000000, 100000000000000))
+	equal(t, uint64(10), rnd(ctx, 10, 1))
+	equal(t, uint64(10), rnd(ctx, 11, 1))
+	equal(t, uint64(20), rnd(ctx, 15, 1))
+	equal(t, uint64(20), rnd(ctx, 19, 1))
+	equal(t, uint64(200), rnd(ctx, 249, 10))
+	equal(t, uint64(200), rnd(ctx, 250, 10))
+	equal(t, uint64(300), rnd(ctx, 251, 10))
+	equal(t, uint64(300), rnd(ctx, 299, 10))
+	equal(t, uint64(300), rnd(ctx, 300, 10))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1000000000000000, 100000000000000))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1100000000000000, 100000000000000))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1499999999999999, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 1500000000000000, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 1500000000000001, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 1900000000000000, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 1999999999999999, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 2000000000000000, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 2499999999999999, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 2500000000000000, 100000000000000))
+	equal(t, uint64(3000000000000000), rnd(ctx, 2500000000000001, 100000000000000))
+	equal(t, uint64(3000000000000000), rnd(ctx, 2999999999999999, 100000000000000))
+	equal(t, uint64(3000000000000000), rnd(ctx, 3000000000000000, 100000000000000))
 }
 
 func TestRoundHDown(t *testing.T) {
 	t.Parallel()
 
 	ctx := Context64{Rounding: Down}
-	assert.Equal(t, uint64(10), rnd(ctx, 10, 1))
-	assert.Equal(t, uint64(10), rnd(ctx, 11, 1))
-	assert.Equal(t, uint64(10), rnd(ctx, 15, 1))
-	assert.Equal(t, uint64(10), rnd(ctx, 19, 1))
-	assert.Equal(t, uint64(200), rnd(ctx, 249, 10))
-	assert.Equal(t, uint64(200), rnd(ctx, 250, 10))
-	assert.Equal(t, uint64(200), rnd(ctx, 251, 10))
-	assert.Equal(t, uint64(200), rnd(ctx, 299, 10))
-	assert.Equal(t, uint64(300), rnd(ctx, 300, 10))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1000000000000000, 100000000000000))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1100000000000000, 100000000000000))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1499999999999999, 100000000000000))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1500000000000000, 100000000000000))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1500000000000001, 100000000000000))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1900000000000000, 100000000000000))
-	assert.Equal(t, uint64(1000000000000000), rnd(ctx, 1999999999999999, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2000000000000000, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2499999999999999, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2500000000000000, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2500000000000001, 100000000000000))
-	assert.Equal(t, uint64(2000000000000000), rnd(ctx, 2999999999999999, 100000000000000))
-	assert.Equal(t, uint64(3000000000000000), rnd(ctx, 3000000000000000, 100000000000000))
+	equal(t, uint64(10), rnd(ctx, 10, 1))
+	equal(t, uint64(10), rnd(ctx, 11, 1))
+	equal(t, uint64(10), rnd(ctx, 15, 1))
+	equal(t, uint64(10), rnd(ctx, 19, 1))
+	equal(t, uint64(200), rnd(ctx, 249, 10))
+	equal(t, uint64(200), rnd(ctx, 250, 10))
+	equal(t, uint64(200), rnd(ctx, 251, 10))
+	equal(t, uint64(200), rnd(ctx, 299, 10))
+	equal(t, uint64(300), rnd(ctx, 300, 10))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1000000000000000, 100000000000000))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1100000000000000, 100000000000000))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1499999999999999, 100000000000000))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1500000000000000, 100000000000000))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1500000000000001, 100000000000000))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1900000000000000, 100000000000000))
+	equal(t, uint64(1000000000000000), rnd(ctx, 1999999999999999, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 2000000000000000, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 2499999999999999, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 2500000000000000, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 2500000000000001, 100000000000000))
+	equal(t, uint64(2000000000000000), rnd(ctx, 2999999999999999, 100000000000000))
+	equal(t, uint64(3000000000000000), rnd(ctx, 3000000000000000, 100000000000000))
 }
 
 func TestToIntegral(t *testing.T) {
 	t.Parallel()
 
 	ctx := Context64{Rounding: HalfUp}
-	assert.Equal(t, "0", ctx.ToIntegral(MustParse64("0")).String())
-	assert.Equal(t, "0", ctx.ToIntegral(MustParse64("0.499999999999999")).String())
-	assert.Equal(t, "1", ctx.ToIntegral(MustParse64("1")).String())
-	assert.Equal(t, "1", ctx.ToIntegral(MustParse64("1.49999999999999")).String())
-	assert.Equal(t, "2", ctx.ToIntegral(MustParse64("1.5")).String())
-	assert.Equal(t, "9", ctx.ToIntegral(MustParse64("9.49999999999999")).String())
-	assert.Equal(t, "10", ctx.ToIntegral(MustParse64("9.5")).String())
-	assert.Equal(t, "99", ctx.ToIntegral(MustParse64("99.499999999999")).String())
-	assert.Equal(t, "100", ctx.ToIntegral(MustParse64("99.5")).String())
+	equal(t, "0", ctx.ToIntegral(MustParse64("0")).String())
+	equal(t, "0", ctx.ToIntegral(MustParse64("0.499999999999999")).String())
+	equal(t, "1", ctx.ToIntegral(MustParse64("1")).String())
+	equal(t, "1", ctx.ToIntegral(MustParse64("1.49999999999999")).String())
+	equal(t, "2", ctx.ToIntegral(MustParse64("1.5")).String())
+	equal(t, "9", ctx.ToIntegral(MustParse64("9.49999999999999")).String())
+	equal(t, "10", ctx.ToIntegral(MustParse64("9.5")).String())
+	equal(t, "99", ctx.ToIntegral(MustParse64("99.499999999999")).String())
+	equal(t, "100", ctx.ToIntegral(MustParse64("99.5")).String())
 }
 
 func benchmarkDecimal64Data() []Decimal64 {
@@ -503,19 +509,22 @@ func BenchmarkDecimal64Sub(b *testing.B) {
 }
 
 func TestAddOverflow(t *testing.T) {
-	require := require.New(t)
-	require.Equal(NegInfinity64, NegMax64.Sub(MustParse64("0.00000000000001e384")))
-	require.Equal(Infinity64, Max64.Add(MustParse64("0.000000000000001e384")))
-	require.Equal(Max64, Max64.Add(MustParse64("1")))
-	require.Equal(Max64, Zero64.Add(Max64))
+	t.Parallel()
+
+	equal(t, NegInfinity64, NegMax64.Sub(MustParse64("0.00000000000001e384")))
+	equal(t, Infinity64, Max64.Add(MustParse64("0.000000000000001e384")))
+	equal(t, Max64, Max64.Add(MustParse64("1")))
+	equal(t, Max64, Zero64.Add(Max64))
 }
 
 func TestQuoOverflow(t *testing.T) {
+	t.Parallel()
+
 	test := func(expected Decimal64, num, denom string) {
 		n := MustParse64(num)
 		d := MustParse64(denom)
-		if !assert.Equal(t, expected, n.Quo(d)) {
-			runtime.Breakpoint()
+		if !equal(t, expected, n.Quo(d)) {
+			log.Printf("TestQuoOverflow: num = %d", n)
 			n.Quo(d)
 		}
 	}
@@ -528,11 +537,12 @@ func TestQuoOverflow(t *testing.T) {
 }
 
 func TestMul(t *testing.T) {
-	require := require.New(t)
-	require.Equal(Infinity64, MustParse64("1e384").Mul(MustParse64("10")))
-	require.Equal(NegInfinity64, MustParse64("1e384").Mul(MustParse64("-10")))
-	require.Equal(NegInfinity64, MustParse64("-1e384").Mul(MustParse64("10")))
-	require.Equal(NegZero64, MustParse64("-1e384").Mul(Zero64))
-	require.Equal(Zero64, Zero64.Mul(Zero64))
-	require.Equal(Zero64, Zero64.Mul(MustParse64("100")))
+	t.Parallel()
+
+	equal(t, Infinity64, MustParse64("1e384").Mul(MustParse64("10")))
+	equal(t, NegInfinity64, MustParse64("1e384").Mul(MustParse64("-10")))
+	equal(t, NegInfinity64, MustParse64("-1e384").Mul(MustParse64("10")))
+	equal(t, NegZero64, MustParse64("-1e384").Mul(Zero64))
+	equal(t, Zero64, Zero64.Mul(Zero64))
+	equal(t, Zero64, Zero64.Mul(MustParse64("100")))
 }

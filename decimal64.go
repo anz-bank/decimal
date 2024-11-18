@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/bits"
+	"strconv"
 )
 
 type discardedDigit int
@@ -108,57 +109,41 @@ func (ctx Rounding) round(significand uint64, rndStatus discardedDigit) uint64 {
 var ErrNaN64 error = Error("sNaN64")
 
 var small64s = []Decimal64{
-	newFromPartsRaw(1, -14, 1*decimal64Base),
+	new64str(newFromPartsRaw(1, -14, 1*decimal64Base).bits, "-10"),
 
-	newFromPartsRaw(1, -15, 9*decimal64Base),
-	newFromPartsRaw(1, -15, 8*decimal64Base),
-	newFromPartsRaw(1, -15, 7*decimal64Base),
-	newFromPartsRaw(1, -15, 6*decimal64Base),
-	newFromPartsRaw(1, -15, 5*decimal64Base),
-	newFromPartsRaw(1, -15, 4*decimal64Base),
-	newFromPartsRaw(1, -15, 3*decimal64Base),
-	newFromPartsRaw(1, -15, 2*decimal64Base),
-	newFromPartsRaw(1, -15, 1*decimal64Base),
+	new64str(newFromPartsRaw(1, -15, 9*decimal64Base).bits, "-9"),
+	new64str(newFromPartsRaw(1, -15, 8*decimal64Base).bits, "-8"),
+	new64str(newFromPartsRaw(1, -15, 7*decimal64Base).bits, "-7"),
+	new64str(newFromPartsRaw(1, -15, 6*decimal64Base).bits, "-6"),
+	new64str(newFromPartsRaw(1, -15, 5*decimal64Base).bits, "-5"),
+	new64str(newFromPartsRaw(1, -15, 4*decimal64Base).bits, "-4"),
+	new64str(newFromPartsRaw(1, -15, 3*decimal64Base).bits, "-3"),
+	new64str(newFromPartsRaw(1, -15, 2*decimal64Base).bits, "-2"),
+	new64str(newFromPartsRaw(1, -15, 1*decimal64Base).bits, "-1"),
 
 	// TODO: Decimal64{}?
-	newFromPartsRaw(0, 0, 0),
+	new64str(newFromPartsRaw(0, 0, 0).bits, "0"),
 
-	newFromPartsRaw(0, -15, 1*decimal64Base),
-	newFromPartsRaw(0, -15, 2*decimal64Base),
-	newFromPartsRaw(0, -15, 3*decimal64Base),
-	newFromPartsRaw(0, -15, 4*decimal64Base),
-	newFromPartsRaw(0, -15, 5*decimal64Base),
-	newFromPartsRaw(0, -15, 6*decimal64Base),
-	newFromPartsRaw(0, -15, 7*decimal64Base),
-	newFromPartsRaw(0, -15, 8*decimal64Base),
-	newFromPartsRaw(0, -15, 9*decimal64Base),
+	new64str(newFromPartsRaw(0, -15, 1*decimal64Base).bits, "1"),
+	new64str(newFromPartsRaw(0, -15, 2*decimal64Base).bits, "2"),
+	new64str(newFromPartsRaw(0, -15, 3*decimal64Base).bits, "3"),
+	new64str(newFromPartsRaw(0, -15, 4*decimal64Base).bits, "4"),
+	new64str(newFromPartsRaw(0, -15, 5*decimal64Base).bits, "5"),
+	new64str(newFromPartsRaw(0, -15, 6*decimal64Base).bits, "6"),
+	new64str(newFromPartsRaw(0, -15, 7*decimal64Base).bits, "7"),
+	new64str(newFromPartsRaw(0, -15, 8*decimal64Base).bits, "8"),
+	new64str(newFromPartsRaw(0, -15, 9*decimal64Base).bits, "9"),
 
-	newFromPartsRaw(0, -14, 1*decimal64Base),
+	new64str(newFromPartsRaw(0, -14, 1*decimal64Base).bits, "10"),
 }
 
-var small64Strings = map[Decimal64]string{
-	small64s[0]:  "-10",
-	small64s[1]:  "-9",
-	small64s[2]:  "-8",
-	small64s[3]:  "-7",
-	small64s[4]:  "-6",
-	small64s[5]:  "-5",
-	small64s[6]:  "-4",
-	small64s[7]:  "-3",
-	small64s[8]:  "-2",
-	small64s[9]:  "-1",
-	small64s[10]: "0",
-	small64s[11]: "1",
-	small64s[12]: "2",
-	small64s[13]: "3",
-	small64s[14]: "4",
-	small64s[15]: "5",
-	small64s[16]: "6",
-	small64s[17]: "7",
-	small64s[18]: "8",
-	small64s[19]: "9",
-	small64s[20]: "10",
-}
+var small64Strings = func() map[uint64]string {
+	m := make(map[uint64]string, len(small64s))
+	for i := -10; i <= 10; i++ {
+		m[small64s[10+i].bits] = strconv.Itoa(i)
+	}
+	return m
+}()
 
 // New64FromInt64 returns a new Decimal64 with the given value.
 func New64FromInt64(i int64) Decimal64 {
@@ -258,10 +243,6 @@ func countTrailingZeros(n uint64) int {
 	return zeros
 }
 
-func new64Raw(bits uint64) Decimal64 {
-	return Decimal64{bits: bits}
-}
-
 func newFromParts(sign int, exp int, significand uint64) Decimal64 {
 	return new64(newFromPartsRaw(sign, exp, significand).bits)
 }
@@ -272,12 +253,12 @@ func newFromPartsRaw(sign int, exp int, significand uint64) Decimal64 {
 	if significand < 0x8<<50 {
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
-		return new64Raw(s | uint64(exp+expOffset)<<(63-10) | significand)
+		return Decimal64{bits: s | uint64(exp+expOffset)<<(63-10) | significand}
 	}
 	// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 	//     EE ∈ {00, 01, 10}
 	significand &= 0x8<<50 - 1
-	return new64Raw(s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand)
+	return Decimal64{bits: s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand}
 }
 
 func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {

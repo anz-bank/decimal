@@ -1,41 +1,40 @@
 package decimal
 
-import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
-)
+import "testing"
 
 func TestPartsInf(t *testing.T) {
+	t.Parallel()
+
 	var a decParts
 	a.unpack(Infinity64)
-	require.True(t, a.isInf())
+	check(t, a.isInf())
 
 	a.unpack(NegInfinity64)
-	require.True(t, a.isInf())
+	check(t, a.isInf())
 }
 
 func TestIsNaN(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
+
 	var a decParts
 	a.unpack(Zero64)
-	require.Equal(false, a.isNaN())
+	check(t, !a.isNaN())
 
 	a.unpack(SNaN64)
-	require.Equal(true, a.isSNaN())
+	check(t, a.isSNaN())
 }
 
 func TestPartsSubnormal(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
 	d := MustParse64("0.1E-383")
 	var subnormal64Parts decParts
 	subnormal64Parts.unpack(d)
-	require.Equal(true, subnormal64Parts.isSubnormal())
+	check(t, subnormal64Parts.isSubnormal())
 
 	e := New64FromInt64(42)
 	var fortyTwoParts decParts
 	fortyTwoParts.unpack(e)
-	require.Equal(false, fortyTwoParts.isSubnormal())
+	check(t, !fortyTwoParts.isSubnormal())
 
 }

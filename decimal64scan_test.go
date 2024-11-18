@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestParse64(t *testing.T) {
+	t.Parallel()
+
 	if testing.Short() {
 		t.Skip("skipping TestParse64 in short mode.")
 	}
@@ -27,6 +27,8 @@ func TestParse64(t *testing.T) {
 }
 
 func TestParse64Inf(t *testing.T) {
+	t.Parallel()
+
 	parseEquals64 := parseEquals64(t)
 
 	parseEquals64(Infinity64, "Inf")
@@ -42,10 +44,12 @@ func TestParse64Inf(t *testing.T) {
 // TODO: Find out what the correct behavior is with bad inputs
 // TODO: Does nan get returned if there are leading/trailing whitespaces?
 func TestParse64BadInputs(t *testing.T) {
+	t.Parallel()
+
 	test := func(input string) {
 		t.Helper()
 		d, _ := Parse64(input)
-		require.Equal(t, SNaN64.IsNaN(), d.IsNaN(), "input = %q", input)
+		equal(t, SNaN64.IsNaN(), d.IsNaN())
 	}
 	test("")
 	test(" ")
@@ -63,6 +67,8 @@ func TestParse64BadInputs(t *testing.T) {
 }
 
 func TestParse64BigExp(t *testing.T) {
+	t.Parallel()
+
 	parseEquals64 := parseEquals64(t)
 
 	parseEquals64(Zero64, "0e-9999")
@@ -77,6 +83,8 @@ func TestParse64BigExp(t *testing.T) {
 }
 
 func TestParse64LongMantissa(t *testing.T) {
+	t.Parallel()
+
 	parseEquals64 := parseEquals64(t)
 
 	parseEquals64(One64, "1000000000000000000000e-21")
@@ -84,18 +92,20 @@ func TestParse64LongMantissa(t *testing.T) {
 }
 
 func TestDecimal64ScanFlakyScanState(t *testing.T) {
-	requireFailAt := func(text string, failAt int) {
+	t.Parallel()
+
+	failAt := func(text string, failAt int) {
 		state := flakyScanState{
 			actual: &scanner{reader: strings.NewReader(text)},
 			failAt: failAt,
 		}
 		var d Decimal64
-		require.Error(t, d.Scan(&state, 'e'), "%d", failAt)
+		notnil(t, d.Scan(&state, 'e'))
 	}
 
-	requireFailAt("x", 0)
+	failAt("x", 0)
 	for i := 0; i < 7; i++ {
-		requireFailAt("-1.0e-3", i)
+		failAt("-1.0e-3", i)
 	}
 }
 
@@ -119,22 +129,20 @@ func BenchmarkDecimal64Scan(b *testing.B) {
 }
 
 func parseEquals64(t *testing.T) func(expected Decimal64, input string) {
-	require := require.New(t)
-
 	return func(expected Decimal64, input string) {
-		require.NotPanics(func() {
+		nopanic(t, func() {
 			n := MustParse64(input)
-			require.Equal(expected, n, "%s", input)
-		}, "%s", input)
+			equalD64(t, expected, n, "%s", input)
+		})
 
 		n, err := Parse64(input)
-		require.NoError(err, "%s", input)
-		require.Equal(expected, n, "%s", input)
+		isnil(t, err)
+		equalD64(t, expected, n, "%s", input)
 
 		n = SNaN64
 		count, err := fmt.Sscanf(input, "%g", &n)
-		require.NoError(err, "%s", input)
-		require.Equal(1, count, "%s", input)
-		require.Equal(expected, n, "%s", input)
+		isnil(t, err)
+		equal(t, 1, count)
+		equalD64(t, expected, n, "%s", input)
 	}
 }

@@ -1,8 +1,6 @@
 package decimal
 
-import (
-	"fmt"
-)
+import "fmt"
 
 type flakyScanState struct {
 	actual fmt.ScanState

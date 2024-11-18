@@ -4,16 +4,15 @@ import (
 	"math"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNew64FromInt64(t *testing.T) {
+	t.Parallel()
+
 	for i := int64(-1000); i <= 1000; i++ {
 		d := New64FromInt64(i)
 		j := d.Int64()
-		require.EqualValues(t, i, j, "%d", i)
+		equal(t, i, j)
 	}
 
 	// Test the neighborhood of powers of two up to the high-significand
@@ -23,18 +22,20 @@ func TestNew64FromInt64(t *testing.T) {
 		for i := base - 10; i <= base+10; i++ {
 			d := New64FromInt64(i)
 			j := d.Int64()
-			require.EqualValues(t, i, j, "1<<%d + %d", e, i)
+			equal(t, i, j)
 		}
 	}
 }
 
 func TestNew64FromInt64Big(t *testing.T) {
+	t.Parallel()
+
 	const limit = int64(decimal64Base)
 	const step = limit / 997
 	for i := -int64(limit); i <= limit; i += step {
 		d := New64FromInt64(i)
 		j := d.Int64()
-		require.EqualValues(t, i, j, "%d", i)
+		equal(t, i, j)
 	}
 }
 
@@ -43,7 +44,7 @@ func TestDecimal64Parse(t *testing.T) {
 
 	test := func(expected string, source string) {
 		t.Helper()
-		assert.Equal(t, strings.TrimSpace(expected), MustParse64(source).String())
+		equal(t, strings.TrimSpace(expected), MustParse64(source).String())
 	}
 
 	test("0", "0")
@@ -60,7 +61,7 @@ func TestDecimal64ParseHalfEvenOdd(t *testing.T) {
 	ctx := Context64{Rounding: HalfEven}
 	test := func(expected string, source string) {
 		t.Helper()
-		assert.Equal(t, strings.TrimSpace(expected), ctx.MustParse(source).String())
+		equal(t, strings.TrimSpace(expected), ctx.MustParse(source).String())
 	}
 
 	test("1.000000000000007    ", "1.000000000000007")
@@ -80,7 +81,7 @@ func TestDecimal64ParseHalfEvenEven(t *testing.T) {
 	ctx := Context64{Rounding: HalfEven}
 	test := func(expected string, source string) {
 		t.Helper()
-		assert.Equal(t, strings.TrimSpace(expected), ctx.MustParse(source).String())
+		equal(t, strings.TrimSpace(expected), ctx.MustParse(source).String())
 	}
 
 	test("1.000000000000008    ", "1.000000000000008")
@@ -100,7 +101,7 @@ func TestDecimal64ParseHalfUp(t *testing.T) {
 	ctx := Context64{Rounding: HalfUp}
 	test := func(expected string, source string) {
 		t.Helper()
-		assert.Equal(t, strings.TrimSpace(expected), ctx.MustParse(source).String())
+		equal(t, strings.TrimSpace(expected), ctx.MustParse(source).String())
 	}
 
 	test("0", "0")
@@ -145,7 +146,7 @@ func TestDecimal64ParseDown(t *testing.T) {
 	ctx := Context64{Rounding: Down}
 	test := func(expected string, source string) {
 		t.Helper()
-		assert.Equal(t, strings.TrimSpace(expected), ctx.MustParse(source).String())
+		equal(t, strings.TrimSpace(expected), ctx.MustParse(source).String())
 	}
 
 	test("0", "0")
@@ -185,132 +186,139 @@ func TestDecimal64ParseDown(t *testing.T) {
 }
 
 func TestDecimal64Float64(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
-	require.Equal(-1.0, NegOne64.Float64())
-	require.Equal(0.0, Zero64.Float64())
-	require.Equal(1.0, One64.Float64())
-	require.Equal(10.0, New64FromInt64(10).Float64())
+	equal(t, -1.0, NegOne64.Float64())
+	equal(t, 0.0, Zero64.Float64())
+	equal(t, 1.0, One64.Float64())
+	equal(t, 10.0, New64FromInt64(10).Float64())
 
 	oneThird := One64.Quo(New64FromInt64(3))
 	one := oneThird.Add(oneThird).Add(oneThird)
-	require.InEpsilon(oneThird.Float64(), 1.0/3.0, 0.00000001)
-	require.InEpsilon(1.0, one.Float64(), 0.00000001)
+	epsilon(t, oneThird.Float64(), 1.0/3.0)
+	epsilon(t, 1.0, one.Float64())
 
-	require.True(math.IsNaN(QNaN64.Float64()))
-	require.Panics(func() { SNaN64.Float64() })
-	require.Equal(math.Inf(1), Infinity64.Float64())
-	require.Equal(math.Inf(-1), NegInfinity64.Float64())
+	check(t, math.IsNaN(QNaN64.Float64()))
+	panics(t, func() { SNaN64.Float64() })
+	equal(t, math.Inf(1), Infinity64.Float64())
+	equal(t, math.Inf(-1), NegInfinity64.Float64())
 }
 
 func TestDecimal64Int64(t *testing.T) {
 	t.Parallel()
 
-	assert.EqualValues(t, -1, NegOne64.Int64())
-	assert.EqualValues(t, 0, Zero64.Int64())
-	assert.EqualValues(t, -0, NegZero64.Int64())
-	assert.EqualValues(t, 1, One64.Int64())
-	assert.EqualValues(t, 10, New64FromInt64(10).Int64())
+	equal(t, -1, NegOne64.Int64())
+	equal(t, 0, Zero64.Int64())
+	equal(t, -0, NegZero64.Int64())
+	equal(t, 1, One64.Int64())
+	equal(t, 10, New64FromInt64(10).Int64())
 
-	assert.EqualValues(t, 0, QNaN64.Int64())
+	equal(t, 0, QNaN64.Int64())
 
-	assert.EqualValues(t, int64(math.MaxInt64), Infinity64.Int64())
-	assert.EqualValues(t, int64(math.MinInt64), NegInfinity64.Int64())
-	assert.EqualValues(t, int64(math.MaxInt64), MustParse64("1e100").Int64())
-	assert.EqualValues(t, int64(math.MaxInt64), MustParse64("91234567890123456789e20").Int64())
+	equal(t, int64(math.MaxInt64), Infinity64.Int64())
+	equal(t, int64(math.MinInt64), NegInfinity64.Int64())
+	equal(t, int64(math.MaxInt64), MustParse64("1e100").Int64())
+	equal(t, int64(math.MaxInt64), MustParse64("91234567890123456789e20").Int64())
 }
 
 func TestDecimal64IsInf(t *testing.T) {
-	require.True(t, Infinity64.IsInf())
-	require.True(t, NegInfinity64.IsInf())
+	t.Parallel()
 
-	require.False(t, Zero64.IsInf())
-	require.False(t, NegZero64.IsInf())
-	require.False(t, QNaN64.IsInf())
-	require.False(t, SNaN64.IsInf())
-	require.False(t, New64FromInt64(42).IsInf())
-	require.False(t, New64FromInt64(-42).IsInf())
+	check(t, Infinity64.IsInf())
+	check(t, NegInfinity64.IsInf())
+
+	check(t, !Zero64.IsInf())
+	check(t, !NegZero64.IsInf())
+	check(t, !QNaN64.IsInf())
+	check(t, !SNaN64.IsInf())
+	check(t, !New64FromInt64(42).IsInf())
+	check(t, !New64FromInt64(-42).IsInf())
 }
 
 func TestDecimal64IsNaN(t *testing.T) {
-	require.True(t, QNaN64.IsNaN())
-	require.True(t, SNaN64.IsNaN())
+	t.Parallel()
 
-	require.True(t, QNaN64.IsQNaN())
-	require.False(t, SNaN64.IsQNaN())
+	check(t, QNaN64.IsNaN())
+	check(t, SNaN64.IsNaN())
 
-	require.False(t, QNaN64.IsSNaN())
-	require.True(t, SNaN64.IsSNaN())
+	check(t, QNaN64.IsQNaN())
+	check(t, !SNaN64.IsQNaN())
 
-	for _, n := range []Decimal64{
-		Infinity64,
-		NegInfinity64,
-		Zero64,
-		NegZero64,
-		New64FromInt64(42),
-		New64FromInt64(-42),
-	} {
-		require.False(t, n.IsNaN(), "%v", n)
-		require.False(t, n.IsQNaN(), "%v", n)
-		require.False(t, n.IsSNaN(), "%v", n)
+	check(t, !QNaN64.IsSNaN())
+	check(t, SNaN64.IsSNaN())
+
+	notNaN := func(n Decimal64) {
+		check(t, !n.IsNaN())
+		check(t, !n.IsQNaN())
+		check(t, !n.IsSNaN())
 	}
+	notNaN(Infinity64)
+	notNaN(NegInfinity64)
+	notNaN(Zero64)
+	notNaN(NegZero64)
+	notNaN(New64FromInt64(42))
+	notNaN(New64FromInt64(-42))
+
 }
 
 func TestDecimal64IsInt(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
 	fortyTwo := New64FromInt64(42)
 
-	require.True(Zero64.IsInt())
-	require.True(fortyTwo.IsInt())
-	require.True(fortyTwo.Mul(fortyTwo).IsInt())
-	require.True(fortyTwo.Quo(fortyTwo).IsInt())
-	require.False(One64.Quo(fortyTwo).IsInt())
+	check(t, Zero64.IsInt())
+	check(t, fortyTwo.IsInt())
+	check(t, fortyTwo.Mul(fortyTwo).IsInt())
+	check(t, fortyTwo.Quo(fortyTwo).IsInt())
+	check(t, !One64.Quo(fortyTwo).IsInt())
 
-	require.False(Infinity64.IsInt())
-	require.False(NegInfinity64.IsInt())
-	require.False(QNaN64.IsInt())
-	require.False(SNaN64.IsInt())
+	check(t, !Infinity64.IsInt())
+	check(t, !NegInfinity64.IsInt())
+	check(t, !QNaN64.IsInt())
+	check(t, !SNaN64.IsInt())
 }
 
 func TestDecimal64Sign(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
-	require.Equal(0, Zero64.Sign())
-	require.Equal(0, NegZero64.Sign())
-	require.Equal(1, One64.Sign())
-	require.Equal(-1, NegOne64.Sign())
+	equal(t, 0, Zero64.Sign())
+	equal(t, 0, NegZero64.Sign())
+	equal(t, 1, One64.Sign())
+	equal(t, -1, NegOne64.Sign())
 }
 
 func TestDecimal64Signbit(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
-	require.Equal(false, Zero64.Signbit())
-	require.Equal(true, NegZero64.Signbit())
-	require.Equal(false, One64.Signbit())
-	require.Equal(true, NegOne64.Signbit())
+	check(t, !Zero64.Signbit())
+	check(t, NegZero64.Signbit())
+	check(t, !One64.Signbit())
+	check(t, NegOne64.Signbit())
 }
 
 func TestDecimal64isZero(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
 
-	require.Equal(true, Zero64.IsZero())
-	require.Equal(true, NegZero64.IsZero())
-	require.Equal(false, One64.IsZero())
+	check(t, Zero64.IsZero())
+	check(t, NegZero64.IsZero())
+	check(t, !One64.IsZero())
 }
 
 func TestNumDecimalDigits(t *testing.T) {
-	require := require.New(t)
+	t.Parallel()
+
 	for i, num := range tenToThe {
 		for j := uint64(1); j < 10 && i < 19; j++ {
-			require.Equal(i+1, numDecimalDigits(num*j))
+			equal(t, i+1, numDecimalDigits(num*j))
 		}
 	}
 }
 
 func TestIsSubnormal(t *testing.T) {
-	require.Equal(t, true, MustParse64("0.1E-383").IsSubnormal())
-	require.Equal(t, true, MustParse64("-0.1E-383").IsSubnormal())
-	require.Equal(t, false, MustParse64("NaN10").IsSubnormal())
-	require.Equal(t, false, New64FromInt64(42).IsSubnormal())
+	t.Parallel()
+
+	check(t, MustParse64("0.1E-383").IsSubnormal())
+	check(t, MustParse64("-0.1E-383").IsSubnormal())
+	check(t, !MustParse64("NaN10").IsSubnormal())
+	check(t, !New64FromInt64(42).IsSubnormal())
 }
