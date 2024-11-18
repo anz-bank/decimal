@@ -556,7 +556,7 @@ func (ctx Context64) roundRaw(d, e Decimal64) Decimal64 {
 
 var (
 	zero64Raw = newFromPartsRaw(0, 0, 0)
-	qNaN64Raw = new64Raw(0x7c << 56)
+	qNaN64Raw = new64nostr(0x7c << 56)
 )
 
 func (ctx Context64) roundRefRaw(dp, ep *decParts) Decimal64 {

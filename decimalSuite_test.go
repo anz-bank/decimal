@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -141,7 +140,6 @@ func TestFromSuite(t *testing.T) {
 						dec64vals, err := convertToDec64(testVal)
 						require.NoError(t, err)
 						if !runTest(t, scannedContext, dec64vals, testVal) {
-							runtime.Breakpoint()
 							runTest(t, scannedContext, dec64vals, testVal)
 						}
 					})

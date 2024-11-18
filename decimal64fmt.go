@@ -253,7 +253,7 @@ func (d Decimal64) String() string {
 }
 
 func (ctx Context64) str(d Decimal64) string {
-	if s, has := small64Strings[d]; has {
+	if s, has := small64Strings[d.bits]; has {
 		return s
 	}
 	return ctx.text(d, 'g', -1, -1)

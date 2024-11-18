@@ -119,22 +119,20 @@ func BenchmarkDecimal64Scan(b *testing.B) {
 }
 
 func parseEquals64(t *testing.T) func(expected Decimal64, input string) {
-	require := require.New(t)
-
 	return func(expected Decimal64, input string) {
-		require.NotPanics(func() {
+		require.NotPanics(t, func() {
 			n := MustParse64(input)
-			require.Equal(expected, n, "%s", input)
+			requireEqualDecimal64(t, expected, n, "%s", input)
 		}, "%s", input)
 
 		n, err := Parse64(input)
-		require.NoError(err, "%s", input)
-		require.Equal(expected, n, "%s", input)
+		require.NoError(t, err, "%s", input)
+		requireEqualDecimal64(t, expected, n, "%s", input)
 
 		n = SNaN64
 		count, err := fmt.Sscanf(input, "%g", &n)
-		require.NoError(err, "%s", input)
-		require.Equal(1, count, "%s", input)
-		require.Equal(expected, n, "%s", input)
+		require.NoError(t, err, "%s", input)
+		require.Equal(t, 1, count, "%s", input)
+		requireEqualDecimal64(t, expected, n, "%s", input)
 	}
 }

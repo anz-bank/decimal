@@ -10,11 +10,16 @@ type Decimal64 struct {
 	bits uint64
 }
 
-// This should be the only point at which Decimal64 instances are constructed raw.
-// The verbose construction below makes it easy to audit accidental raw cosntruction.
-// A search for (?<!\[\])Decimal64\{ must come up empty.
 func new64(bits uint64) Decimal64 {
-	return new64Raw(bits)
+	return new64nostr(bits)
+}
+
+func new64str(bits uint64, _ string) Decimal64 {
+	return Decimal64{bits: bits}
+}
+
+func new64nostr(bits uint64) Decimal64 {
+	return Decimal64{bits: bits}
 }
 
 func checkSignificandIsNormal(significand uint64) {}

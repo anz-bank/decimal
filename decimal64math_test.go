@@ -2,7 +2,7 @@ package decimal
 
 import (
 	"fmt"
-	"runtime"
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -128,8 +128,14 @@ func TestDecimal64MulThreeByOneTenthByTen(t *testing.T) {
 	decOne := New64FromInt64(1)
 	decOneTenth := decOne.Quo(decTen)
 	decProduct := decThree.Mul(decOneTenth).Mul(decTen)
-	r.Equal(decTen.Mul(decOneTenth), decOne)
-	r.Equal(decThree, decProduct)
+	requireEqualDecimal64(t, decTen.Mul(decOneTenth), decOne)
+	requireEqualDecimal64(t, decThree, decProduct)
+}
+
+func requireEqualDecimal64(t *testing.T, expected, actual Decimal64, fmtAndArgs ...any) {
+	t.Helper()
+	require := require.New(t)
+	require.Equal(expected.bits, actual.bits)
 }
 
 func TestDecimal64Mul(t *testing.T) {
@@ -197,7 +203,6 @@ func checkDecimal64QuoByF(t *testing.T, f int64) {
 				t.Log("q", q.bits, qFlavor, qSign, qExp, qSignificand)
 			}
 			if !assert.Equal(t, e, q, "%d / %d ≠ %v (expecting %v)", k, j, q, e) {
-				runtime.Breakpoint()
 				n.Quo(d)
 				t.FailNow()
 			}
@@ -275,7 +280,6 @@ func TestDecimal64QuoInf(t *testing.T) {
 }
 
 func TestDecimal64MulPo10(t *testing.T) {
-	r := require.New(t)
 	for i, u := range tenToThe128 {
 		for j, v := range tenToThe128 {
 			k := i + j
@@ -288,19 +292,18 @@ func TestDecimal64MulPo10(t *testing.T) {
 			}
 			e := New64FromInt64(int64(w.lo))
 			a := New64FromInt64(int64(u.lo)).Mul(New64FromInt64(int64(v.lo)))
-			r.EqualValues(e, a, "%v * %v ≠ %v (expecting %v)", u, v, a, e)
+			requireEqualDecimal64(t, e, a, "%v * %v ≠ %v (expecting %v)", u, v, a, e)
 		}
 	}
 }
 
 func TestDecimal64Sqrt(t *testing.T) {
-	r := require.New(t)
 	for i := int64(0); i < 100000000; i = i*19/17 + 1 {
 		i2 := i * i
 		e := New64FromInt64(i)
 		n := New64FromInt64(i2)
 		a := n.Sqrt()
-		r.EqualValues(e, a, "√%v != %v (expected %v)", n, a, e)
+		requireEqualDecimal64(t, e, a, "√%v != %v (expected %v)", n, a, e)
 	}
 }
 
@@ -515,7 +518,7 @@ func TestQuoOverflow(t *testing.T) {
 		n := MustParse64(num)
 		d := MustParse64(denom)
 		if !assert.Equal(t, expected, n.Quo(d)) {
-			runtime.Breakpoint()
+			log.Printf("TestQuoOverflow: num = %d", n)
 			n.Quo(d)
 		}
 	}
