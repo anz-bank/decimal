@@ -11,7 +11,7 @@ type Decimal64 struct {
 }
 
 func new64(bits uint64) Decimal64 {
-	return new64nostr(bits)
+	return Decimal64{bits: bits}
 }
 
 func new64str(bits uint64, _ string) Decimal64 {

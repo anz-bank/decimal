@@ -108,32 +108,32 @@ func (ctx Rounding) round(significand uint64, rndStatus discardedDigit) uint64 {
 var ErrNaN64 error = Error("sNaN64")
 
 var small64s = []Decimal64{
-	newFromPartsStr(1, -14, 1*decimal64Base, "-10"),
+	new64str(newFromPartsRaw(1, -14, 1*decimal64Base).bits, "-10"),
 
-	newFromPartsStr(1, -15, 9*decimal64Base, "-9"),
-	newFromPartsStr(1, -15, 8*decimal64Base, "-8"),
-	newFromPartsStr(1, -15, 7*decimal64Base, "-7"),
-	newFromPartsStr(1, -15, 6*decimal64Base, "-6"),
-	newFromPartsStr(1, -15, 5*decimal64Base, "-5"),
-	newFromPartsStr(1, -15, 4*decimal64Base, "-4"),
-	newFromPartsStr(1, -15, 3*decimal64Base, "-3"),
-	newFromPartsStr(1, -15, 2*decimal64Base, "-2"),
-	newFromPartsStr(1, -15, 1*decimal64Base, "-1"),
+	new64str(newFromPartsRaw(1, -15, 9*decimal64Base).bits, "-9"),
+	new64str(newFromPartsRaw(1, -15, 8*decimal64Base).bits, "-8"),
+	new64str(newFromPartsRaw(1, -15, 7*decimal64Base).bits, "-7"),
+	new64str(newFromPartsRaw(1, -15, 6*decimal64Base).bits, "-6"),
+	new64str(newFromPartsRaw(1, -15, 5*decimal64Base).bits, "-5"),
+	new64str(newFromPartsRaw(1, -15, 4*decimal64Base).bits, "-4"),
+	new64str(newFromPartsRaw(1, -15, 3*decimal64Base).bits, "-3"),
+	new64str(newFromPartsRaw(1, -15, 2*decimal64Base).bits, "-2"),
+	new64str(newFromPartsRaw(1, -15, 1*decimal64Base).bits, "-1"),
 
 	// TODO: Decimal64{}?
-	newFromPartsStr(0, 0, 0, "0"),
+	new64str(newFromPartsRaw(0, 0, 0).bits, "0"),
 
-	newFromPartsStr(0, -15, 1*decimal64Base, "1"),
-	newFromPartsStr(0, -15, 2*decimal64Base, "2"),
-	newFromPartsStr(0, -15, 3*decimal64Base, "3"),
-	newFromPartsStr(0, -15, 4*decimal64Base, "4"),
-	newFromPartsStr(0, -15, 5*decimal64Base, "5"),
-	newFromPartsStr(0, -15, 6*decimal64Base, "6"),
-	newFromPartsStr(0, -15, 7*decimal64Base, "7"),
-	newFromPartsStr(0, -15, 8*decimal64Base, "8"),
-	newFromPartsStr(0, -15, 9*decimal64Base, "9"),
+	new64str(newFromPartsRaw(0, -15, 1*decimal64Base).bits, "1"),
+	new64str(newFromPartsRaw(0, -15, 2*decimal64Base).bits, "2"),
+	new64str(newFromPartsRaw(0, -15, 3*decimal64Base).bits, "3"),
+	new64str(newFromPartsRaw(0, -15, 4*decimal64Base).bits, "4"),
+	new64str(newFromPartsRaw(0, -15, 5*decimal64Base).bits, "5"),
+	new64str(newFromPartsRaw(0, -15, 6*decimal64Base).bits, "6"),
+	new64str(newFromPartsRaw(0, -15, 7*decimal64Base).bits, "7"),
+	new64str(newFromPartsRaw(0, -15, 8*decimal64Base).bits, "8"),
+	new64str(newFromPartsRaw(0, -15, 9*decimal64Base).bits, "9"),
 
-	newFromPartsStr(0, -14, 1*decimal64Base, "10"),
+	new64str(newFromPartsRaw(0, -14, 1*decimal64Base).bits, "10"),
 }
 
 var small64Strings = map[uint64]string{
@@ -256,10 +256,6 @@ func countTrailingZeros(n uint64) int {
 		zeros++
 	}
 	return zeros
-}
-
-func newFromPartsStr(sign int, exp int, significand uint64, s string) Decimal64 {
-	return new64str(newFromPartsRaw(sign, exp, significand).bits, s)
 }
 
 func newFromParts(sign int, exp int, significand uint64) Decimal64 {
