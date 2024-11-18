@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/bits"
+	"strconv"
 )
 
 type discardedDigit int
@@ -136,29 +137,13 @@ var small64s = []Decimal64{
 	new64str(newFromPartsRaw(0, -14, 1*decimal64Base).bits, "10"),
 }
 
-var small64Strings = map[uint64]string{
-	small64s[0].bits:  "-10",
-	small64s[1].bits:  "-9",
-	small64s[2].bits:  "-8",
-	small64s[3].bits:  "-7",
-	small64s[4].bits:  "-6",
-	small64s[5].bits:  "-5",
-	small64s[6].bits:  "-4",
-	small64s[7].bits:  "-3",
-	small64s[8].bits:  "-2",
-	small64s[9].bits:  "-1",
-	small64s[10].bits: "0",
-	small64s[11].bits: "1",
-	small64s[12].bits: "2",
-	small64s[13].bits: "3",
-	small64s[14].bits: "4",
-	small64s[15].bits: "5",
-	small64s[16].bits: "6",
-	small64s[17].bits: "7",
-	small64s[18].bits: "8",
-	small64s[19].bits: "9",
-	small64s[20].bits: "10",
-}
+var small64Strings = func() map[uint64]string {
+	m := make(map[uint64]string, len(small64s))
+	for i := -10; i <= 10; i++ {
+		m[small64s[10+i].bits] = strconv.Itoa(i)
+	}
+	return m
+}()
 
 // New64FromInt64 returns a new Decimal64 with the given value.
 func New64FromInt64(i int64) Decimal64 {
