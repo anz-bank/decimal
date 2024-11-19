@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+var sink any
+
 func checkDecimal64BinOp(
 	t *testing.T,
 	expected func(a, b int64) int64,
@@ -456,7 +458,7 @@ func benchmarkDecimal64Data() []Decimal64 {
 
 func BenchmarkDecimal64Abs(b *testing.B) {
 	x := benchmarkDecimal64Data()
-	for i := 0; i <= b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		_ = x[i%len(x)].Abs()
 	}
 }
@@ -464,7 +466,7 @@ func BenchmarkDecimal64Abs(b *testing.B) {
 func BenchmarkDecimal64Add(b *testing.B) {
 	x := benchmarkDecimal64Data()
 	y := x[:len(x)-2]
-	for i := 0; i <= b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		_ = x[i%len(x)].Add(y[i%len(y)])
 	}
 }
@@ -472,30 +474,46 @@ func BenchmarkDecimal64Add(b *testing.B) {
 func BenchmarkDecimal64Cmp(b *testing.B) {
 	x := benchmarkDecimal64Data()
 	y := x[:len(x)-2]
-	for i := 0; i <= b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		_ = x[i%len(x)].Cmp(y[i%len(y)])
 	}
 }
 
 func BenchmarkDecimal64Mul(b *testing.B) {
-	x := benchmarkDecimal64Data()
-	y := x[:len(x)-2]
-	for i := 0; i <= b.N; i++ {
-		_ = x[i%len(x)].Mul(y[i%len(y)])
+	x := One64
+	y, err := Parse64("1.00000000001")
+	if err != nil {
+		b.Fatal(err)
 	}
+	z := x.Quo(y)
+	for i := 0; i < b.N; i++ {
+		x = x.Mul(y)
+		y, z = z, y
+	}
+	sink = x
+}
+
+func BenchmarkFloat64Mul(b *testing.B) {
+	x := 1.0
+	y := 1.00000000001
+	z := 1 / y
+	for i := 0; i < b.N; i++ {
+		x *= y
+		y, z = z, y
+	}
+	sink = x
 }
 
 func BenchmarkDecimal64Quo(b *testing.B) {
 	x := benchmarkDecimal64Data()
-	y := x[:len(x)-2]
-	for i := 0; i <= b.N; i++ {
-		_ = x[i%len(x)].Quo(y[i%len(y)])
+	for i := 0; i < b.N; i++ {
+		_ = x[i%len(x)].Mul(x[(2*i)%len(x)])
 	}
 }
 
 func BenchmarkDecimal64Sqrt(b *testing.B) {
 	x := benchmarkDecimal64Data()
-	for i := 0; i <= b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		_ = x[i%len(x)].Sqrt()
 	}
 }
@@ -503,7 +521,7 @@ func BenchmarkDecimal64Sqrt(b *testing.B) {
 func BenchmarkDecimal64Sub(b *testing.B) {
 	x := benchmarkDecimal64Data()
 	y := x[:len(x)-2]
-	for i := 0; i <= b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		_ = x[i%len(x)].Sub(y[i%len(y)])
 	}
 }

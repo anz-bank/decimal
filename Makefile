@@ -58,7 +58,7 @@ profile: cpu.prof
 
 .INTERMEDIATE: cpu.prof
 cpu.prof:
-	go test -cpuprofile $@ -count=10 $(GOTESTFLAGS)
+	go test -cpuprofile $@ -count=10 $(GOPROFILEFLAGS)
 
 .PHONY: bench
 bench: bench.txt
@@ -72,4 +72,4 @@ bench.stat: bench.txt
 	benchstat bench.old $< > $@ || (rm -f $@; false)
 
 bench.txt: test
-	go test -run=^$$ -bench=. -benchmem -count=10 $(GOTESTFLAGS) > $@ || (rm -f $@; false)
+	go test -run=^$$ -bench=. -benchmem $(GOBENCHFLAGS) > $@ || (rm -f $@; false)

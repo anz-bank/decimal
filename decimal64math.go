@@ -425,6 +425,8 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 
 // Mul computes d * e
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
+	// fld := flav(d)
+	// fle := flav(e)
 	var dp decParts
 	dp.unpack(d)
 	var ep decParts

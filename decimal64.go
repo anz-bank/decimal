@@ -26,7 +26,7 @@ const (
 )
 
 // Rounding defines how arithmetic operations round numbers in certain operations.
-type Rounding int
+type Rounding int8
 
 const (
 	// HalfUp rounds to the nearest number, rounding away from zero if the
