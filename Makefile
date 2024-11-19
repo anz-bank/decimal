@@ -52,13 +52,12 @@ DOCKERRUN = docker run --rm \
 lint: build-linux
 	$(DOCKERRUN) golangci/golangci-lint:v1.60.1-alpine golangci-lint run
 
-.PHONY: profile
-profile: cpu.prof
+%.pprof: %.prof
 	go tool pprof -http=:8080 $<
 
-.INTERMEDIATE: cpu.prof
-cpu.prof:
-	go test -cpuprofile $@ -count=10 $(GOPROFILEFLAGS)
+.INTERMEDIATE: %.prof
+%.prof:
+	go test -$*profile $@ -count=10 $(GOPROFILEFLAGS)
 
 .PHONY: bench
 bench: bench.txt

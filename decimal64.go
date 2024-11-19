@@ -16,14 +16,42 @@ const (
 	gt5
 )
 
-type flavor int
+type flavor int8
 
 const (
-	flNormal flavor = 1 << iota
-	flInf
+	flInf      flavor = 0
+	flNormal53 flavor = 1 << iota
+	flNormal51
 	flQNaN
 	flSNaN
+	flNormal = flNormal53 | flNormal51
+	flNaN    = flQNaN | flSNaN
 )
+
+func (f flavor) normal() bool {
+	return f&flNormal != 0
+}
+
+func (f flavor) nan() bool {
+	return f&flNaN != 0
+}
+
+func (f flavor) String() string {
+	switch f {
+	case flInf:
+		return "Infinity"
+	case flNormal53:
+		return "Normal53"
+	case flNormal51:
+		return "Normal51"
+	case flQNaN:
+		return "QNaN"
+	case flSNaN:
+		return "SNaN"
+	default:
+		return fmt.Sprintf("Unknown flavor %d", f)
+	}
+}
 
 // Rounding defines how arithmetic operations round numbers in certain operations.
 type Rounding int8
@@ -167,32 +195,31 @@ func new64FromInt64(value int64) Decimal64 {
 }
 
 func renormalize(exp int, significand uint64) (int, uint64) {
-	numBits := 64 - bits.LeadingZeros64(significand)
+	numBits := bits.Len64(significand)
 	numDigits := numBits * 3 / 10
 	normExp := 15 - numDigits
 	if normExp > 0 {
-		if exp-normExp < -expOffset {
+		if normExp > exp+expOffset {
 			normExp = exp + expOffset
 		}
 		exp -= normExp
 		significand *= tenToThe[normExp]
 	} else if normExp < -1 {
 		normExp++
-		if exp-normExp > expMax {
+		if normExp < exp-expMax {
 			normExp = exp - expMax
 		}
 		exp -= normExp
 		significand /= tenToThe[-normExp]
 	}
-	for significand < decimal64Base && exp > -expOffset {
-		exp--
-		significand *= 10
+	switch {
+	case significand < decimal64Base && exp > -expOffset:
+		return exp - 1, significand * 10
+	case significand >= 10*decimal64Base:
+		return exp + 1, significand / 10
+	default:
+		return exp, significand
 	}
-	for significand >= 10*decimal64Base && exp < expMax {
-		exp++
-		significand /= 10
-	}
-	return exp, significand
 }
 
 // roundStatus gives info about the truncated part of the significand that can't be fully stored in 16 decimal digits.
@@ -211,36 +238,6 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 		return eq5
 	}
 	return gt5
-}
-
-// func from stack overflow: samgak
-// TODO: make this more efficent
-func countTrailingZeros(n uint64) int {
-	zeros := 0
-	q := n / 1_0000_0000_0000_0000
-	if n == q*1_0000_0000_0000_0000 {
-		zeros += 16
-		n = q
-	}
-	q = n / 1_0000_0000
-	if n == q*1_0000_0000 {
-		zeros += 8
-		n = q
-	}
-	q = n / 10000
-	if n == q*10000 {
-		zeros += 4
-		n = q
-	}
-	q = n / 100
-	if n == q*100 {
-		zeros += 2
-		n = q
-	}
-	if n%10 == 0 {
-		zeros++
-	}
-	return zeros
 }
 
 func newFromParts(sign int, exp int, significand uint64) Decimal64 {

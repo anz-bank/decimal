@@ -94,9 +94,35 @@ func (dp *decParts) separation(ep *decParts) int {
 
 // removeZeros removes zeros and increments the exponent to match.
 func (dp *decParts) removeZeros() {
-	zeros := countTrailingZeros(dp.significand.lo)
-	dp.significand.lo /= tenToThe[zeros]
-	dp.exp += zeros
+	e := dp.exp
+	n := dp.significand.lo
+	b := n / 1_0000_0000_0000_0000
+	if n == b*1_0000_0000_0000_0000 {
+		e += 16
+		n = b
+	}
+	b = n / 1_0000_0000
+	if n == b*1_0000_0000 {
+		e += 8
+		n = b
+	}
+	b = n / 10000
+	if n == b*10000 {
+		e += 4
+		n = b
+	}
+	b = n / 100
+	if n == b*100 {
+		e += 2
+		n = b
+	}
+	b = n / 10
+	if n == b*10 {
+		e++
+		n = b
+	}
+	dp.significand.lo = n
+	dp.exp = e
 }
 
 // isinf returns true if the decimal is an infinty
