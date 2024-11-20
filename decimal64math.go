@@ -349,7 +349,8 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	}
 	var rndStatus discardedDigit
 	dp.matchScales128(&ep)
-	ans := dp.add128(&ep)
+	var ans decParts
+	ans.add128(&dp, &ep)
 	rndStatus = ans.roundToLo()
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
@@ -408,7 +409,7 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 		if sep < -17 {
 			return f
 		} else if sep <= 17 {
-			ans = ans.add128(&fp)
+			ans.add128(&ans, &fp)
 		}
 	}
 	rndStatus = ans.roundToLo()

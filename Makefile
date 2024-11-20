@@ -56,7 +56,7 @@ lint: build-linux
 	go tool pprof -http=:8080 $<
 
 .INTERMEDIATE: %.prof
-%.prof:
+%.prof: $(wildcard *.go)
 	go test -$*profile $@ -count=10 $(GOPROFILEFLAGS)
 
 .PHONY: bench

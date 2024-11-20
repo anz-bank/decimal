@@ -20,9 +20,8 @@ func (dp *decParts) decimal64() Decimal64 {
 }
 
 // add128 adds two decParts with full precision in 128 bits of significand
-func (dp *decParts) add128(ep *decParts) decParts {
+func (ans *decParts) add128(dp, ep *decParts) {
 	dp.matchScales128(ep)
-	var ans decParts
 	ans.exp = dp.exp
 	if dp.sign == ep.sign {
 		ans.sign = dp.sign
@@ -38,7 +37,6 @@ func (dp *decParts) add128(ep *decParts) decParts {
 			ans.significand = uint128T{0, 0}
 		}
 	}
-	return ans
 }
 
 func (dp *decParts) matchScales128(ep *decParts) {
