@@ -30,10 +30,10 @@ func (dp *decParts) add128(ep *decParts) decParts {
 	} else {
 		if dp.significand.lt(ep.significand) {
 			ans.sign = ep.sign
-			ans.significand = ep.significand.sub(dp.significand)
+			ans.significand.sub(&ep.significand, &dp.significand)
 		} else if ep.significand.lt(dp.significand) {
 			ans.sign = dp.sign
-			ans.significand = dp.significand.sub(ep.significand)
+			ans.significand.sub(&dp.significand, &ep.significand)
 		} else {
 			ans.significand = uint128T{0, 0}
 		}

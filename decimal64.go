@@ -321,7 +321,9 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 		}
 	}
 	whole128 := n.div64(10 * decimal64Base)
-	frac128 := n.sub(whole128.mul64(10 * decimal64Base))
+	x := whole128.mul64(10 * decimal64Base)
+	var frac128 uint128T
+	frac128.sub(&n, &x)
 	return exp, whole128.lo, frac128.lo
 }
 

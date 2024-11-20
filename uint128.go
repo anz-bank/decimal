@@ -114,8 +114,10 @@ func (a *uint128T) neg(b *uint128T) *uint128T {
 	return a
 }
 
-func (a uint128T) sub(b uint128T) uint128T {
-	return a.add(*b.neg(&b))
+func (a *uint128T) sub(x, y *uint128T) *uint128T {
+	var n uint128T
+	*a = x.add(*n.neg(y))
+	return a
 }
 
 func (a uint128T) shl(s uint) uint128T {
