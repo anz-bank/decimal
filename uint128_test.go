@@ -1,6 +1,10 @@
 package decimal
 
-import "testing"
+import (
+	"math/bits"
+	"math/rand"
+	"testing"
+)
 
 func TestUint128Shl(t *testing.T) {
 	t.Parallel()
@@ -33,4 +37,53 @@ func TestUint128Sqrt(t *testing.T) {
 	test(3, uint128T{9, 0})
 	test(uint64(1<<32), uint128T{0, 1})
 	test(uint64(2<<32), uint128T{0, 4})
+}
+
+func TestU64sqrt(t *testing.T) {
+	t.Parallel()
+
+	test := func(n uint64) {
+		t.Helper()
+		replayOnFail(t, func() {
+			t.Helper()
+			s := u64sqrt(n)
+			sq := s * s
+			s1q := (s + 1) * (s + 1)
+			// s1q < sq handles overflow cases.
+			check(t, sq <= n && (s1q < sq || s1q >= n)).Or(t.FailNow)
+		})
+	}
+
+	// Fibonacci numbers, just because
+	var a, b uint64 = 1, 1
+	for a < b {
+		test(a)
+		a, b = b, a+b
+	}
+
+	hi := uint64(1<<64 - 1)
+
+	for i := 0; i < 64; i++ {
+		n := uint64(1) << i
+		test(n)
+		test(hi - n)
+	}
+
+	for i := uint64(0); i < 100_000; i++ {
+		test(i)
+		test(hi - i)
+	}
+
+	// (2**64)**1e-6 ~ 1.00004
+	for i := uint64(100_000); i < (1<<64)*99_999/100_004; {
+		test(i)
+		test(hi - i)
+		a, b := bits.Mul64(i, 100_004)
+		i, _ = bits.Div64(a, b, 100_000)
+	}
+
+	s := rand.NewSource(0).(rand.Source64)
+	for i := 0; i < 1_000_000; i++ {
+		test(s.Uint64())
+	}
 }

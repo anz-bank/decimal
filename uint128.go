@@ -3,6 +3,7 @@ package decimal
 import (
 	"math"
 	"math/bits"
+	"sync"
 )
 
 type uint128T struct {
@@ -64,32 +65,18 @@ func (a *uint128T) divrem64(x *uint128T, d uint64) uint64 {
 	return r
 }
 
-func (a *uint128T) divbase(x *uint128T) *uint128T {
-	// divbase is only called by Context64.Mul with (hi, lo) ≤ (10*base - 1)^2
-	//                            = 0x0000_04ee_2d6d_415b__8565_e19c_207e_0001
-	//                            = up to 43 bits of hi
-	m := x.hi<<(64-43) + x.lo>>43             // (hi, lo) >> 43
-	q, _ := bits.Mul64(m, 0x901d7cf73ab0acd9) // (2^113)/decimal64Base
-	// q := mul64(m)
-	// (q, _) ~= (hi, lo) >> 43 << 113 / base = (hi, lo) << 70 / base
-	// rbase is a shade under 2^113/base; add 1 here to correct it.
-	q = q>>(70-64) + 1
+// divbase divides a by [decimal64Base].
+func (a *uint128T) divbase(x *uint128T) *uint128T { return a.divc(x, 113, 0x901d7cf73ab0acd9) }
 
-	return a.set(0, q)
-}
+// div10base divides a by 10*[decimal64Base].
+func (a *uint128T) div10base(x *uint128T) *uint128T { return a.divc(x, 117, 0xe69594bec44de15b) }
 
-func (a *uint128T) div10base(x *uint128T) *uint128T {
-	// div10base is only called by expWholeFrac with (hi, lo) ≤ (10*base - 1)^2
-	//                            = 0x0000_04ee_2d6d_415b__8565_e19c_207e_0001
-	//                            = up to 43 bits of hi
-	m := x.hi<<(64-43) + x.lo>>43             // (hi, lo) >> 43
-	q, _ := bits.Mul64(m, 0xe69594bec44de15b) // (2^117)/(10*decimal64Base)
-	// q := mul64(m)
-	// (q, _) ~= (hi, lo) >> 43 << 117 / base = (hi, lo) << 74 / base
-	// rbase is a shade under 2^113/base; add 1 here to correct it.
-	q = q>>(74-64) + 1
-
-	return a.set(0, q)
+// divc divides a by n, expressed as a power-of-two index and 1<<index/n.
+// Index should be chosen such that 1<<index/n is the largest possible value < 1<<64.
+func (a *uint128T) divc(x *uint128T, index int, rdenom uint64) *uint128T {
+	m := x.hi<<(64-43) + x.lo>>43 // (hi, lo) >> 43
+	q, _ := bits.Mul64(m, rdenom)
+	return a.set(0, q>>((index-43)-64)+1)
 }
 
 func (a *uint128T) leadingZeros() uint {
@@ -134,15 +121,6 @@ func (a *uint128T) set(hi, lo uint64) *uint128T {
 	return a
 }
 
-var sqrts [1 << 16]uint8
-
-func init() {
-	// Precompute square roots for the highest 16 bits.
-	for i := 0; i < len(sqrts); i++ {
-		sqrts[i] = uint8(math.Sqrt(float64(i)))
-	}
-}
-
 // Assumes a < 1<<125
 func (a *uint128T) sqrt() uint64 {
 	if a.hi == 0 && a.lo < 2 {
@@ -158,9 +136,31 @@ func (a *uint128T) sqrt() uint64 {
 	}
 }
 
-// func (a uint128T) trailingZeros() uint {
-// 	if a.lo > 0 {
-// 		return uint(bits.TrailingZeros64(a.lo))
-// 	}
-// 	return uint(bits.TrailingZeros64(a.hi) + 64)
-// }
+func u64sqrt(n uint64) uint64 {
+	const maxu32 = 1<<32 - 1
+	switch {
+	case n == 0:
+		return 0
+	case n >= maxu32*maxu32:
+		return maxu32
+	}
+
+	// Shift up as far as possible (but always an even emount).
+	shift := bits.LeadingZeros64(n) / 2
+	n <<= 2 * shift
+
+	s := sqrtTable()
+	x := uint64(s[n>>(64-16)]) << (32 - 16)
+
+	// Two iterations suffice.
+	x = (x + n/x) >> 1
+	return (x + n/x) >> (1 + shift)
+}
+
+var sqrtTable = sync.OnceValue(func() *[1 << 16]uint16 {
+	var s [1 << 16]uint16
+	for i := 0; i < len(s); i++ {
+		s[i] = uint16(math.Sqrt(float64(i << 16)))
+	}
+	return &s
+})

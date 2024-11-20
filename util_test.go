@@ -7,16 +7,30 @@ func errorf(t *testing.T, format string, args ...any) {
 	t.Errorf(format, args...)
 }
 
-func repeatOnFail(t *testing.T, f func()) {
+func replayOnFail(t *testing.T, f func()) {
 	t.Helper()
 	alreadyFailed := t.Failed()
+	defer func() {
+		t.Helper()
+		if r := recover(); r != nil {
+			errorf(t, "panic: %+v", r)
+		}
+		if !alreadyFailed && t.Failed() {
+			f() // Set a breakpoint here to replay the first failed test.
+		}
+	}()
 	f()
-	if !alreadyFailed && t.Failed() {
+}
+
+type pass bool
+
+func (p pass) Or(f func()) {
+	if !p {
 		f()
 	}
 }
 
-func check(t *testing.T, ok bool) bool {
+func check(t *testing.T, ok bool) pass {
 	t.Helper()
 	if !ok {
 		errorf(t, "expected true")
@@ -25,7 +39,7 @@ func check(t *testing.T, ok bool) bool {
 	return true
 }
 
-func epsilon(t *testing.T, a, b float64) bool {
+func epsilon(t *testing.T, a, b float64) pass {
 	t.Helper()
 	if a/b-1 > 0.00000001 {
 		errorf(t, "%f and %f too dissimilar", a, b)
@@ -34,7 +48,7 @@ func epsilon(t *testing.T, a, b float64) bool {
 	return true
 }
 
-func equal[T comparable](t *testing.T, a, b T) bool {
+func equal[T comparable](t *testing.T, a, b T) pass {
 	t.Helper()
 	if a != b {
 		errorf(t, "expected %+v, got %+v", a, b)
@@ -43,12 +57,12 @@ func equal[T comparable](t *testing.T, a, b T) bool {
 	return true
 }
 
-func equalD64(t *testing.T, expected, actual Decimal64) {
+func equalD64(t *testing.T, expected, actual Decimal64) pass {
 	t.Helper()
-	equal(t, expected.bits, actual.bits)
+	return equal(t, expected.bits, actual.bits)
 }
 
-func isnil(t *testing.T, a any) bool {
+func isnil(t *testing.T, a any) pass {
 	t.Helper()
 	if a != nil {
 		errorf(t, "expected nil, got %+v", a)
@@ -57,9 +71,10 @@ func isnil(t *testing.T, a any) bool {
 	return true
 }
 
-func nopanic(t *testing.T, f func()) (b bool) {
+func nopanic(t *testing.T, f func()) (b pass) {
 	t.Helper()
 	defer func() {
+		t.Helper()
 		if r := recover(); r != nil {
 			errorf(t, "panic: %+v", r)
 			b = false
@@ -69,7 +84,7 @@ func nopanic(t *testing.T, f func()) (b bool) {
 	return true
 }
 
-func notequal[T comparable](t *testing.T, a, b T) bool {
+func notequal[T comparable](t *testing.T, a, b T) pass {
 	t.Helper()
 	if a == b {
 		errorf(t, "equal values %+v", a)
@@ -78,7 +93,7 @@ func notequal[T comparable](t *testing.T, a, b T) bool {
 	return true
 }
 
-func notnil(t *testing.T, a any) bool {
+func notnil(t *testing.T, a any) pass {
 	t.Helper()
 	if a == nil {
 		errorf(t, "expected non-nil")
@@ -87,9 +102,10 @@ func notnil(t *testing.T, a any) bool {
 	return true
 }
 
-func panics(t *testing.T, f func()) (b bool) {
+func panics(t *testing.T, f func()) (b pass) {
 	t.Helper()
 	defer func() {
+		t.Helper()
 		if r := recover(); r == nil {
 			errorf(t, "expected panic")
 			b = false
