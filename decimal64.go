@@ -382,31 +382,27 @@ func (d Decimal64) Int64x() (i int64, exact bool) {
 // IsZero returns true if the Decimal encodes a zero value.
 func (d Decimal64) IsZero() bool {
 	fl, _, _, significand := d.parts()
-	return significand == 0 && fl == flNormal
+	return significand == 0 && fl.normal()
 }
 
 // IsInf indicates whether d is ±∞.
 func (d Decimal64) IsInf() bool {
-	fl, _, _, _ := d.parts()
-	return fl == flInf
+	return d.flavor() == flInf
 }
 
 // IsNaN indicates whether d is not a number.
 func (d Decimal64) IsNaN() bool {
-	fl, _, _, _ := d.parts()
-	return fl == flQNaN || fl == flSNaN
+	return d.flavor().nan()
 }
 
 // IsQNaN indicates whether d is a quiet NaN.
 func (d Decimal64) IsQNaN() bool {
-	fl, _, _, _ := d.parts()
-	return fl == flQNaN
+	return d.flavor() == flQNaN
 }
 
 // IsSNaN indicates whether d is a signalling NaN.
 func (d Decimal64) IsSNaN() bool {
-	fl, _, _, _ := d.parts()
-	return fl == flSNaN
+	return d.flavor() == flSNaN
 }
 
 // IsInt indicates whether d is an integer.
@@ -429,7 +425,7 @@ func (d Decimal64) quiet() Decimal64 {
 // IsSubnormal indicates whether d is a subnormal.
 func (d Decimal64) IsSubnormal() bool {
 	fl, _, _, significand := d.parts()
-	return significand != 0 && significand < decimal64Base && fl == flNormal
+	return significand != 0 && significand < decimal64Base && fl.normal()
 }
 
 // Sign returns -1/0/1 if d is </=/> 0, respectively.
@@ -454,10 +450,10 @@ func (d Decimal64) ScaleB(e Decimal64) Decimal64 {
 		return r
 	}
 
-	if dp.fl != flNormal || dp.isZero() {
+	if !dp.fl.normal() || dp.isZero() {
 		return d
 	}
-	if ep.fl != flNormal {
+	if !ep.fl.normal() {
 		return QNaN64
 	}
 
@@ -471,7 +467,7 @@ func (d Decimal64) ScaleB(e Decimal64) Decimal64 {
 func (d Decimal64) ScaleBInt(i int) Decimal64 {
 	var dp decParts
 	dp.unpack(d)
-	if dp.fl != flNormal || dp.isZero() {
+	if !dp.fl.normal() || dp.isZero() {
 		return d
 	}
 	return scaleBInt(&dp, i)
