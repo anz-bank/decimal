@@ -99,7 +99,7 @@ func (a *uint128T) mul(x, y *uint128T) *uint128T {
 	t.umul64(x.hi, y.lo)
 	u.umul64(x.lo, y.hi)
 	t.add(&t, &u)
-	t.shl(&t, 64)
+	t = uint128T{0, t.lo}
 	u.umul64(x.lo, y.lo)
 	return a.add(&t, &u)
 }
