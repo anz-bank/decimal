@@ -470,7 +470,7 @@ func (d Decimal64) NextPlus() Decimal64 {
 			return NegMax64
 		}
 		return Infinity64
-	case flav != flNormal:
+	case !flav.normal():
 		return d
 	case significand == 0:
 		return Min64
@@ -507,7 +507,7 @@ func (d Decimal64) NextMinus() Decimal64 {
 			return Max64
 		}
 		return NegInfinity64
-	case flav != flNormal:
+	case !flav.normal():
 		return d
 	case significand == 0:
 		return NegMin64
@@ -605,7 +605,7 @@ var decPartsOne64 decParts = unpack(One64)
 func (ctx Context64) ToIntegral(d Decimal64) Decimal64 {
 	var dp decParts
 	dp.unpack(d)
-	if dp.fl != flNormal || dp.exp >= 0 {
+	if !dp.fl.normal() || dp.exp >= 0 {
 		return d
 	}
 	return new64(ctx.roundRefRaw(&dp, &decPartsOne64).bits)

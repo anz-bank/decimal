@@ -132,17 +132,17 @@ func parseEquals64(t *testing.T) func(expected Decimal64, input string) {
 	return func(expected Decimal64, input string) {
 		nopanic(t, func() {
 			n := MustParse64(input)
-			equalD64(t, expected, n, "%s", input)
+			equalD64(t, expected, n)
 		})
 
 		n, err := Parse64(input)
 		isnil(t, err)
-		equalD64(t, expected, n, "%s", input)
+		equalD64(t, expected, n)
 
 		n = SNaN64
 		count, err := fmt.Sscanf(input, "%g", &n)
 		isnil(t, err)
 		equal(t, 1, count)
-		equalD64(t, expected, n, "%s", input)
+		equalD64(t, expected, n)
 	}
 }

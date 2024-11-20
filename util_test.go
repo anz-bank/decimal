@@ -2,10 +2,24 @@ package decimal
 
 import "testing"
 
+func errorf(t *testing.T, format string, args ...any) {
+	t.Helper()
+	t.Errorf(format, args...)
+}
+
+func repeatOnFail(t *testing.T, f func()) {
+	t.Helper()
+	alreadyFailed := t.Failed()
+	f()
+	if !alreadyFailed && t.Failed() {
+		f()
+	}
+}
+
 func check(t *testing.T, ok bool) bool {
 	t.Helper()
 	if !ok {
-		t.Errorf("expected true")
+		errorf(t, "expected true")
 		return false
 	}
 	return true
@@ -14,7 +28,7 @@ func check(t *testing.T, ok bool) bool {
 func epsilon(t *testing.T, a, b float64) bool {
 	t.Helper()
 	if a/b-1 > 0.00000001 {
-		t.Errorf("%f and %f too dissimilar", a, b)
+		errorf(t, "%f and %f too dissimilar", a, b)
 		return false
 	}
 	return true
@@ -23,13 +37,13 @@ func epsilon(t *testing.T, a, b float64) bool {
 func equal[T comparable](t *testing.T, a, b T) bool {
 	t.Helper()
 	if a != b {
-		t.Errorf("expected %+v, got %+v", a, b)
+		errorf(t, "expected %+v, got %+v", a, b)
 		return false
 	}
 	return true
 }
 
-func equalD64(t *testing.T, expected, actual Decimal64, fmtAndArgs ...any) {
+func equalD64(t *testing.T, expected, actual Decimal64) {
 	t.Helper()
 	equal(t, expected.bits, actual.bits)
 }
@@ -37,7 +51,7 @@ func equalD64(t *testing.T, expected, actual Decimal64, fmtAndArgs ...any) {
 func isnil(t *testing.T, a any) bool {
 	t.Helper()
 	if a != nil {
-		t.Errorf("expected nil, got %+v", a)
+		errorf(t, "expected nil, got %+v", a)
 		return false
 	}
 	return true
@@ -47,7 +61,7 @@ func nopanic(t *testing.T, f func()) (b bool) {
 	t.Helper()
 	defer func() {
 		if r := recover(); r != nil {
-			t.Errorf("panic: %+v", r)
+			errorf(t, "panic: %+v", r)
 			b = false
 		}
 	}()
@@ -58,7 +72,7 @@ func nopanic(t *testing.T, f func()) (b bool) {
 func notequal[T comparable](t *testing.T, a, b T) bool {
 	t.Helper()
 	if a == b {
-		t.Errorf("equal values %+v", a)
+		errorf(t, "equal values %+v", a)
 		return false
 	}
 	return true
@@ -67,7 +81,7 @@ func notequal[T comparable](t *testing.T, a, b T) bool {
 func notnil(t *testing.T, a any) bool {
 	t.Helper()
 	if a == nil {
-		t.Errorf("expected non-nil")
+		errorf(t, "expected non-nil")
 		return false
 	}
 	return true
@@ -77,7 +91,7 @@ func panics(t *testing.T, f func()) (b bool) {
 	t.Helper()
 	defer func() {
 		if r := recover(); r == nil {
-			t.Errorf("expected panic")
+			errorf(t, "expected panic")
 			b = false
 		}
 	}()

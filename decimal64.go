@@ -557,6 +557,23 @@ func checkNan(d, e *decParts) (Decimal64, bool) {
 	return d.original, false
 }
 
+// checkNan returns the decimal NaN that is to be propogated and true else first decimal and false
+func checkNanV2(fld, fle flavor, d, e Decimal64) (Decimal64, bool) {
+	if fld == flSNaN {
+		return d, true
+	}
+	if fle == flSNaN {
+		return e, true
+	}
+	if fld == flQNaN {
+		return d, true
+	}
+	if fle == flQNaN {
+		return e, true
+	}
+	return d, false
+}
+
 // checkNan3 returns the decimal NaN that is to be propogated and true else first decimal and false
 func checkNan3(d, e, f *decParts) (Decimal64, bool) {
 	if d.fl == flSNaN {

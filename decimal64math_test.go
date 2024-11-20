@@ -12,7 +12,6 @@ func checkDecimal64BinOp(
 	t *testing.T,
 	expected func(a, b int64) int64,
 	actual func(a, b Decimal64) Decimal64,
-	op string,
 ) {
 	for i := int64(-100); i <= 100; i++ {
 		a := New64FromInt64(i)
@@ -48,7 +47,6 @@ func TestDecimal64Add(t *testing.T) {
 	checkDecimal64BinOp(t,
 		func(a, b int64) int64 { return a + b },
 		func(a, b Decimal64) Decimal64 { return a.Add(b) },
-		"+",
 	)
 }
 
@@ -141,7 +139,6 @@ func TestDecimal64Mul(t *testing.T) {
 	checkDecimal64BinOp(t,
 		func(a, b int64) int64 { return a * b },
 		func(a, b Decimal64) Decimal64 { return a.Mul(b) },
-		"*",
 	)
 }
 
@@ -290,7 +287,7 @@ func TestDecimal64MulPo10(t *testing.T) {
 			}
 			e := New64FromInt64(int64(w.lo))
 			a := New64FromInt64(int64(u.lo)).Mul(New64FromInt64(int64(v.lo)))
-			equalD64(t, e, a, "%v * %v ≠ %v (expecting %v)", u, v, a, e)
+			equalD64(t, e, a)
 		}
 	}
 }
@@ -303,7 +300,7 @@ func TestDecimal64Sqrt(t *testing.T) {
 		e := New64FromInt64(i)
 		n := New64FromInt64(i2)
 		a := n.Sqrt()
-		equalD64(t, e, a, "√%v != %v (expected %v)", n, a, e)
+		equalD64(t, e, a)
 	}
 }
 
@@ -332,7 +329,6 @@ func TestDecimal64Sub(t *testing.T) {
 	checkDecimal64BinOp(t,
 		func(a, b int64) int64 { return a - b },
 		func(a, b Decimal64) Decimal64 { return a.Sub(b) },
-		"-",
 	)
 }
 
@@ -481,13 +477,13 @@ func BenchmarkDecimal64Cmp(b *testing.B) {
 
 func BenchmarkDecimal64Mul(b *testing.B) {
 	x := One64
-	y, err := Parse64("1.00000000001")
+	y, err := Parse64("3.142")
 	if err != nil {
 		b.Fatal(err)
 	}
 	z := x.Quo(y)
 	for i := 0; i < b.N; i++ {
-		x = x.Mul(y)
+		x = x.Mul(z)
 		y, z = z, y
 	}
 	sink = x
@@ -495,10 +491,10 @@ func BenchmarkDecimal64Mul(b *testing.B) {
 
 func BenchmarkFloat64Mul(b *testing.B) {
 	x := 1.0
-	y := 1.00000000001
+	y := 3.142
 	z := 1 / y
 	for i := 0; i < b.N; i++ {
-		x *= y
+		x *= z
 		y, z = z, y
 	}
 	sink = x

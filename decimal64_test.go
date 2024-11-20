@@ -9,10 +9,17 @@ import (
 func TestNew64FromInt64(t *testing.T) {
 	t.Parallel()
 
-	for i := int64(-1000); i <= 1000; i++ {
-		d := New64FromInt64(i)
-		j := d.Int64()
-		equal(t, i, j)
+	for i := int64(0); i <= 1000; i++ {
+		repeatOnFail(t, func() {
+			d := New64FromInt64(i)
+			j := d.Int64()
+			equal(t, i, j)
+		})
+		repeatOnFail(t, func() {
+			d := New64FromInt64(-i)
+			j := d.Int64()
+			equal(t, -i, j)
+		})
 	}
 
 	// Test the neighborhood of powers of two up to the high-significand
@@ -20,9 +27,11 @@ func TestNew64FromInt64(t *testing.T) {
 	for e := 4; e < 54; e++ {
 		base := int64(1) << uint(e)
 		for i := base - 10; i <= base+10; i++ {
-			d := New64FromInt64(i)
-			j := d.Int64()
-			equal(t, i, j)
+			repeatOnFail(t, func() {
+				d := New64FromInt64(i)
+				j := d.Int64()
+				equal(t, i, j)
+			})
 		}
 	}
 }
@@ -33,9 +42,11 @@ func TestNew64FromInt64Big(t *testing.T) {
 	const limit = int64(decimal64Base)
 	const step = limit / 997
 	for i := -int64(limit); i <= limit; i += step {
-		d := New64FromInt64(i)
-		j := d.Int64()
-		equal(t, i, j)
+		repeatOnFail(t, func() {
+			d := New64FromInt64(i)
+			j := d.Int64()
+			equal(t, i, j)
+		})
 	}
 }
 
