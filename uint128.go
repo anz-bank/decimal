@@ -78,7 +78,7 @@ func (a *uint128T) divbase(x *uint128T) *uint128T {
 }
 
 func (a *uint128T) div10base(x *uint128T) *uint128T {
-	// div10base is only called by Context64.Mul with (hi, lo) ≤ (10*base - 1)^2
+	// div10base is only called by expWholeFrac with (hi, lo) ≤ (10*base - 1)^2
 	//                            = 0x0000_04ee_2d6d_415b__8565_e19c_207e_0001
 	//                            = up to 43 bits of hi
 	m := x.hi<<(64-43) + x.lo>>43             // (hi, lo) >> 43
