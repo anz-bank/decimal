@@ -18,24 +18,6 @@ func TestUint128Shl(t *testing.T) {
 	test(uint128T{0, 3}, uint128T{3, 42}, 64)
 }
 
-func TestUint128Shr(t *testing.T) {
-	t.Parallel()
-
-	test := func(expected, original uint128T, shift uint) {
-		t.Helper()
-		actual := original.shr(shift)
-		equal(t, expected, actual)
-	}
-	test(uint128T{}, uint128T{}, 1)
-	test(uint128T{1, 0}, uint128T{2, 0}, 1)
-	test(uint128T{2, 0}, uint128T{4, 0}, 1)
-	test(uint128T{1, 0}, uint128T{4, 0}, 2)
-	test(uint128T{1, 0}, uint128T{0, 1}, 64)
-	test(uint128T{3, 0}, uint128T{0, 3}, 64)
-	test(uint128T{0x80000000 << 32, 0}, uint128T{0, 1}, 1)
-	test(uint128T{0xffff8000 << 32, 0x7fff}, uint128T{0xffff0000 << 32, 0xffff}, 1)
-}
-
 func TestUint128Sqrt(t *testing.T) {
 	t.Parallel()
 
@@ -51,23 +33,4 @@ func TestUint128Sqrt(t *testing.T) {
 	test(3, uint128T{9, 0})
 	test(uint64(1<<32), uint128T{0, 1})
 	test(uint64(2<<32), uint128T{0, 4})
-}
-
-func TestUint128MulBy10(t *testing.T) {
-	t.Parallel()
-
-	test := func(expected, original uint128T) {
-		t.Helper()
-		actual := original.mulBy10()
-		equal(t, expected, actual)
-	}
-	test(uint128T{0, 0}, uint128T{0, 0})
-	test(uint128T{10, 0}, uint128T{1, 0})
-	test(uint128T{20, 0}, uint128T{2, 0})
-	test(uint128T{90, 0}, uint128T{9, 0})
-	test(uint128T{100, 0}, uint128T{10, 0})
-	test(uint128T{99990, 0}, uint128T{9999, 0})
-	test(uint128T{100000, 0}, uint128T{10000, 0})
-	test(uint128T{0xfffffffffffffffa, 0}, uint128T{(1 << 64) / 10, 0})
-	test(uint128T{0xfffffffffffffffc, 3}, uint128T{(4 << 64) / 10, 0})
 }

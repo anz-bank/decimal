@@ -103,18 +103,19 @@ func (a uint128T) mul64(b uint64) uint128T {
 }
 
 // 2's-complement negation, used to implement sub.
-func (a uint128T) neg() uint128T {
+func (a *uint128T) neg(b *uint128T) *uint128T {
 	// return ^a + 1
-	a0 := ^a.lo + 1
-	a1 := ^a.hi
+	a0 := ^b.lo + 1
+	a1 := ^b.hi
 	if a0 == 0 {
 		a1++
 	}
-	return uint128T{a0, a1}
+	*a = uint128T{a0, a1}
+	return a
 }
 
 func (a uint128T) sub(b uint128T) uint128T {
-	return a.add(b.neg())
+	return a.add(*b.neg(&b))
 }
 
 func (a uint128T) shl(s uint) uint128T {
