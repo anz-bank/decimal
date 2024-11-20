@@ -71,37 +71,3 @@ func TestUint128MulBy10(t *testing.T) {
 	test(uint128T{0xfffffffffffffffa, 0}, uint128T{(1 << 64) / 10, 0})
 	test(uint128T{0xfffffffffffffffc, 3}, uint128T{(4 << 64) / 10, 0})
 }
-
-func TestUint128DivBy10(t *testing.T) {
-	t.Parallel()
-
-	test := func(expected, original uint128T) {
-		t.Helper()
-		actual := original.divBy10()
-		equal(t, expected, actual)
-	}
-	test(uint128T{0, 0}, uint128T{0, 0})
-	test(uint128T{0, 0}, uint128T{1, 0})
-	test(uint128T{0, 0}, uint128T{9, 0})
-	test(uint128T{1, 0}, uint128T{10, 0})
-	test(uint128T{1, 0}, uint128T{19, 0})
-	test(uint128T{2, 0}, uint128T{20, 0})
-	test(uint128T{9, 0}, uint128T{99, 0})
-	test(uint128T{10, 0}, uint128T{100, 0})
-	test(uint128T{9999, 0}, uint128T{99999, 0})
-	test(uint128T{10000, 0}, uint128T{100000, 0})
-	test(uint128T{(1 << 64) / 10, 0}, uint128T{0, 1})
-	test(uint128T{(2 << 64) / 10, 0}, uint128T{0, 2})
-	test(uint128T{((123 << 64) / 10) % (1 << 64), ((123 << 64) / 10) >> 64},
-		uint128T{0, 123},
-	)
-	test(uint128T{((123456789 << 64) / 10) % (1 << 64), ((123456789 << 64) / 10) >> 64},
-		uint128T{0, 123456789},
-	)
-	test(uint128T{((123 << 56 << 64) / 10) % (1 << 64), ((123 << 56 << 64) / 10) >> 64},
-		uint128T{0, 123 << 56},
-	)
-	test(uint128T{((1<<128 - 1) / 10) % (1 << 64), ((1<<128 - 1) / 10) >> 64},
-		uint128T{1<<64 - 1, 1<<64 - 1},
-	)
-}

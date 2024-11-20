@@ -99,28 +99,6 @@ func panics(t *testing.T, f func()) (b bool) {
 	return true
 }
 
-func TestDiv10_64(t *testing.T) {
-	t.Parallel()
-
-	for i := uint64(0); i <= 10000; i++ {
-		d := uint128T{i, 0}.divBy10().lo
-		equal(t, i/10, d)
-	}
-}
-
-func TestDiv10_64_po10(t *testing.T) {
-	t.Parallel()
-
-	for i, u := range tenToThe128 {
-		var e uint128T
-		if i > 0 {
-			e = tenToThe128[i-1]
-		}
-		a := u.divBy10()
-		equal(t, e, a)
-	}
-}
-
 func TestUmul64_po10(t *testing.T) {
 	t.Parallel()
 

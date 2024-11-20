@@ -63,28 +63,31 @@ func (a uint128T) divrem64(d uint64) (q uint128T, r uint64) {
 	return
 }
 
-// See http://www.hackersdelight.org/divcMore.pdf for div-by-const tricks.
-
-func (a uint128T) divBy10() uint128T {
-	q := a.shr(1).add(a.shr(2))
-	q = q.add(q.shr(4))
-	q = q.add(q.shr(8))
-	q = q.add(q.shr(16))
-	q = q.add(q.shr(32))
-	q = q.add(q.shr(64))
-	q = q.shr(3)
-	r := a.sub(q.mulBy10())
-	return q.add(uint128T{(r.lo + 6) >> 4, 0})
+func (a *uint128T) divbase(x *uint128T) *uint128T {
+	*a = uint128T{divbase(x.hi, x.lo), 0}
+	return a
 }
 
-func (a uint128T) leadingZeros() uint {
+func divbase(hi, lo uint64) uint64 {
+	// divbase is only called by Context64.Mul with (hi, lo) ≤ (10*base - 1)^2
+	//                            = 0x0000_04ee_2d6d_415b__8565_e19c_207e_0001
+	//                            = up to 43 bits of hi
+	m := hi<<(64-43) + lo>>43                 // (hi, lo) >> 43
+	a, _ := bits.Mul64(m, 0x901d7cf73ab0acd9) // (2^113)/decimal64Base
+	// a := mul64(m)
+	// (a, _) ~= (hi, lo) >> 43 << 113 / base = (hi, lo) << 70 / base
+	// rbase is a shade under 2^113/base; add 1 here to correct it.
+	return a>>(70-64) + 1
+}
+
+func (a *uint128T) leadingZeros() uint {
 	if a.hi > 0 {
 		return uint(bits.LeadingZeros64(a.hi))
 	}
 	return uint(64 + bits.LeadingZeros64(a.lo))
 }
 
-func (a uint128T) lt(b uint128T) bool {
+func (a *uint128T) lt(b uint128T) bool {
 	if a.hi != b.hi {
 		return a.hi < b.hi
 	}
