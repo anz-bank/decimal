@@ -1,6 +1,7 @@
 package decimal
 
 import (
+	"math"
 	"math/bits"
 )
 
@@ -131,6 +132,15 @@ func (a *uint128T) shl(b *uint128T, s uint) *uint128T {
 func (a *uint128T) set(hi, lo uint64) *uint128T {
 	*a = uint128T{lo, hi}
 	return a
+}
+
+var sqrts [1 << 16]uint8
+
+func init() {
+	// Precompute square roots for the highest 16 bits.
+	for i := 0; i < len(sqrts); i++ {
+		sqrts[i] = uint8(math.Sqrt(float64(i)))
+	}
 }
 
 // Assumes a < 1<<125
