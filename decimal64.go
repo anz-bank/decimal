@@ -277,13 +277,13 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 	case 12, 13, 14:
 		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//     EE ∈ {00, 01, 10}
-		fl = flNormal
+		fl = flNormal51
 		exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
 		significand = d.bits&(1<<51-1) | (1 << 53)
 	default:
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
-		fl = flNormal
+		fl = flNormal53
 		exp = int((d.bits>>(63-10))&(1<<10-1)) - expOffset
 		significand = d.bits & (1<<53 - 1)
 		if significand == 0 {
@@ -329,7 +329,7 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 func (d Decimal64) Float64() float64 {
 	fl, sign, exp, significand := d.parts()
 	switch fl {
-	case flNormal:
+	case flNormal53, flNormal51:
 		if significand == 0 {
 			return 0.0 * float64(1-2*sign)
 		}
@@ -409,7 +409,7 @@ func (d Decimal64) IsSNaN() bool {
 func (d Decimal64) IsInt() bool {
 	fl, _, exp, significand := d.parts()
 	switch fl {
-	case flNormal:
+	case flNormal53, flNormal51:
 		_, _, frac := expWholeFrac(exp, significand)
 		return frac == 0
 	default:

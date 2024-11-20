@@ -294,7 +294,7 @@ func (d Decimal64) Sqrt() Decimal64 {
 		return d
 	case flSNaN:
 		return SNaN64
-	case flNormal:
+	case flNormal53, flNormal51:
 	}
 	if significand == 0 {
 		return d

@@ -68,7 +68,7 @@ func (dp *decParts) roundToLo() discardedDigit {
 }
 
 func (dp *decParts) isZero() bool {
-	return (dp.significand == uint128T{}) && dp.significand.hi == 0 && dp.fl == flNormal
+	return dp.significand == uint128T{} && dp.fl.normal()
 }
 
 func (dp *decParts) isInf() bool {
@@ -84,7 +84,7 @@ func (dp *decParts) isSNaN() bool {
 }
 
 func (dp *decParts) isSubnormal() bool {
-	return (dp.significand != uint128T{}) && dp.significand.lo < decimal64Base && dp.fl == flNormal
+	return (dp.significand != uint128T{}) && dp.significand.lo < decimal64Base && dp.fl.normal()
 }
 
 // separation gets the separation in decimal places of the MSD's of two decimal 64s
@@ -145,26 +145,15 @@ func (dp *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
 }
 
 func (dp *decParts) unpack(d Decimal64) {
+	dp.unpackV2(d, d.flavor())
+}
+
+func (dp *decParts) unpackV2(d Decimal64, fl flavor) {
 	dp.original = d
 	dp.sign = int(d.bits >> 63)
-	dp.fl = flav(d)
-	switch (d.bits >> (63 - 4)) & 0xf {
-	case 15:
-		switch (d.bits >> (63 - 6)) & 3 {
-		case 0, 1:
-		case 2:
-			dp.significand.lo = d.bits & (1<<51 - 1) // Payload
-			return
-		case 3:
-			dp.significand.lo = d.bits & (1<<51 - 1) // Payload
-			return
-		}
-	case 12, 13, 14:
-		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
-		//     EE ∈ {00, 01, 10}
-		dp.exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
-		dp.significand.lo = d.bits&(1<<51-1) | (1 << 53)
-	default:
+	dp.fl = fl
+	switch fl {
+	case flNormal53:
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
 		dp.exp = int((d.bits>>(63-10))&(1<<10-1)) - expOffset
@@ -172,6 +161,15 @@ func (dp *decParts) unpack(d Decimal64) {
 		if dp.significand.lo == 0 {
 			dp.exp = 0
 		}
+	case flNormal51:
+		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
+		//     EE ∈ {00, 01, 10}
+		dp.exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
+		dp.significand.lo = d.bits&(1<<51-1) | (1 << 53)
+	case flInf:
+	default: // NaN
+		dp.significand.lo = d.bits & (1<<51 - 1) // Payload
+		return
 	}
 }
 
