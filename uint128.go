@@ -99,7 +99,7 @@ func (a uint128T) mul(b uint128T) uint128T {
 	x := umul64(a.hi, b.lo)
 	y := umul64(a.lo, b.hi)
 	x.add(&x, &y)
-	x = x.shl(64)
+	x.shl(&x, 64)
 	y = umul64(a.lo, b.lo)
 	return *x.add(&x, &y)
 }
@@ -127,11 +127,16 @@ func (a *uint128T) sub(x, y *uint128T) *uint128T {
 	return a.add(x, n.neg(y))
 }
 
-func (a uint128T) shl(s uint) uint128T {
+func (a *uint128T) shl(b *uint128T, s uint) *uint128T {
 	if s < 64 {
-		return uint128T{a.lo << s, a.lo>>(64-s) | a.hi<<s}
+		return a.set(b.lo>>(64-s)|b.hi<<s, b.lo<<s)
 	}
-	return uint128T{0, a.lo << (s - 64)}
+	return a.set(b.lo<<(s-64), 0)
+}
+
+func (a *uint128T) set(hi, lo uint64) *uint128T {
+	*a = uint128T{lo, hi}
+	return a
 }
 
 // Assumes a < 1<<125

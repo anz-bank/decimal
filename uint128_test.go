@@ -7,8 +7,8 @@ func TestUint128Shl(t *testing.T) {
 
 	test := func(expected, original uint128T, shift uint) {
 		t.Helper()
-		actual := original.shl(shift)
-		equal(t, expected, actual)
+		original.shl(&original, shift)
+		equal(t, expected, original)
 	}
 	test(uint128T{}, uint128T{}, 1)
 	test(uint128T{2, 0}, uint128T{1, 0}, 1)
