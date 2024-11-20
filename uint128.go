@@ -41,10 +41,10 @@ func (a *uint128T) add(x, y *uint128T) *uint128T {
 	return a
 }
 
-func (a *uint128T) subV2(x, b *uint128T) *uint128T {
+func (a *uint128T) sub(x, y *uint128T) *uint128T {
 	var borrow uint64
-	a.lo, borrow = bits.Sub64(x.lo, b.lo, 0)
-	a.hi, _ = bits.Sub64(x.hi, b.hi, borrow)
+	a.lo, borrow = bits.Sub64(x.lo, y.lo, 0)
+	a.hi, _ = bits.Sub64(x.hi, y.hi, borrow)
 	return a
 }
 
@@ -108,23 +108,6 @@ func (a uint128T) mul64(b uint64) uint128T {
 	x := uint128T{0, umul64(a.hi, b).lo}
 	y := umul64(a.lo, b)
 	return *x.add(&x, &y)
-}
-
-// 2's-complement negation, used to implement sub.
-func (a *uint128T) neg(b *uint128T) *uint128T {
-	// return ^a + 1
-	a0 := ^b.lo + 1
-	a1 := ^b.hi
-	if a0 == 0 {
-		a1++
-	}
-	*a = uint128T{a0, a1}
-	return a
-}
-
-func (a *uint128T) sub(x, y *uint128T) *uint128T {
-	var n uint128T
-	return a.add(x, n.neg(y))
 }
 
 func (a *uint128T) shl(b *uint128T, s uint) *uint128T {
