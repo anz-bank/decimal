@@ -306,7 +306,8 @@ func (d Decimal64) Sqrt() Decimal64 {
 		exp--
 		significand *= 10
 	}
-	sqrt := umul64(10*decimal64Base, significand).sqrt()
+	x := umul64(10*decimal64Base, significand)
+	sqrt := x.sqrt()
 	exp, significand = renormalize(exp/2-8, sqrt)
 	return newFromParts(sign, exp, significand)
 }

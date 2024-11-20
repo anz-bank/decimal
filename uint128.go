@@ -139,7 +139,7 @@ func (a uint128T) shr(s uint) uint128T {
 }
 
 // Assumes a < 1<<125
-func (a uint128T) sqrt() uint64 {
+func (a *uint128T) sqrt() uint64 {
 	if a.hi == 0 && a.lo < 2 {
 		return a.lo
 	}
