@@ -94,14 +94,14 @@ func (a *uint128T) lt(b uint128T) bool {
 	return a.lo < b.lo
 }
 
-func (a uint128T) mul(b uint128T) uint128T {
-	var x, y uint128T
-	x.umul64(a.hi, b.lo)
-	y.umul64(a.lo, b.hi)
-	x.add(&x, &y)
-	x.shl(&x, 64)
-	y.umul64(a.lo, b.lo)
-	return *x.add(&x, &y)
+func (a *uint128T) mul(x, y *uint128T) *uint128T {
+	var t, u uint128T
+	t.umul64(x.hi, y.lo)
+	u.umul64(x.lo, y.hi)
+	t.add(&t, &u)
+	t.shl(&t, 64)
+	u.umul64(x.lo, y.lo)
+	return a.add(&t, &u)
 }
 
 func (a *uint128T) mul64(x *uint128T, b uint64) *uint128T {

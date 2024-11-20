@@ -45,10 +45,10 @@ func (dp *decParts) matchScales128(ep *decParts) {
 	expDiff := ep.exp - dp.exp
 	if (ep.significand != uint128T{0, 0}) {
 		if expDiff < 0 {
-			dp.significand = dp.significand.mul(tenToThe128[-expDiff])
+			dp.significand.mul(&dp.significand, &tenToThe128[-expDiff])
 			dp.exp += expDiff
 		} else if expDiff > 0 {
-			ep.significand = ep.significand.mul(tenToThe128[expDiff])
+			ep.significand.mul(&ep.significand, &tenToThe128[expDiff])
 			ep.exp -= expDiff
 		}
 	}
