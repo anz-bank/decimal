@@ -198,26 +198,3 @@ var flavMap = [...]flavor{
 func (d Decimal64) flavor() flavor {
 	return flavMap[int(d.bits>>(64-7))%len(flavMap)]
 }
-
-var flavorLookup = []flavor{
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flNormal, flNormal, flNormal, flNormal,
-	flInf, flInf, flQNaN, flSNaN,
-}
-
-func flav(d Decimal64) flavor {
-	return flavorLookup[(d.bits>>(64-7))%uint64(len(flavorLookup))]
-}
