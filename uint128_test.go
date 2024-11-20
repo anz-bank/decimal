@@ -46,7 +46,7 @@ func TestU64sqrt(t *testing.T) {
 		t.Helper()
 		replayOnFail(t, func() {
 			t.Helper()
-			s := u64sqrt(n)
+			s := sqrtu64(n)
 			sq := s * s
 			s1q := (s + 1) * (s + 1)
 			// s1q < sq handles overflow cases.

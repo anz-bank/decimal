@@ -123,8 +123,8 @@ func (a *uint128T) set(hi, lo uint64) *uint128T {
 
 // Assumes a < 1<<125
 func (a *uint128T) sqrt() uint64 {
-	if a.hi == 0 && a.lo < 2 {
-		return a.lo
+	if a.hi == 0 {
+		return sqrtu64(a.lo)
 	}
 	for x := uint64(1) << (a.bitLen()/2 + 1); ; {
 		var t uint128T
@@ -134,33 +134,62 @@ func (a *uint128T) sqrt() uint64 {
 		}
 		x = y
 	}
+	// if a.hi == 0 {
+	// 	return uint64(u64sqrt(a.lo))
+	// }
+	// shift := bits.LeadingZeros64(a.hi) / 2
+	// n := a.hi<<uint64(2*shift) + a.lo>>uint64(64-(2*shift))
+	// s := u64sqrt(n)
+	// var t uint128T
+	// y := (t.div64(a, x).lo + x) >> 1
+	// if y >= x {
+	// 	return x
+	// }
+	// x = y
+
 }
 
-func u64sqrt(n uint64) uint64 {
+func sqrtu64(n uint64) uint64 {
 	const maxu32 = 1<<32 - 1
 	switch {
-	case n == 0:
-		return 0
+	case n < 1<<16:
+		return uint64(sqrtu16(uint16(n)) >> 8)
 	case n >= maxu32*maxu32:
 		return maxu32
 	}
 
-	// Shift up as far as possible (but always an even emount).
+	// Shift up as far as possible, but must be an even amount.
 	shift := bits.LeadingZeros64(n) / 2
 	n <<= 2 * shift
 
-	s := sqrtTable()
-	x := uint64(s[n>>(64-16)]) << (32 - 16)
+	s := sqrtu16(uint16(n >> (64 - 16)))
+	x := uint64(s) << (32 - 16)
 
 	// Two iterations suffice.
 	x = (x + n/x) >> 1
+	// Undo shift in second iteration. Only need 1/2-shift because it's the √.
 	return (x + n/x) >> (1 + shift)
 }
 
-var sqrtTable = sync.OnceValue(func() *[1 << 16]uint16 {
-	var s [1 << 16]uint16
-	for i := 0; i < len(s); i++ {
-		s[i] = uint16(math.Sqrt(float64(i << 16)))
-	}
-	return &s
-})
+const (
+	sqrtSlotSize = 64 / 2 // 1 cache line
+	sqrtElts     = 1 << 16
+)
+
+var (
+	sqrtTable [sqrtElts]uint16
+	sqrtOnce  [sqrtElts / sqrtSlotSize]sync.Once
+)
+
+// sqrtu16 returns √n << 8.
+func sqrtu16(n uint16) uint16 {
+	slot := n / sqrtSlotSize
+	sqrtOnce[slot].Do(func() {
+		a := slot * sqrtSlotSize
+		b := a + sqrtSlotSize
+		for i := a; i != b; i++ { // != because b wraps
+			sqrtTable[i] = uint16(math.Sqrt(float64(uint64(i) << 16)))
+		}
+	})
+	return sqrtTable[n]
+}
