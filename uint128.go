@@ -40,7 +40,14 @@ func (a uint128T) add(b uint128T) uint128T {
 	return uint128T{lo, hi}
 }
 
-func (a uint128T) bitLen() uint {
+func (a *uint128T) subV2(x, b *uint128T) *uint128T {
+	var borrow uint64
+	a.lo, borrow = bits.Sub64(x.lo, b.lo, 0)
+	a.hi, _ = bits.Sub64(x.hi, b.hi, borrow)
+	return a
+}
+
+func (a *uint128T) bitLen() uint {
 	return 128 - a.leadingZeros()
 }
 
