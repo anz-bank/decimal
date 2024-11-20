@@ -64,20 +64,17 @@ func (a *uint128T) divrem64(x *uint128T, d uint64) uint64 {
 }
 
 func (a *uint128T) divbase(x *uint128T) *uint128T {
-	*a = uint128T{divbase(x.hi, x.lo), 0}
-	return a
-}
-
-func divbase(hi, lo uint64) uint64 {
 	// divbase is only called by Context64.Mul with (hi, lo) ≤ (10*base - 1)^2
 	//                            = 0x0000_04ee_2d6d_415b__8565_e19c_207e_0001
 	//                            = up to 43 bits of hi
-	m := hi<<(64-43) + lo>>43                 // (hi, lo) >> 43
-	a, _ := bits.Mul64(m, 0x901d7cf73ab0acd9) // (2^113)/decimal64Base
-	// a := mul64(m)
-	// (a, _) ~= (hi, lo) >> 43 << 113 / base = (hi, lo) << 70 / base
+	m := x.hi<<(64-43) + x.lo>>43             // (hi, lo) >> 43
+	q, _ := bits.Mul64(m, 0x901d7cf73ab0acd9) // (2^113)/decimal64Base
+	// q := mul64(m)
+	// (q, _) ~= (hi, lo) >> 43 << 113 / base = (hi, lo) << 70 / base
 	// rbase is a shade under 2^113/base; add 1 here to correct it.
-	return a>>(70-64) + 1
+	q = q>>(70-64) + 1
+
+	return a.set(0, q)
 }
 
 func (a *uint128T) leadingZeros() uint {
@@ -99,7 +96,7 @@ func (a *uint128T) mul(x, y *uint128T) *uint128T {
 	t.umul64(x.hi, y.lo)
 	u.umul64(x.lo, y.hi)
 	t.add(&t, &u)
-	t = uint128T{0, t.lo}
+	t = uint128T{0, t.lo} // t <<= 64
 	u.umul64(x.lo, y.lo)
 	return a.add(&t, &u)
 }
