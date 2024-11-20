@@ -57,11 +57,11 @@ func (dp *decParts) matchScales128(ep *decParts) {
 func (dp *decParts) roundToLo() discardedDigit {
 	var rndStatus discardedDigit
 
-	if dsig := dp.significand; dsig.hi > 0 || dsig.lo >= 10*decimal64Base {
+	if ds := &dp.significand; ds.hi > 0 || ds.lo >= 10*decimal64Base {
 		var remainder uint64
-		expDiff := dsig.numDecimalDigits() - 16
+		expDiff := ds.numDecimalDigits() - 16
 		dp.exp += expDiff
-		dp.significand, remainder = dsig.divrem64(tenToThe[expDiff])
+		remainder = ds.divrem64(ds, tenToThe[expDiff])
 		rndStatus = roundStatus(remainder, 0, expDiff)
 	}
 	return rndStatus

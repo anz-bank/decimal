@@ -52,15 +52,15 @@ func (a *uint128T) bitLen() uint {
 }
 
 func (a *uint128T) div64(x *uint128T, d uint64) *uint128T {
-	*a, _ = x.divrem64(d)
+	a.divrem64(x, d)
 	return a
 }
 
-func (a uint128T) divrem64(d uint64) (q uint128T, r uint64) {
-	r = 0
-	q.hi, r = bits.Div64(r, a.hi, d)
-	q.lo, r = bits.Div64(r, a.lo, d)
-	return
+func (a *uint128T) divrem64(x *uint128T, d uint64) uint64 {
+	var r uint64
+	a.hi, r = bits.Div64(0, x.hi, d)
+	a.lo, r = bits.Div64(r, x.lo, d)
+	return r
 }
 
 func (a *uint128T) divbase(x *uint128T) *uint128T {
