@@ -51,9 +51,9 @@ func (a *uint128T) bitLen() uint {
 	return 128 - a.leadingZeros()
 }
 
-func (a uint128T) div64(d uint64) uint128T {
-	q, _ := a.divrem64(d)
-	return q
+func (a *uint128T) div64(x *uint128T, d uint64) *uint128T {
+	*a, _ = x.divrem64(d)
+	return a
 }
 
 func (a uint128T) divrem64(d uint64) (q uint128T, r uint64) {
@@ -128,7 +128,8 @@ func (a *uint128T) sqrt() uint64 {
 		return a.lo
 	}
 	for x := uint64(1) << (a.bitLen()/2 + 1); ; {
-		y := (a.div64(x).lo + x) >> 1
+		var t uint128T
+		y := (t.div64(a, x).lo + x) >> 1
 		if y >= x {
 			return x
 		}
