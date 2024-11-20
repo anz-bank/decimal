@@ -23,15 +23,14 @@ func (a *uint128T) numDecimalDigits() int {
 var tenToThe128 = func() [39]uint128T {
 	var ans [39]uint128T
 	for i := range ans {
-		ans[i] = umul64(tenToThe[i/2], tenToThe[(i+1)/2])
+		ans[i].umul64(tenToThe[i/2], tenToThe[(i+1)/2])
 	}
 	return ans
 }()
 
-func umul64(a, b uint64) uint128T {
-	var n uint128T
-	n.hi, n.lo = bits.Mul64(a, b)
-	return n
+func (a *uint128T) umul64(x, y uint64) *uint128T {
+	a.hi, a.lo = bits.Mul64(x, y)
+	return a
 }
 
 func (a *uint128T) add(x, y *uint128T) *uint128T {
@@ -96,18 +95,19 @@ func (a *uint128T) lt(b uint128T) bool {
 }
 
 func (a uint128T) mul(b uint128T) uint128T {
-	x := umul64(a.hi, b.lo)
-	y := umul64(a.lo, b.hi)
+	var x, y uint128T
+	x.umul64(a.hi, b.lo)
+	y.umul64(a.lo, b.hi)
 	x.add(&x, &y)
 	x.shl(&x, 64)
-	y = umul64(a.lo, b.lo)
+	y.umul64(a.lo, b.lo)
 	return *x.add(&x, &y)
 }
 
-func (a uint128T) mul64(b uint64) uint128T {
-	x := uint128T{0, umul64(a.hi, b).lo}
-	y := umul64(a.lo, b)
-	return *x.add(&x, &y)
+func (a *uint128T) mul64(x *uint128T, b uint64) *uint128T {
+	var t uint128T
+	y := uint128T{0, t.umul64(x.hi, b).lo}
+	return a.add(&y, t.umul64(x.lo, b))
 }
 
 func (a *uint128T) shl(b *uint128T, s uint) *uint128T {

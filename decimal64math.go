@@ -306,7 +306,8 @@ func (d Decimal64) Sqrt() Decimal64 {
 		exp--
 		significand *= 10
 	}
-	x := umul64(10*decimal64Base, significand)
+	var x uint128T
+	x.umul64(10*decimal64Base, significand)
 	sqrt := x.sqrt()
 	exp, significand = renormalize(exp/2-8, sqrt)
 	return newFromParts(sign, exp, significand)
@@ -401,7 +402,7 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	ep.removeZeros()
 	dp.removeZeros()
 	ans.exp = dp.exp + ep.exp
-	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
+	ans.significand.umul64(dp.significand.lo, ep.significand.lo)
 	sep := ans.separation(&fp)
 	if fp.significand.lo != 0 {
 		if sep < -17 {
@@ -447,7 +448,7 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 		return zeroes64[ans.sign]
 	}
 	var roundStatus discardedDigit
-	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
+	ans.significand.umul64(dp.significand.lo, ep.significand.lo)
 	ans.exp = dp.exp + ep.exp + 15
 	ans.significand.divbase(&ans.significand)
 	if ans.exp >= -expOffset {

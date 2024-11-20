@@ -107,7 +107,8 @@ func TestUmul64_po10(t *testing.T) {
 			for j, v := range tenToThe128 {
 				if v.hi == 0 {
 					e := tenToThe128[i+j]
-					a := umul64(u.lo, v.lo)
+					var a uint128T
+					a.umul64(u.lo, v.lo)
 					equal(t, e, a)
 				}
 			}

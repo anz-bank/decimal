@@ -303,7 +303,7 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 	n := uint128T{significand, 0}
 	exp += 16
 	if exp > 0 {
-		n = n.mul64(tenToThe[exp])
+		n.mul64(&n, tenToThe[exp])
 		exp = 0
 	} else {
 		// exp++ till it hits 0 or continuing would throw away digits.
@@ -321,7 +321,8 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 		}
 	}
 	whole128 := n.div64(10 * decimal64Base)
-	x := whole128.mul64(10 * decimal64Base)
+	var x uint128T
+	x.mul64(&whole128, 10*decimal64Base)
 	var frac128 uint128T
 	frac128.sub(&n, &x)
 	return exp, whole128.lo, frac128.lo
