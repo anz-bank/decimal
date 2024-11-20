@@ -39,7 +39,7 @@ func TestUint128Sqrt(t *testing.T) {
 	test(uint64(2<<32), uint128T{0, 4})
 }
 
-func TestU64sqrt(t *testing.T) {
+func TestSqrtu64(t *testing.T) {
 	t.Parallel()
 
 	test := func(n uint64) {
@@ -86,4 +86,27 @@ func TestU64sqrt(t *testing.T) {
 	for i := 0; i < 1_000_000; i++ {
 		test(s.Uint64())
 	}
+}
+
+func TestSqrtu16(t *testing.T) {
+	t.Parallel()
+
+	test := func(n uint16) {
+		t.Helper()
+		replayOnFail(t, func() {
+			t.Helper()
+			s := sqrtu16(n) >> 8
+			sq := uint32(s) * uint32(s)
+			s1q := uint32(s+1) * uint32(s+1)
+			// s1q < sq handles overflow cases.
+			check(t, sq <= uint32(n) && (s1q < sq || s1q >= uint32(n))).Or(t.FailNow)
+		})
+	}
+
+	for i := uint16(0); i < 1<<16-1; i++ {
+		test(i)
+	}
+	test(1<<16 - 1)
+	// fmt.Printf("%#v\n", sqrtTable)
+	// t.Fail()
 }
