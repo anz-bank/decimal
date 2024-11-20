@@ -28,10 +28,10 @@ func (dp *decParts) add128(ep *decParts) decParts {
 		ans.sign = dp.sign
 		ans.significand.add(&dp.significand, &ep.significand)
 	} else {
-		if dp.significand.lt(ep.significand) {
+		if dp.significand.lt(&ep.significand) {
 			ans.sign = ep.sign
 			ans.significand.sub(&ep.significand, &dp.significand)
-		} else if ep.significand.lt(dp.significand) {
+		} else if ep.significand.lt(&dp.significand) {
 			ans.sign = dp.sign
 			ans.significand.sub(&dp.significand, &ep.significand)
 		} else {

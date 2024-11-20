@@ -14,7 +14,7 @@ func (a *uint128T) numDecimalDigits() int {
 	}
 	bitSize := 129 - uint(bits.LeadingZeros64(a.hi))
 	numDigitsEst := int(bitSize * 3 / 10)
-	if a.lt(tenToThe128[numDigitsEst]) {
+	if a.lt(&tenToThe128[numDigitsEst]) {
 		return numDigitsEst
 	}
 	return numDigitsEst + 1
@@ -87,7 +87,7 @@ func (a *uint128T) leadingZeros() uint {
 	return uint(64 + bits.LeadingZeros64(a.lo))
 }
 
-func (a *uint128T) lt(b uint128T) bool {
+func (a *uint128T) lt(b *uint128T) bool {
 	if a.hi != b.hi {
 		return a.hi < b.hi
 	}
