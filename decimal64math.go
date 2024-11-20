@@ -449,7 +449,7 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	var roundStatus discardedDigit
 	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
 	ans.exp = dp.exp + ep.exp + 15
-	ans.significand = ans.significand.div64(decimal64Base)
+	ans.significand.divbase(&ans.significand)
 	if ans.exp >= -expOffset {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	} else if ans.exp < 1-expMax {

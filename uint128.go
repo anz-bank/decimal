@@ -94,13 +94,6 @@ func (a *uint128T) lt(b uint128T) bool {
 	return a.lo < b.lo
 }
 
-func (a uint128T) mulBy10() uint128T {
-	// a*10 = a*8 + a*2
-	a8 := a.shl(3)
-	a2 := a.shl(1)
-	return a8.add(a2)
-}
-
 func (a uint128T) mul(b uint128T) uint128T {
 	return umul64(a.hi, b.lo).add(umul64(a.lo, b.hi)).shl(64).add(umul64(a.lo, b.lo))
 }
@@ -129,13 +122,6 @@ func (a uint128T) shl(s uint) uint128T {
 		return uint128T{a.lo << s, a.lo>>(64-s) | a.hi<<s}
 	}
 	return uint128T{0, a.lo << (s - 64)}
-}
-
-func (a uint128T) shr(s uint) uint128T {
-	if s < 64 {
-		return uint128T{a.lo>>s | a.hi<<(64-s), a.hi >> s}
-	}
-	return uint128T{a.hi >> (s - 64), 0}
 }
 
 // Assumes a < 1<<125
