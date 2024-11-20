@@ -8,7 +8,7 @@ type uint128T struct {
 	lo, hi uint64
 }
 
-func (a uint128T) numDecimalDigits() int {
+func (a *uint128T) numDecimalDigits() int {
 	if a.hi == 0 {
 		return numDecimalDigits(a.lo)
 	}
