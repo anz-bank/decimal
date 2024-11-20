@@ -26,7 +26,7 @@ func (dp *decParts) add128(ep *decParts) decParts {
 	ans.exp = dp.exp
 	if dp.sign == ep.sign {
 		ans.sign = dp.sign
-		ans.significand = dp.significand.add(ep.significand)
+		ans.significand.add(&dp.significand, &ep.significand)
 	} else {
 		if dp.significand.lt(ep.significand) {
 			ans.sign = ep.sign

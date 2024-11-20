@@ -34,10 +34,11 @@ func umul64(a, b uint64) uint128T {
 	return n
 }
 
-func (a uint128T) add(b uint128T) uint128T {
-	lo, carry := bits.Add64(a.lo, b.lo, 0)
-	hi, _ := bits.Add64(a.hi, b.hi, carry)
-	return uint128T{lo, hi}
+func (a *uint128T) add(x, y *uint128T) *uint128T {
+	var carry uint64
+	a.lo, carry = bits.Add64(x.lo, y.lo, 0)
+	a.hi, _ = bits.Add64(x.hi, y.hi, carry)
+	return a
 }
 
 func (a *uint128T) subV2(x, b *uint128T) *uint128T {
@@ -95,11 +96,18 @@ func (a *uint128T) lt(b uint128T) bool {
 }
 
 func (a uint128T) mul(b uint128T) uint128T {
-	return umul64(a.hi, b.lo).add(umul64(a.lo, b.hi)).shl(64).add(umul64(a.lo, b.lo))
+	x := umul64(a.hi, b.lo)
+	y := umul64(a.lo, b.hi)
+	x.add(&x, &y)
+	x = x.shl(64)
+	y = umul64(a.lo, b.lo)
+	return *x.add(&x, &y)
 }
 
 func (a uint128T) mul64(b uint64) uint128T {
-	return uint128T{0, umul64(a.hi, b).lo}.add(umul64(a.lo, b))
+	x := uint128T{0, umul64(a.hi, b).lo}
+	y := umul64(a.lo, b)
+	return *x.add(&x, &y)
 }
 
 // 2's-complement negation, used to implement sub.
@@ -116,8 +124,7 @@ func (a *uint128T) neg(b *uint128T) *uint128T {
 
 func (a *uint128T) sub(x, y *uint128T) *uint128T {
 	var n uint128T
-	*a = x.add(*n.neg(y))
-	return a
+	return a.add(x, n.neg(y))
 }
 
 func (a uint128T) shl(s uint) uint128T {
