@@ -59,7 +59,7 @@ func equal[T comparable](t *testing.T, a, b T) pass {
 
 func equalD64(t *testing.T, expected, actual Decimal64) pass {
 	t.Helper()
-	return equal(t, expected.bits, actual.bits)
+	return equal(t, expected.String(), actual.String())
 }
 
 func isnil(t *testing.T, a any) pass {

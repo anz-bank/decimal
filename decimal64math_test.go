@@ -299,8 +299,10 @@ func TestDecimal64Sqrt(t *testing.T) {
 		i2 := i * i
 		e := New64FromInt64(i)
 		n := New64FromInt64(i2)
-		a := n.Sqrt()
-		equalD64(t, e, a)
+		replayOnFail(t, func() {
+			a := n.Sqrt()
+			equalD64(t, e, a).Or(t.FailNow)
+		})
 	}
 }
 

@@ -121,34 +121,6 @@ func (a *uint128T) set(hi, lo uint64) *uint128T {
 	return a
 }
 
-// Assumes a < 1<<125
-func (a *uint128T) sqrt() uint64 {
-	if a.hi == 0 {
-		return sqrtu64(a.lo)
-	}
-	for x := uint64(1) << (a.bitLen()/2 + 1); ; {
-		var t uint128T
-		y := (t.div64(a, x).lo + x) >> 1
-		if y >= x {
-			return x
-		}
-		x = y
-	}
-	// if a.hi == 0 {
-	// 	return uint64(u64sqrt(a.lo))
-	// }
-	// shift := bits.LeadingZeros64(a.hi) / 2
-	// n := a.hi<<uint64(2*shift) + a.lo>>uint64(64-(2*shift))
-	// s := u64sqrt(n)
-	// var t uint128T
-	// y := (t.div64(a, x).lo + x) >> 1
-	// if y >= x {
-	// 	return x
-	// }
-	// x = y
-
-}
-
 func sqrtu64(n uint64) uint64 {
 	const maxu32 = 1<<32 - 1
 	switch {
@@ -159,8 +131,8 @@ func sqrtu64(n uint64) uint64 {
 	}
 
 	// Shift up as far as possible, but must be an even amount.
-	shift := bits.LeadingZeros64(n) / 2
-	n <<= 2 * shift
+	halfshift := bits.LeadingZeros64(n) / 2
+	n <<= 2 * halfshift
 
 	s := sqrtu16(uint16(n >> (64 - 16)))
 	x := uint64(s) << (32 - 16)
@@ -168,7 +140,7 @@ func sqrtu64(n uint64) uint64 {
 	// Two iterations suffice.
 	x = (x + n/x) >> 1
 	// Undo shift in second iteration. Only need 1/2-shift because it's the √.
-	return (x + n/x) >> (1 + shift)
+	return (x + n/x) >> (1 + halfshift)
 }
 
 const (

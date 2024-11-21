@@ -303,13 +303,13 @@ func (d Decimal64) Sqrt() Decimal64 {
 		return QNaN64
 	}
 	if exp&1 == 1 {
-		exp--
+		exp++
 		significand *= 10
+	} else {
+		significand *= 100
 	}
-	var x uint128T
-	x.umul64(10*decimal64Base, significand)
-	sqrt := x.sqrt()
-	exp, significand = renormalize(exp/2-8, sqrt)
+	s := sqrtu64(significand) / 10
+	exp, significand = renormalize(exp/2, s)
 	return newFromParts(sign, exp, significand)
 }
 

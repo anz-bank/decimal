@@ -22,23 +22,6 @@ func TestUint128Shl(t *testing.T) {
 	test(uint128T{0, 3}, uint128T{3, 42}, 64)
 }
 
-func TestUint128Sqrt(t *testing.T) {
-	t.Parallel()
-
-	test := func(expected uint64, original uint128T) {
-		t.Helper()
-		equal(t, expected, original.sqrt())
-	}
-	test(0, uint128T{})
-	test(1, uint128T{1, 0})
-	test(1, uint128T{2, 0})
-	test(2, uint128T{4, 0})
-	test(2, uint128T{8, 0})
-	test(3, uint128T{9, 0})
-	test(uint64(1<<32), uint128T{0, 1})
-	test(uint64(2<<32), uint128T{0, 4})
-}
-
 func TestSqrtu64(t *testing.T) {
 	t.Parallel()
 
