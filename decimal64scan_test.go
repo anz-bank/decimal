@@ -109,7 +109,7 @@ func TestDecimal64ScanFlakyScanState(t *testing.T) {
 	}
 }
 
-func BenchmarkParse64(b *testing.B) {
+func BenchmarkIOParse64(b *testing.B) {
 	var d Decimal64
 	for n := 0; n < b.N; n++ {
 		buf := bytes.NewBufferString("123456789")
@@ -117,7 +117,7 @@ func BenchmarkParse64(b *testing.B) {
 	}
 }
 
-func BenchmarkDecimal64Scan(b *testing.B) {
+func BenchmarkIODecimal64Scan(b *testing.B) {
 	reader := strings.NewReader("")
 	for n := 0; n < b.N; n++ {
 		reader.Reset("123456789")
@@ -132,17 +132,17 @@ func parseEquals64(t *testing.T) func(expected Decimal64, input string) {
 	return func(expected Decimal64, input string) {
 		nopanic(t, func() {
 			n := MustParse64(input)
-			equalD64(t, expected, n, "%s", input)
+			equalD64(t, expected, n)
 		})
 
 		n, err := Parse64(input)
 		isnil(t, err)
-		equalD64(t, expected, n, "%s", input)
+		equalD64(t, expected, n)
 
 		n = SNaN64
 		count, err := fmt.Sscanf(input, "%g", &n)
 		isnil(t, err)
 		equal(t, 1, count)
-		equalD64(t, expected, n, "%s", input)
+		equalD64(t, expected, n)
 	}
 }

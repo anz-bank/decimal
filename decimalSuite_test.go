@@ -53,67 +53,9 @@ var (
 func TestFromSuite(t *testing.T) {
 	t.Parallel()
 
-	for _, file := range []string{
-		"dectest/ddAbs.decTest",
-		"dectest/ddAdd.decTest",
-		"dectest/ddClass.decTest",
-		"dectest/ddCompare.decTest",
-		"dectest/ddCopySign.decTest",
-		"dectest/ddDivide.decTest",
-		"dectest/ddFMA.decTest",
-		"dectest/ddLogB.decTest",
-		"dectest/ddMax.decTest",
-		"dectest/ddMaxMag.decTest",
-		"dectest/ddMin.decTest",
-		"dectest/ddMinMag.decTest",
-		"dectest/ddMinus.decTest",
-		"dectest/ddMultiply.decTest",
-		"dectest/ddNextMinus.decTest",
-		"dectest/ddNextPlus.decTest",
-		"dectest/ddPlus.decTest",
-		"dectest/ddRound.decTest",
-		"dectest/ddScaleB.decTest",
-		"dectest/ddSubtract.decTest",
-		"dectest/ddToIntegral.decTest",
-
-		// Future
-		// "dectest/ddBase.decTest",
-		// "dectest/ddCompareTotal.decTest",
-		// "dectest/ddCompareTotalMag.decTest",
-		// "dectest/ddCopyAbs.decTest", // QAbs
-		// "dectest/ddCopyNegate.decTest", // QNeg
-		// "dectest/ddDivideInt.decTest",
-		// "dectest/ddNextToward.decTest",
-		// "dectest/ddRemainder.decTest",
-		// "dectest/ddRemainderNear.decTest",
-
-		// Wat?
-		// "dectest/ddEncode.decTest",
-
-		// Not planned
-		// -- bitwise
-		// "dectest/ddAnd.decTest",
-		// "dectest/ddInvert.decTest",
-		// "dectest/ddOr.decTest",
-		// "dectest/ddRotate.decTest",
-		// "dectest/ddShift.decTest",
-		// "dectest/ddXor.decTest",
-		//
-		// -- signalling
-		// "dectest/ddCompareSig.decTest",
-		//
-		// -- nop
-		// "dectest/ddCopy.decTest",
-		//
-		// -- repr
-		// "dectest/ddCanonical.decTest",
-		// "dectest/ddQuantize.decTest",
-		// "dectest/ddReduce.decTest",
-		// "dectest/ddSameQuantum.decTest",
-	} {
-		file := file
-		t.Run(file, func(t *testing.T) {
-			// t.Parallel()
+	test := func(file string) func(t *testing.T) {
+		return func(t *testing.T) {
+			t.Parallel()
 
 			f, _ := os.Open(file)
 			scanner := bufio.NewScanner(f)
@@ -142,8 +84,67 @@ func TestFromSuite(t *testing.T) {
 					})
 				}
 			}
-		})
+		}
 	}
+
+	t.Run("ddAbs", test("dectest/ddAbs.decTest"))
+	t.Run("ddAdd", test("dectest/ddAdd.decTest"))
+	t.Run("ddClass", test("dectest/ddClass.decTest"))
+	t.Run("ddCompare", test("dectest/ddCompare.decTest"))
+	t.Run("ddCopySign", test("dectest/ddCopySign.decTest"))
+	t.Run("ddDivide", test("dectest/ddDivide.decTest"))
+	t.Run("ddFMA", test("dectest/ddFMA.decTest"))
+	t.Run("ddLogB", test("dectest/ddLogB.decTest"))
+	t.Run("ddMax", test("dectest/ddMax.decTest"))
+	t.Run("ddMaxMag", test("dectest/ddMaxMag.decTest"))
+	t.Run("ddMin", test("dectest/ddMin.decTest"))
+	t.Run("ddMinMag", test("dectest/ddMinMag.decTest"))
+	t.Run("ddMinus", test("dectest/ddMinus.decTest"))
+	t.Run("ddMultiply", test("dectest/ddMultiply.decTest"))
+	t.Run("ddNextMinus", test("dectest/ddNextMinus.decTest"))
+	t.Run("ddNextPlus", test("dectest/ddNextPlus.decTest"))
+	t.Run("ddPlus", test("dectest/ddPlus.decTest"))
+	t.Run("ddRound", test("dectest/ddRound.decTest"))
+	t.Run("ddScaleB", test("dectest/ddScaleB.decTest"))
+	t.Run("ddSubtract", test("dectest/ddSubtract.decTest"))
+	t.Run("ddToIntegral", test("dectest/ddToIntegral.decTest"))
+	t.Run("squareroot", test("dectest/squareroot.decTest"))
+
+	// Future
+	// t.Run("ddBase", test("dectest/ddBase.decTest"))
+	// t.Run("ddCompareTotal", test("dectest/ddCompareTotal.decTest"))
+	// t.Run("ddCompareTotalMag", test("dectest/ddCompareTotalMag.decTest"))
+	// t.Run("ddCopyAbs.decTest", //", test("dectest/ddCopyAbs.decTest", // QAb)s)
+	// t.Run("ddCopyNegate.decTest", //", test("dectest/ddCopyNegate.decTest", // QNe)g)
+	// t.Run("ddDivideInt", test("dectest/ddDivideInt.decTest"))
+	// t.Run("ddNextToward", test("dectest/ddNextToward.decTest"))
+	// t.Run("ddRemainder", test("dectest/ddRemainder.decTest"))
+	// t.Run("ddRemainderNear", test("dectest/ddRemainderNear.decTest"))
+
+	// Wat?
+	// t.Run("ddEncode", test("dectest/ddEncode.decTest"))
+
+	// Not planned
+	// -- bitwise
+	// t.Run("ddAnd", test("dectest/ddAnd.decTest"))
+	// t.Run("ddInvert", test("dectest/ddInvert.decTest"))
+	// t.Run("ddOr", test("dectest/ddOr.decTest"))
+	// t.Run("ddRotate", test("dectest/ddRotate.decTest"))
+	// t.Run("ddShift", test("dectest/ddShift.decTest"))
+	// t.Run("ddXor", test("dectest/ddXor.decTest"))
+	//
+	// -- signalling
+	// t.Run("ddCompareSig", test("dectest/ddCompareSig.decTest"))
+	//
+	// -- nop
+	// t.Run("ddCopy", test("dectest/ddCopy.decTest"))
+	//
+	// -- repr
+	// t.Run("ddCanonical", test("dectest/ddCanonical.decTest"))
+	// t.Run("ddQuantize", test("dectest/ddQuantize.decTest"))
+	// t.Run("ddReduce", test("dectest/ddReduce.decTest"))
+	// t.Run("ddSameQuantum", test("dectest/ddSameQuantum.decTest"))
+
 }
 
 func setRoundingFromString(s string) Context64 {
@@ -170,7 +171,7 @@ func getInput(line string) *testCase {
 	// Add regex to match to  rounding: rounding mode here
 
 	m := testRegex.FindAllStringSubmatch(line, -1)
-	if m == nil || !strings.HasPrefix(m[0][2], "dd") {
+	if m == nil || !strings.HasPrefix(m[0][2], "dd") && !strings.HasPrefix(m[0][2], "sqtx") {
 		m := roundingRegex.FindStringSubmatch(line)
 		if m == nil {
 			return nil
@@ -301,10 +302,10 @@ func execOp(ctx Context64, a, b, c Decimal64, op string) opResult {
 	switch op {
 	case "add":
 		return opResult{result: ctx.Add(a, b)}
-	case "multiply":
-		return opResult{result: ctx.Mul(a, b)}
 	case "abs":
 		return opResult{result: a.Abs()}
+	case "class":
+		return opResult{text: a.Class()}
 	case "compare":
 		return opResult{result: a.Cmp64(b)}
 	case "copysign":
@@ -325,6 +326,8 @@ func execOp(ctx Context64, a, b, c Decimal64, op string) opResult {
 		return opResult{result: a.MinMag(b)}
 	case "minus":
 		return opResult{result: a.Neg()}
+	case "multiply":
+		return opResult{result: ctx.Mul(a, b)}
 	case "nextminus":
 		return opResult{result: a.NextMinus()}
 	case "nextplus":
@@ -341,8 +344,8 @@ func execOp(ctx Context64, a, b, c Decimal64, op string) opResult {
 		return opResult{result: ctx.ToIntegral(a)}
 	case "subtract":
 		return opResult{result: ctx.Add(a, b.Neg())}
-	case "class":
-		return opResult{text: a.Class()}
+	case "squareroot":
+		return opResult{result: a.Sqrt()}
 	default:
 		panic(fmt.Errorf("unhandled op: %s", op))
 	}

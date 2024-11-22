@@ -294,7 +294,7 @@ func (d Decimal64) Sqrt() Decimal64 {
 		return d
 	case flSNaN:
 		return SNaN64
-	case flNormal:
+	case flNormal53, flNormal51:
 	}
 	if significand == 0 {
 		return d
@@ -303,11 +303,13 @@ func (d Decimal64) Sqrt() Decimal64 {
 		return QNaN64
 	}
 	if exp&1 == 1 {
-		exp--
+		exp++
 		significand *= 10
+	} else {
+		significand *= 100
 	}
-	sqrt := umul64(10*decimal64Base, significand).sqrt()
-	exp, significand = renormalize(exp/2-8, sqrt)
+	s := sqrtu64(significand) / 10
+	exp, significand = renormalize(exp/2, s)
 	return newFromParts(sign, exp, significand)
 }
 
@@ -347,7 +349,8 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	}
 	var rndStatus discardedDigit
 	dp.matchScales128(&ep)
-	ans := dp.add128(&ep)
+	var ans decParts
+	ans.add128(&dp, &ep)
 	rndStatus = ans.roundToLo()
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
@@ -400,13 +403,13 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	ep.removeZeros()
 	dp.removeZeros()
 	ans.exp = dp.exp + ep.exp
-	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
+	ans.significand.umul64(dp.significand.lo, ep.significand.lo)
 	sep := ans.separation(&fp)
 	if fp.significand.lo != 0 {
 		if sep < -17 {
 			return f
 		} else if sep <= 17 {
-			ans = ans.add128(&fp)
+			ans.add128(&ans, &fp)
 		}
 	}
 	rndStatus = ans.roundToLo()
@@ -425,6 +428,8 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 
 // Mul computes d * e
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
+	// fld := flav(d)
+	// fle := flav(e)
 	var dp decParts
 	dp.unpack(d)
 	var ep decParts
@@ -444,9 +449,9 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 		return zeroes64[ans.sign]
 	}
 	var roundStatus discardedDigit
-	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
+	ans.significand.umul64(dp.significand.lo, ep.significand.lo)
 	ans.exp = dp.exp + ep.exp + 15
-	ans.significand = ans.significand.div64(decimal64Base)
+	ans.significand.divbase(&ans.significand)
 	if ans.exp >= -expOffset {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	} else if ans.exp < 1-expMax {
@@ -468,7 +473,7 @@ func (d Decimal64) NextPlus() Decimal64 {
 			return NegMax64
 		}
 		return Infinity64
-	case flav != flNormal:
+	case !flav.normal():
 		return d
 	case significand == 0:
 		return Min64
@@ -505,7 +510,7 @@ func (d Decimal64) NextMinus() Decimal64 {
 			return Max64
 		}
 		return NegInfinity64
-	case flav != flNormal:
+	case !flav.normal():
 		return d
 	case significand == 0:
 		return NegMin64
@@ -603,7 +608,7 @@ var decPartsOne64 decParts = unpack(One64)
 func (ctx Context64) ToIntegral(d Decimal64) Decimal64 {
 	var dp decParts
 	dp.unpack(d)
-	if dp.fl != flNormal || dp.exp >= 0 {
+	if !dp.fl.normal() || dp.exp >= 0 {
 		return d
 	}
 	return new64(ctx.roundRefRaw(&dp, &decPartsOne64).bits)

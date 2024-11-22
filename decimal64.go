@@ -16,17 +16,45 @@ const (
 	gt5
 )
 
-type flavor int
+type flavor int8
 
 const (
-	flNormal flavor = 1 << iota
-	flInf
+	flInf      flavor = 0
+	flNormal53 flavor = 1 << iota
+	flNormal51
 	flQNaN
 	flSNaN
+	flNormal = flNormal53 | flNormal51
+	flNaN    = flQNaN | flSNaN
 )
 
+func (f flavor) normal() bool {
+	return f&flNormal != 0
+}
+
+func (f flavor) nan() bool {
+	return f&flNaN != 0
+}
+
+func (f flavor) String() string {
+	switch f {
+	case flInf:
+		return "Infinity"
+	case flNormal53:
+		return "Normal53"
+	case flNormal51:
+		return "Normal51"
+	case flQNaN:
+		return "QNaN"
+	case flSNaN:
+		return "SNaN"
+	default:
+		return fmt.Sprintf("Unknown flavor %d", f)
+	}
+}
+
 // Rounding defines how arithmetic operations round numbers in certain operations.
-type Rounding int
+type Rounding int8
 
 const (
 	// HalfUp rounds to the nearest number, rounding away from zero if the
@@ -167,32 +195,31 @@ func new64FromInt64(value int64) Decimal64 {
 }
 
 func renormalize(exp int, significand uint64) (int, uint64) {
-	numBits := 64 - bits.LeadingZeros64(significand)
+	numBits := bits.Len64(significand)
 	numDigits := numBits * 3 / 10
 	normExp := 15 - numDigits
 	if normExp > 0 {
-		if exp-normExp < -expOffset {
+		if normExp > exp+expOffset {
 			normExp = exp + expOffset
 		}
 		exp -= normExp
 		significand *= tenToThe[normExp]
 	} else if normExp < -1 {
 		normExp++
-		if exp-normExp > expMax {
+		if normExp < exp-expMax {
 			normExp = exp - expMax
 		}
 		exp -= normExp
 		significand /= tenToThe[-normExp]
 	}
-	for significand < decimal64Base && exp > -expOffset {
-		exp--
-		significand *= 10
+	switch {
+	case significand < decimal64Base && exp > -expOffset:
+		return exp - 1, significand * 10
+	case significand >= 10*decimal64Base:
+		return exp + 1, significand / 10
+	default:
+		return exp, significand
 	}
-	for significand >= 10*decimal64Base && exp < expMax {
-		exp++
-		significand /= 10
-	}
-	return exp, significand
 }
 
 // roundStatus gives info about the truncated part of the significand that can't be fully stored in 16 decimal digits.
@@ -211,36 +238,6 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 		return eq5
 	}
 	return gt5
-}
-
-// func from stack overflow: samgak
-// TODO: make this more efficent
-func countTrailingZeros(n uint64) int {
-	zeros := 0
-	q := n / 1_0000_0000_0000_0000
-	if n == q*1_0000_0000_0000_0000 {
-		zeros += 16
-		n = q
-	}
-	q = n / 1_0000_0000
-	if n == q*1_0000_0000 {
-		zeros += 8
-		n = q
-	}
-	q = n / 10000
-	if n == q*10000 {
-		zeros += 4
-		n = q
-	}
-	q = n / 100
-	if n == q*100 {
-		zeros += 2
-		n = q
-	}
-	if n%10 == 0 {
-		zeros++
-	}
-	return zeros
 }
 
 func newFromParts(sign int, exp int, significand uint64) Decimal64 {
@@ -280,13 +277,13 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 	case 12, 13, 14:
 		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//     EE ∈ {00, 01, 10}
-		fl = flNormal
+		fl = flNormal51
 		exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
 		significand = d.bits&(1<<51-1) | (1 << 53)
 	default:
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
-		fl = flNormal
+		fl = flNormal53
 		exp = int((d.bits>>(63-10))&(1<<10-1)) - expOffset
 		significand = d.bits & (1<<53 - 1)
 		if significand == 0 {
@@ -306,7 +303,7 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 	n := uint128T{significand, 0}
 	exp += 16
 	if exp > 0 {
-		n = n.mul64(tenToThe[exp])
+		n.mul64(&n, tenToThe[exp])
 		exp = 0
 	} else {
 		// exp++ till it hits 0 or continuing would throw away digits.
@@ -323,8 +320,12 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 			}
 		}
 	}
-	whole128 := n.div64(10 * decimal64Base)
-	frac128 := n.sub(whole128.mul64(10 * decimal64Base))
+	var whole128 uint128T
+	whole128.div10base(&n)
+	var x uint128T
+	x.mul64(&whole128, 10*decimal64Base)
+	var frac128 uint128T
+	frac128.sub(&n, &x)
 	return exp, whole128.lo, frac128.lo
 }
 
@@ -332,7 +333,7 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 func (d Decimal64) Float64() float64 {
 	fl, sign, exp, significand := d.parts()
 	switch fl {
-	case flNormal:
+	case flNormal53, flNormal51:
 		if significand == 0 {
 			return 0.0 * float64(1-2*sign)
 		}
@@ -385,38 +386,34 @@ func (d Decimal64) Int64x() (i int64, exact bool) {
 // IsZero returns true if the Decimal encodes a zero value.
 func (d Decimal64) IsZero() bool {
 	fl, _, _, significand := d.parts()
-	return significand == 0 && fl == flNormal
+	return significand == 0 && fl.normal()
 }
 
 // IsInf indicates whether d is ±∞.
 func (d Decimal64) IsInf() bool {
-	fl, _, _, _ := d.parts()
-	return fl == flInf
+	return d.flavor() == flInf
 }
 
 // IsNaN indicates whether d is not a number.
 func (d Decimal64) IsNaN() bool {
-	fl, _, _, _ := d.parts()
-	return fl == flQNaN || fl == flSNaN
+	return d.flavor().nan()
 }
 
 // IsQNaN indicates whether d is a quiet NaN.
 func (d Decimal64) IsQNaN() bool {
-	fl, _, _, _ := d.parts()
-	return fl == flQNaN
+	return d.flavor() == flQNaN
 }
 
 // IsSNaN indicates whether d is a signalling NaN.
 func (d Decimal64) IsSNaN() bool {
-	fl, _, _, _ := d.parts()
-	return fl == flSNaN
+	return d.flavor() == flSNaN
 }
 
 // IsInt indicates whether d is an integer.
 func (d Decimal64) IsInt() bool {
 	fl, _, exp, significand := d.parts()
 	switch fl {
-	case flNormal:
+	case flNormal53, flNormal51:
 		_, _, frac := expWholeFrac(exp, significand)
 		return frac == 0
 	default:
@@ -432,7 +429,7 @@ func (d Decimal64) quiet() Decimal64 {
 // IsSubnormal indicates whether d is a subnormal.
 func (d Decimal64) IsSubnormal() bool {
 	fl, _, _, significand := d.parts()
-	return significand != 0 && significand < decimal64Base && fl == flNormal
+	return significand != 0 && significand < decimal64Base && fl.normal()
 }
 
 // Sign returns -1/0/1 if d is </=/> 0, respectively.
@@ -457,10 +454,10 @@ func (d Decimal64) ScaleB(e Decimal64) Decimal64 {
 		return r
 	}
 
-	if dp.fl != flNormal || dp.isZero() {
+	if !dp.fl.normal() || dp.isZero() {
 		return d
 	}
-	if ep.fl != flNormal {
+	if !ep.fl.normal() {
 		return QNaN64
 	}
 
@@ -474,7 +471,7 @@ func (d Decimal64) ScaleB(e Decimal64) Decimal64 {
 func (d Decimal64) ScaleBInt(i int) Decimal64 {
 	var dp decParts
 	dp.unpack(d)
-	if dp.fl != flNormal || dp.isZero() {
+	if !dp.fl.normal() || dp.isZero() {
 		return d
 	}
 	return scaleBInt(&dp, i)
@@ -562,6 +559,23 @@ func checkNan(d, e *decParts) (Decimal64, bool) {
 		return e.original, true
 	}
 	return d.original, false
+}
+
+// checkNan returns the decimal NaN that is to be propogated and true else first decimal and false
+func checkNanV2(fld, fle flavor, d, e Decimal64) (Decimal64, bool) {
+	if fld == flSNaN {
+		return d, true
+	}
+	if fle == flSNaN {
+		return e, true
+	}
+	if fld == flQNaN {
+		return d, true
+	}
+	if fle == flQNaN {
+		return e, true
+	}
+	return d, false
 }
 
 // checkNan3 returns the decimal NaN that is to be propogated and true else first decimal and false
