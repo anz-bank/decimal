@@ -55,7 +55,7 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 func (d Decimal64) Cmp(e Decimal64) int {
 	dp := decParts{original: d}
 	ep := decParts{original: e}
-	if checkNanV3(&dp, &ep) != nil {
+	if checkNan(&dp, &ep) != nil {
 		return -2
 	}
 	return cmp(&dp, &ep)
@@ -66,8 +66,8 @@ func (d Decimal64) Cmp(e Decimal64) int {
 func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
 	dp := decParts{original: d}
 	ep := decParts{original: e}
-	if nan := checkNanV3(&dp, &ep); nan != nil {
-		return nan.original
+	if nan := checkNan(&dp, &ep); nan != nil {
+		return *nan
 	}
 	switch cmp(&dp, &ep) {
 	case -1:
@@ -211,12 +211,10 @@ func (d Decimal64) CopySign(e Decimal64) Decimal64 {
 // Quo computes d / e.
 // Rounding rules are applied as per the context.
 func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	if nan, isNan := checkNan(&dp, &ep); isNan {
-		return nan
+	dp := decParts{original: d}
+	ep := decParts{original: e}
+	if nan := checkNan(&dp, &ep); nan != nil {
+		return *nan
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
@@ -311,14 +309,11 @@ func (d Decimal64) Sqrt() Decimal64 {
 
 // Add computes d + e
 func (ctx Context64) Add(d, e Decimal64) Decimal64 {
-	fld := d.flavor()
-	fle := e.flavor()
-	if nan, isNan := checkNanV2(fld, fle, d, e); isNan {
-		return nan
+	dp := decParts{original: d}
+	ep := decParts{original: e}
+	if nan := checkNan(&dp, &ep); nan != nil {
+		return *nan
 	}
-	var dp, ep decParts
-	dp.unpackV2(d, fld)
-	ep.unpackV2(e, fle)
 	if dp.fl == flInf || ep.fl == flInf {
 		if dp.fl != flInf {
 			return e
@@ -425,12 +420,10 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	// fld := flav(d)
 	// fle := flav(e)
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	if nan, isNan := checkNan(&dp, &ep); isNan {
-		return nan
+	dp := decParts{original: d}
+	ep := decParts{original: e}
+	if nan := checkNan(&dp, &ep); nan != nil {
+		return *nan
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
@@ -547,10 +540,8 @@ func (ctx Context64) Round(d, e Decimal64) Decimal64 {
 }
 
 func (ctx Context64) roundRaw(d, e Decimal64) Decimal64 {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
+	dp := decParts{original: d}
+	ep := decParts{original: e}
 	return ctx.roundRefRaw(&dp, &ep)
 }
 
@@ -560,8 +551,8 @@ var (
 )
 
 func (ctx Context64) roundRefRaw(dp, ep *decParts) Decimal64 {
-	if nan, is := checkNan(dp, ep); is {
-		return nan
+	if nan := checkNan(dp, ep); nan != nil {
+		return *nan
 	}
 	if dp.fl == flInf || ep.fl == flInf {
 		if dp.fl == flInf && ep.fl == flInf {

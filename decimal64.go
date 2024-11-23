@@ -448,8 +448,8 @@ func (d Decimal64) Signbit() bool {
 func (d Decimal64) ScaleB(e Decimal64) Decimal64 {
 	dp := decParts{original: d}
 	ep := decParts{original: e}
-	if nan := checkNanV3(&dp, &ep); nan != nil {
-		return nan.original
+	if nan := checkNan(&dp, &ep); nan != nil {
+		return *nan
 	}
 
 	if !dp.fl.normal() || dp.isZero() {
@@ -541,55 +541,21 @@ func numDecimalDigitsU64(n uint64) int {
 	return numDigits
 }
 
-// checkNan returns the decimal NaN that is to be propogated and true else first decimal and false
-func checkNan(d, e *decParts) (Decimal64, bool) {
-	if d.fl == flSNaN {
-		return d.original, true
-	}
-	if e.fl == flSNaN {
-		return e.original, true
-	}
-	if d.fl == flQNaN {
-		return d.original, true
-	}
-	if e.fl == flQNaN {
-		return e.original, true
-	}
-	return d.original, false
-}
-
-// checkNan returns the decimal NaN that is to be propogated and true else first decimal and false
-func checkNanV2(fld, fle flavor, d, e Decimal64) (Decimal64, bool) {
-	if (fld|fle)&flNaN == 0 {
-		return d, false
-	}
-	switch {
-	case fld == flSNaN:
-		return d, true
-	case fle == flSNaN:
-		return e, true
-	case fld == flQNaN:
-		return d, true
-	default:
-		return e, true
-	}
-}
-
-func checkNanV3(dp, ep *decParts) *decParts {
+func checkNan(dp, ep *decParts) *Decimal64 {
 	dp.fl = dp.original.flavor()
 	ep.fl = ep.original.flavor()
 	switch {
 	case dp.fl == flSNaN:
-		return dp
+		return &dp.original
 	case ep.fl == flSNaN:
-		return ep
+		return &ep.original
 	case dp.fl == flQNaN:
-		return dp
+		return &dp.original
 	case ep.fl == flQNaN:
-		return ep
+		return &ep.original
 	}
-	dp.unpackV3()
-	ep.unpackV3()
+	dp.unpackV2()
+	ep.unpackV2()
 	return nil
 }
 

@@ -131,16 +131,12 @@ func (dp *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
 }
 
 func (dp *decParts) unpack(d Decimal64) {
-	dp.unpackV2(d, d.flavor())
-}
-
-func (dp *decParts) unpackV2(d Decimal64, fl flavor) {
 	dp.original = d
-	dp.fl = fl
-	dp.unpackV3()
+	dp.fl = d.flavor()
+	dp.unpackV2()
 }
 
-func (dp *decParts) unpackV3() {
+func (dp *decParts) unpackV2() {
 	d := dp.original
 	dp.sign = int(d.bits >> 63)
 	switch dp.fl {
