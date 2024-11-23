@@ -428,7 +428,7 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
 	if dp.fl == flInf || ep.fl == flInf {
-		if dp.isZero() || ep.isZero() {
+		if dp.significand.lo == 0 && dp.fl != flInf || ep.significand.lo == 0 && ep.fl != flInf {
 			return QNaN64
 		}
 		return infinities64[ans.sign]
