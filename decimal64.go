@@ -545,18 +545,18 @@ func checkNan(dp, ep *decParts) *Decimal64 {
 	dp.fl = dp.original.flavor()
 	ep.fl = ep.original.flavor()
 	switch {
-	case !(dp.fl | ep.fl).nan():
-		dp.unpackV2()
-		ep.unpackV2()
-		return nil
 	case dp.fl == flSNaN:
 		return &dp.original
 	case ep.fl == flSNaN:
 		return &ep.original
 	case dp.fl == flQNaN:
 		return &dp.original
-	default: // ep.fl == flQNaN
+	case ep.fl == flQNaN:
 		return &ep.original
+	default:
+		dp.unpackV2()
+		ep.unpackV2()
+		return nil
 	}
 }
 
@@ -566,11 +566,6 @@ func checkNan3(dp, ep, fp *decParts) *Decimal64 {
 	ep.fl = ep.original.flavor()
 	fp.fl = fp.original.flavor()
 	switch {
-	case !(dp.fl | ep.fl | fp.fl).nan():
-		dp.unpackV2()
-		ep.unpackV2()
-		fp.unpackV2()
-		return nil
 	case dp.fl == flSNaN:
 		return &dp.original
 	case ep.fl == flSNaN:
@@ -581,7 +576,12 @@ func checkNan3(dp, ep, fp *decParts) *Decimal64 {
 		return &dp.original
 	case ep.fl == flQNaN:
 		return &ep.original
-	default: // fp.fl == flQNaN
+	case fp.fl == flQNaN:
 		return &fp.original
+	default:
+		dp.unpackV2()
+		ep.unpackV2()
+		fp.unpackV2()
+		return nil
 	}
 }

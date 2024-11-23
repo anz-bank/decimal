@@ -338,7 +338,6 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 		return dp.original
 	}
 	var rndStatus discardedDigit
-	dp.matchScales128(&ep)
 	var ans decParts
 	ans.add128(&dp, &ep)
 	rndStatus = ans.roundToLo()
