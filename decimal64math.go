@@ -13,6 +13,10 @@ func (d Decimal64) Abs() Decimal64 {
 	if d.flavor().nan() {
 		return d
 	}
+	return d.abs()
+}
+
+func (d Decimal64) abs() Decimal64 {
 	return new64(^neg64 & uint64(d.bits))
 }
 
@@ -77,12 +81,18 @@ func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
 	}
 }
 
-func cmp(_, _ Decimal64, dp, ep *decParts) int {
+func cmp(d, e Decimal64, dp, ep *decParts) int {
+	if d != dp.original {
+		panic("d != dp.original")
+	}
+	if e != ep.original {
+		panic("e != ep.original")
+	}
 	switch {
-	case dp.isZero() && ep.isZero(), dp.original == ep.original:
+	case dp.isZero() && ep.isZero(), d == e:
 		return 0
 	default:
-		diff := dp.original.Sub(ep.original)
+		diff := d.Sub(e)
 		return 1 - 2*int(diff.bits>>63)
 	}
 }
@@ -137,17 +147,18 @@ func (d Decimal64) MaxMag(e Decimal64) Decimal64 {
 
 // MinMag returns the lower of d and e.
 func (d Decimal64) minMag(e Decimal64, sign int) Decimal64 {
+	da, ea := d.abs(), e.abs()
 	var dp decParts
-	dp.unpack(d.Abs())
+	dp.unpack(da)
 	var ep decParts
-	ep.unpack(e.Abs())
+	ep.unpack(ea)
 
 	dnan := dp.fl.nan()
 	enan := ep.fl.nan()
 
 	switch {
 	case !dnan && !enan: // Fast path for non-NaNs.
-		switch sign * cmp(d, e, &dp, &ep) {
+		switch sign * cmp(da, ea, &dp, &ep) {
 		case -1:
 			return d
 		case 1:
