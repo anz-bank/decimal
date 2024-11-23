@@ -136,7 +136,6 @@ func (dp *decParts) unpack(d Decimal64) {
 }
 
 func (dp *decParts) unpackV2(d Decimal64) {
-	dp.original = d
 	dp.sign = int8(d.bits >> 63)
 	switch dp.fl {
 	case flNormal53:
