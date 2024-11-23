@@ -555,30 +555,27 @@ func checkNan(dp, ep *decParts) *Decimal64 {
 		return &ep.original
 	case dp.fl == flQNaN:
 		return &dp.original
-	default: // ep.fl == flQNaN:
+	default: // ep.fl == flQNaN
 		return &ep.original
 	}
 }
 
 // checkNan3 returns the decimal NaN that is to be propogated and true else first decimal and false
-func checkNan3(d, e, f *decParts) (Decimal64, bool) {
-	if d.fl == flSNaN {
-		return d.original, true
+func checkNan3(dp, ep, fp *decParts) *Decimal64 {
+	switch {
+	case !(dp.fl | ep.fl | fp.fl).nan():
+		return nil
+	case dp.fl == flSNaN:
+		return &dp.original
+	case ep.fl == flSNaN:
+		return &ep.original
+	case fp.fl == flSNaN:
+		return &fp.original
+	case dp.fl == flQNaN:
+		return &dp.original
+	case ep.fl == flQNaN:
+		return &ep.original
+	default: // fp.fl == flQNaN
+		return &fp.original
 	}
-	if e.fl == flSNaN {
-		return e.original, true
-	}
-	if f.fl == flSNaN {
-		return f.original, true
-	}
-	if d.fl == flQNaN {
-		return d.original, true
-	}
-	if e.fl == flQNaN {
-		return e.original, true
-	}
-	if f.fl == flQNaN {
-		return f.original, true
-	}
-	return d.original, false
 }

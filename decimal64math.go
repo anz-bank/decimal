@@ -368,8 +368,8 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	ep.unpack(e)
 	var fp decParts
 	fp.unpack(f)
-	if nan, isNan := checkNan3(&dp, &ep, &fp); isNan {
-		return nan
+	if nan := checkNan3(&dp, &ep, &fp); nan != nil {
+		return *nan
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
