@@ -320,7 +320,7 @@ func TestNumDecimalDigits(t *testing.T) {
 
 	for i, num := range tenToThe {
 		for j := uint64(1); j < 10 && i < 19; j++ {
-			equal(t, i+1, numDecimalDigits(num*j))
+			equal(t, i+1, numDecimalDigitsU64(num*j))
 		}
 	}
 }

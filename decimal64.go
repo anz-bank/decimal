@@ -92,7 +92,7 @@ type Context64 struct {
 	// Signal bool
 }
 
-var tenToThe = [...]uint64{
+var tenToThe = [32]uint64{ // pad for efficient indexing
 	1,
 	10,
 	100,
@@ -446,12 +446,10 @@ func (d Decimal64) Signbit() bool {
 }
 
 func (d Decimal64) ScaleB(e Decimal64) Decimal64 {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	if r, nan := checkNan(&dp, &ep); nan {
-		return r
+	dp := decParts{original: d}
+	ep := decParts{original: e}
+	if nan := checkNanV3(&dp, &ep); nan != nil {
+		return nan.original
 	}
 
 	if !dp.fl.normal() || dp.isZero() {
@@ -517,14 +515,14 @@ func scaleBInt(dp *decParts, i int) Decimal64 {
 func (d Decimal64) Class() string {
 	var dp decParts
 	dp.unpack(d)
-	if dp.isSNaN() {
+	if dp.fl == flSNaN {
 		return "sNaN"
-	} else if dp.isNaN() {
+	} else if dp.fl.nan() {
 		return "NaN"
 	}
 
 	switch {
-	case dp.isInf():
+	case dp.fl == flInf:
 		return "+Infinity-Infinity"[9*dp.sign : 9*(dp.sign+1)]
 	case dp.isZero():
 		return "+Zero-Zero"[5*dp.sign : 5*(dp.sign+1)]
@@ -534,14 +532,13 @@ func (d Decimal64) Class() string {
 	return "+Normal-Normal"[7*dp.sign : 7*(dp.sign+1)]
 }
 
-// numDecimalDigits returns the magnitude (number of digits) of a uint64.
-func numDecimalDigits(n uint64) int {
-	numBits := 64 - bits.LeadingZeros64(n)
-	numDigits := numBits * 3 / 10
-	if n < tenToThe[numDigits] {
-		return numDigits
+// numDecimalDigitsU64 returns the magnitude (number of digits) of a uint64.
+func numDecimalDigitsU64(n uint64) int {
+	numDigits := bits.Len64(n) * 77 / 256 // ~ 3/10
+	if n >= tenToThe[uint(numDigits)%uint(len(tenToThe))] {
+		numDigits++
 	}
-	return numDigits + 1
+	return numDigits
 }
 
 // checkNan returns the decimal NaN that is to be propogated and true else first decimal and false
@@ -563,19 +560,37 @@ func checkNan(d, e *decParts) (Decimal64, bool) {
 
 // checkNan returns the decimal NaN that is to be propogated and true else first decimal and false
 func checkNanV2(fld, fle flavor, d, e Decimal64) (Decimal64, bool) {
-	if fld == flSNaN {
-		return d, true
+	if (fld|fle)&flNaN == 0 {
+		return d, false
 	}
-	if fle == flSNaN {
+	switch {
+	case fld == flSNaN:
+		return d, true
+	case fle == flSNaN:
+		return e, true
+	case fld == flQNaN:
+		return d, true
+	default:
 		return e, true
 	}
-	if fld == flQNaN {
-		return d, true
+}
+
+func checkNanV3(dp, ep *decParts) *decParts {
+	dp.fl = dp.original.flavor()
+	ep.fl = ep.original.flavor()
+	switch {
+	case dp.fl == flSNaN:
+		return dp
+	case ep.fl == flSNaN:
+		return ep
+	case dp.fl == flQNaN:
+		return dp
+	case ep.fl == flQNaN:
+		return ep
 	}
-	if fle == flQNaN {
-		return e, true
-	}
-	return d, false
+	dp.unpackV3()
+	ep.unpackV3()
+	return nil
 }
 
 // checkNan3 returns the decimal NaN that is to be propogated and true else first decimal and false

@@ -275,10 +275,10 @@ func TestDecimal64QuoInf(t *testing.T) {
 func TestDecimal64MulPo10(t *testing.T) {
 	t.Parallel()
 
-	for i, u := range tenToThe128 {
-		for j, v := range tenToThe128 {
+	for i, u := range tenToThe128[:39] {
+		for j, v := range tenToThe128[:39] {
 			k := i + j
-			if !(k < len(tenToThe128)) {
+			if !(k < 39) {
 				continue
 			}
 			w := tenToThe128[k]

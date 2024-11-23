@@ -12,19 +12,19 @@ type uint128T struct {
 
 func (a *uint128T) numDecimalDigits() int {
 	if a.hi == 0 {
-		return numDecimalDigits(a.lo)
+		return numDecimalDigitsU64(a.lo)
 	}
-	bitSize := 129 - uint(bits.LeadingZeros64(a.hi))
-	numDigitsEst := int(bitSize * 3 / 10)
-	if a.lt(&tenToThe128[numDigitsEst]) {
-		return numDigitsEst
+	bitSize := 65 + bits.Len64(a.hi)
+	numDigitsEst := bitSize * 77 / 256
+	if !a.lt(&tenToThe128[uint(numDigitsEst)%uint(len(tenToThe128))]) {
+		numDigitsEst++
 	}
-	return numDigitsEst + 1
+	return numDigitsEst
 }
 
-var tenToThe128 = func() [39]uint128T {
-	var ans [39]uint128T
-	for i := range ans {
+var tenToThe128 = func() [64]uint128T {
+	var ans [64]uint128T
+	for i := range ans[:39] {
 		ans[i].umul64(tenToThe[i/2], tenToThe[(i+1)/2])
 	}
 	return ans
@@ -49,19 +49,14 @@ func (a *uint128T) sub(x, y *uint128T) *uint128T {
 	return a
 }
 
-func (a *uint128T) bitLen() uint {
-	return 128 - a.leadingZeros()
-}
-
-func (a *uint128T) div64(x *uint128T, d uint64) *uint128T {
-	a.divrem64(x, d)
-	return a
-}
-
 func (a *uint128T) divrem64(x *uint128T, d uint64) uint64 {
 	var r uint64
-	a.hi, r = bits.Div64(0, x.hi, d)
-	a.lo, r = bits.Div64(r, x.lo, d)
+	if a.hi == 0 {
+		a.lo, r = x.lo/d, x.lo%d
+	} else {
+		a.hi, r = bits.Div64(0, x.hi, d)
+		a.lo, r = bits.Div64(r, x.lo, d)
+	}
 	return r
 }
 
@@ -71,19 +66,11 @@ func (a *uint128T) divbase(x *uint128T) *uint128T { return a.divc(x, 113, 0x901d
 // div10base divides a by 10*[decimal64Base].
 func (a *uint128T) div10base(x *uint128T) *uint128T { return a.divc(x, 117, 0xe69594bec44de15b) }
 
-// divc divides a by n, expressed as a power-of-two index and 1<<index/n.
-// Index should be chosen such that 1<<index/n is the largest possible value < 1<<64.
-func (a *uint128T) divc(x *uint128T, index int, rdenom uint64) *uint128T {
+// divc divides a by n where 1<<po2/rdenom ~ n and po2 is chosen such that rdenom is the largest possible value < 1<<64.
+func (a *uint128T) divc(x *uint128T, po2 int, rdenom uint64) *uint128T {
 	m := x.hi<<(64-43) + x.lo>>43 // (hi, lo) >> 43
 	q, _ := bits.Mul64(m, rdenom)
-	return a.set(0, q>>(index-(43+64))+1)
-}
-
-func (a *uint128T) leadingZeros() uint {
-	if a.hi > 0 {
-		return uint(bits.LeadingZeros64(a.hi))
-	}
-	return uint(64 + bits.LeadingZeros64(a.lo))
+	return a.set(0, q>>(po2-(43+64))+1)
 }
 
 func (a *uint128T) lt(b *uint128T) bool {

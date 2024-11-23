@@ -10,7 +10,7 @@ func (d Decimal64) Equal(e Decimal64) bool {
 
 // Abs computes ||d||.
 func (d Decimal64) Abs() Decimal64 {
-	if d.IsNaN() {
+	if d.flavor().nan() {
 		return d
 	}
 	return new64(^neg64 & uint64(d.bits))
@@ -53,11 +53,9 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 //	 0 if d == e (incl. -0 == 0, -Inf == -Inf, and +Inf == +Inf)
 //	+1 if d >  e
 func (d Decimal64) Cmp(e Decimal64) int {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	if _, isNan := checkNan(&dp, &ep); isNan {
+	dp := decParts{original: d}
+	ep := decParts{original: e}
+	if checkNanV3(&dp, &ep) != nil {
 		return -2
 	}
 	return cmp(&dp, &ep)
@@ -66,12 +64,10 @@ func (d Decimal64) Cmp(e Decimal64) int {
 // Cmp64 returns the same output as Cmp as a Decimal64, unless d or e is NaN, in
 // which case it returns a corresponding NaN result.
 func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	if n, isNan := checkNan(&dp, &ep); isNan {
-		return n
+	dp := decParts{original: d}
+	ep := decParts{original: e}
+	if nan := checkNanV3(&dp, &ep); nan != nil {
+		return nan.original
 	}
 	switch cmp(&dp, &ep) {
 	case -1:
@@ -105,13 +101,12 @@ func (d Decimal64) Max(e Decimal64) Decimal64 {
 
 // Min returns the lower of d and e.
 func (d Decimal64) min(e Decimal64, sign int) Decimal64 {
-	var dp decParts
+	var dp, ep decParts
 	dp.unpack(d)
-	var ep decParts
 	ep.unpack(e)
 
-	dnan := dp.isNaN()
-	enan := ep.isNaN()
+	dnan := dp.fl.nan()
+	enan := ep.fl.nan()
 
 	switch {
 	case !dnan && !enan: // Fast path for non-NaNs.
@@ -120,9 +115,9 @@ func (d Decimal64) min(e Decimal64, sign int) Decimal64 {
 		}
 		return e
 
-	case dp.isSNaN():
+	case dp.fl == flSNaN:
 		return d.quiet()
-	case ep.isSNaN():
+	case ep.fl == flSNaN:
 		return e.quiet()
 
 	case !enan:
@@ -149,8 +144,8 @@ func (d Decimal64) minMag(e Decimal64, sign int) Decimal64 {
 	var ep decParts
 	ep.unpack(e.Abs())
 
-	dnan := dp.isNaN()
-	enan := ep.isNaN()
+	dnan := dp.fl.nan()
+	enan := ep.fl.nan()
 
 	switch {
 	case !dnan && !enan: // Fast path for non-NaNs.
@@ -165,9 +160,9 @@ func (d Decimal64) minMag(e Decimal64, sign int) Decimal64 {
 			}
 			return e
 		}
-	case dp.isSNaN():
+	case dp.fl == flSNaN:
 		return d.quiet()
-	case ep.isSNaN():
+	case ep.fl == flSNaN:
 		return e.quiet()
 	case !enan:
 		return e
@@ -178,7 +173,7 @@ func (d Decimal64) minMag(e Decimal64, sign int) Decimal64 {
 
 // Neg computes -d.
 func (d Decimal64) Neg() Decimal64 {
-	if d.IsNaN() {
+	if d.flavor().nan() {
 		return d
 	}
 	return new64(neg64 ^ d.bits)
@@ -186,12 +181,13 @@ func (d Decimal64) Neg() Decimal64 {
 
 // Logb return the integral log10 of d.
 func (d Decimal64) Logb() Decimal64 {
+	fl := d.flavor()
 	switch {
-	case d.IsNaN():
+	case fl.nan():
 		return d
 	case d.IsZero():
 		return NegInfinity64
-	case d.IsInf():
+	case fl == flInf:
 		return Infinity64
 	default:
 		var dp decParts
@@ -315,13 +311,14 @@ func (d Decimal64) Sqrt() Decimal64 {
 
 // Add computes d + e
 func (ctx Context64) Add(d, e Decimal64) Decimal64 {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	if nan, isNan := checkNan(&dp, &ep); isNan {
+	fld := d.flavor()
+	fle := e.flavor()
+	if nan, isNan := checkNanV2(fld, fle, d, e); isNan {
 		return nan
 	}
+	var dp, ep decParts
+	dp.unpackV2(d, fld)
+	ep.unpackV2(e, fle)
 	if dp.fl == flInf || ep.fl == flInf {
 		if dp.fl != flInf {
 			return e
@@ -336,8 +333,6 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	} else if ep.significand.lo == 0 {
 		return d
 	}
-	ep.removeZeros()
-	dp.removeZeros()
 	sep := dp.separation(&ep)
 
 	if sep < 0 {

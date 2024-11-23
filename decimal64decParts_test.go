@@ -7,10 +7,10 @@ func TestPartsInf(t *testing.T) {
 
 	var a decParts
 	a.unpack(Infinity64)
-	check(t, a.isInf())
+	check(t, a.fl == flInf)
 
 	a.unpack(NegInfinity64)
-	check(t, a.isInf())
+	check(t, a.fl == flInf)
 }
 
 func TestIsNaN(t *testing.T) {
@@ -18,10 +18,10 @@ func TestIsNaN(t *testing.T) {
 
 	var a decParts
 	a.unpack(Zero64)
-	check(t, !a.isNaN())
+	check(t, !a.fl.nan())
 
 	a.unpack(SNaN64)
-	check(t, a.isSNaN())
+	check(t, a.fl == flSNaN)
 }
 
 func TestPartsSubnormal(t *testing.T) {

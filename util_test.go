@@ -118,9 +118,9 @@ func panics(t *testing.T, f func()) (b pass) {
 func TestUmul64_po10(t *testing.T) {
 	t.Parallel()
 
-	for i, u := range tenToThe128 {
+	for i, u := range tenToThe128[:39] {
 		if u.hi == 0 {
-			for j, v := range tenToThe128 {
+			for j, v := range tenToThe128[:39] {
 				if v.hi == 0 {
 					e := tenToThe128[i+j]
 					var a uint128T

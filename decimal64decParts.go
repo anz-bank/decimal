@@ -69,18 +69,6 @@ func (dp *decParts) isZero() bool {
 	return dp.significand == uint128T{} && dp.fl.normal()
 }
 
-func (dp *decParts) isInf() bool {
-	return dp.fl == flInf
-}
-
-func (dp *decParts) isNaN() bool {
-	return dp.fl&(flQNaN|flSNaN) != 0
-}
-
-func (dp *decParts) isSNaN() bool {
-	return dp.fl == flSNaN
-}
-
 func (dp *decParts) isSubnormal() bool {
 	return (dp.significand != uint128T{}) && dp.significand.lo < decimal64Base && dp.fl.normal()
 }
@@ -148,9 +136,14 @@ func (dp *decParts) unpack(d Decimal64) {
 
 func (dp *decParts) unpackV2(d Decimal64, fl flavor) {
 	dp.original = d
-	dp.sign = int(d.bits >> 63)
 	dp.fl = fl
-	switch fl {
+	dp.unpackV3()
+}
+
+func (dp *decParts) unpackV3() {
+	d := dp.original
+	dp.sign = int(d.bits >> 63)
+	switch dp.fl {
 	case flNormal53:
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
