@@ -545,18 +545,19 @@ func checkNan(dp, ep *decParts) *Decimal64 {
 	dp.fl = dp.original.flavor()
 	ep.fl = ep.original.flavor()
 	switch {
+	case !(dp.fl | ep.fl).nan():
+		dp.unpackV2()
+		ep.unpackV2()
+		return nil
 	case dp.fl == flSNaN:
 		return &dp.original
 	case ep.fl == flSNaN:
 		return &ep.original
 	case dp.fl == flQNaN:
 		return &dp.original
-	case ep.fl == flQNaN:
+	default: // ep.fl == flQNaN:
 		return &ep.original
 	}
-	dp.unpackV2()
-	ep.unpackV2()
-	return nil
 }
 
 // checkNan3 returns the decimal NaN that is to be propogated and true else first decimal and false
