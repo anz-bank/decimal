@@ -362,12 +362,9 @@ func (ctx Context64) Sub(d, e Decimal64) Decimal64 {
 
 // FMA computes d*e + f
 func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	var fp decParts
-	fp.unpack(f)
+	dp := decParts{original: d}
+	ep := decParts{original: e}
+	fp := decParts{original: f}
 	if nan := checkNan3(&dp, &ep, &fp); nan != nil {
 		return *nan
 	}
