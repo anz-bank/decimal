@@ -6,7 +6,6 @@ type decParts struct {
 	sign        int8
 	exp         int16
 	significand uint128T
-	original    Decimal64
 }
 
 func unpack(d Decimal64) decParts {
