@@ -324,12 +324,17 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 		}
 		return QNaN64
 	}
+	return ctx.add(d, e, &dp, &ep)
+}
+
+// Add computes d + e
+func (ctx Context64) add(d, e Decimal64, dp, ep *decParts) Decimal64 {
 	if dp.significand.lo == 0 {
 		return e
 	} else if ep.significand.lo == 0 {
 		return d
 	}
-	sep := dp.separation(&ep)
+	sep := dp.separation(ep)
 
 	if sep < -17 {
 		return e
@@ -343,7 +348,7 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	}
 	var rndStatus discardedDigit
 	var ans decParts
-	ans.add128(&dp, &ep)
+	ans.add128(dp, ep)
 	rndStatus = ans.roundToLo()
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
