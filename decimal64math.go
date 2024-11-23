@@ -82,12 +82,6 @@ func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
 }
 
 func cmp(d, e Decimal64, dp, ep *decParts) int {
-	if d != dp.original {
-		panic("d != dp.original")
-	}
-	if e != ep.original {
-		panic("e != ep.original")
-	}
 	switch {
 	case dp.isZero() && ep.isZero(), d == e:
 		return 0
