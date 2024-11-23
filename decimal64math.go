@@ -558,7 +558,7 @@ func (ctx Context64) roundRefRaw(d, e Decimal64, dp, ep *decParts) Decimal64 {
 		return zero64Raw
 	}
 	if delta > 14 {
-		return dp.original
+		return d
 	}
 	p := tenToThe[14-delta]
 	s, grew := ctx.round(dsignificand, p)
