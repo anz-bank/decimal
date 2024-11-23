@@ -333,7 +333,7 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 
 	if sep < 0 {
 		dp, ep = ep, dp
-		d, e = e, d
+		d = e
 		sep = -sep
 	}
 	if sep > 17 {
