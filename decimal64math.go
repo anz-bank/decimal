@@ -545,7 +545,7 @@ func (ctx Context64) roundRefRaw(d, e Decimal64, dp, ep *decParts) Decimal64 {
 	}
 	if dp.fl == flInf || ep.fl == flInf {
 		if dp.fl == flInf && ep.fl == flInf {
-			return dp.original
+			return d
 		}
 		return qNaN64Raw
 	}
