@@ -2,10 +2,10 @@ package decimal
 
 // decParts stores the constituting decParts of a decimal64.
 type decParts struct {
-	fl          flavor
-	sign        int8
-	exp         int16
 	significand uint128T
+	exp         int16
+	sign        int8
+	fl          flavor
 }
 
 func unpack(d Decimal64) decParts {
