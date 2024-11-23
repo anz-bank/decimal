@@ -209,8 +209,7 @@ func (d Decimal64) CopySign(e Decimal64) Decimal64 {
 // Quo computes d / e.
 // Rounding rules are applied as per the context.
 func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
-	dp := decParts{original: d}
-	ep := decParts{original: e}
+	var dp, ep decParts
 	if nan := checkNan(d, e, &dp, &ep); nan != nil {
 		return *nan
 	}
@@ -307,8 +306,7 @@ func (d Decimal64) Sqrt() Decimal64 {
 
 // Add computes d + e
 func (ctx Context64) Add(d, e Decimal64) Decimal64 {
-	dp := decParts{original: d}
-	ep := decParts{original: e}
+	var dp, ep decParts
 	if nan := checkNan(d, e, &dp, &ep); nan != nil {
 		return *nan
 	}
@@ -359,8 +357,7 @@ func (ctx Context64) Sub(d, e Decimal64) Decimal64 {
 
 // FMA computes d*e + f
 func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
-	dp := decParts{original: d}
-	ep := decParts{original: e}
+	var dp, ep decParts
 	fp := decParts{original: f}
 	if nan := checkNan3(d, e, f, &dp, &ep, &fp); nan != nil {
 		return *nan
@@ -414,8 +411,7 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	// fld := flav(d)
 	// fle := flav(e)
-	dp := decParts{original: d}
-	ep := decParts{original: e}
+	var dp, ep decParts
 	if nan := checkNan(d, e, &dp, &ep); nan != nil {
 		return *nan
 	}
@@ -534,8 +530,7 @@ func (ctx Context64) Round(d, e Decimal64) Decimal64 {
 }
 
 func (ctx Context64) roundRaw(d, e Decimal64) Decimal64 {
-	dp := decParts{original: d}
-	ep := decParts{original: e}
+	var dp, ep decParts
 	return ctx.roundRefRaw(d, e, &dp, &ep)
 }
 
