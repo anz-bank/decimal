@@ -357,8 +357,7 @@ func (ctx Context64) Sub(d, e Decimal64) Decimal64 {
 
 // FMA computes d*e + f
 func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
-	var dp, ep decParts
-	fp := decParts{original: f}
+	var dp, ep, fp decParts
 	if nan := checkNan3(d, e, f, &dp, &ep, &fp); nan != nil {
 		return *nan
 	}
