@@ -419,10 +419,8 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	return ans.decimal64()
 }
 
-// Mul computes d * e
+// Mul computes d * e.
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
-	// fld := flav(d)
-	// fle := flav(e)
 	var dp, ep decParts
 	if nan := checkNan(d, e, &dp, &ep); nan != nil {
 		return *nan
@@ -430,11 +428,15 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
 	if dp.fl == flInf || ep.fl == flInf {
-		if ep.isZero() || dp.isZero() {
+		if dp.isZero() || ep.isZero() {
 			return QNaN64
 		}
 		return infinities64[ans.sign]
 	}
+	return ctx.mul(&dp, &ep, &ans)
+}
+
+func (ctx Context64) mul(dp, ep, ans *decParts) Decimal64 {
 	if ep.significand.lo == 0 || dp.significand.lo == 0 {
 		return zeroes64[ans.sign]
 	}
