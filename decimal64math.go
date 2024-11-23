@@ -57,7 +57,7 @@ func (d Decimal64) Cmp(e Decimal64) int {
 	if checkNan(d, e, &dp, &ep) != nil {
 		return -2
 	}
-	return cmp(&dp, &ep)
+	return cmp(d, e, &dp, &ep)
 }
 
 // Cmp64 returns the same output as Cmp as a Decimal64, unless d or e is NaN, in
@@ -67,7 +67,7 @@ func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
 	if nan := checkNan(d, e, &dp, &ep); nan != nil {
 		return *nan
 	}
-	switch cmp(&dp, &ep) {
+	switch cmp(d, e, &dp, &ep) {
 	case -1:
 		return NegOne64
 	case 1:
@@ -77,7 +77,7 @@ func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
 	}
 }
 
-func cmp(dp, ep *decParts) int {
+func cmp(_, _ Decimal64, dp, ep *decParts) int {
 	switch {
 	case dp.isZero() && ep.isZero(), dp.original == ep.original:
 		return 0
@@ -108,7 +108,7 @@ func (d Decimal64) min(e Decimal64, sign int) Decimal64 {
 
 	switch {
 	case !dnan && !enan: // Fast path for non-NaNs.
-		if sign*cmp(&dp, &ep) < 0 {
+		if sign*cmp(d, e, &dp, &ep) < 0 {
 			return d
 		}
 		return e
@@ -147,7 +147,7 @@ func (d Decimal64) minMag(e Decimal64, sign int) Decimal64 {
 
 	switch {
 	case !dnan && !enan: // Fast path for non-NaNs.
-		switch sign * cmp(&dp, &ep) {
+		switch sign * cmp(d, e, &dp, &ep) {
 		case -1:
 			return d
 		case 1:
