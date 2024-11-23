@@ -11,8 +11,8 @@ import "fmt"
 type Decimal64 struct {
 	s           string
 	fl          flavor
-	sign        int
-	exp         int
+	sign        int8
+	exp         int16
 	significand uint64
 	bits        uint64
 }
