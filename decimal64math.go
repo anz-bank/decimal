@@ -331,9 +331,11 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	}
 	sep := dp.separation(&ep)
 
+	if sep < -17 {
+		return e
+	}
 	if sep < 0 {
 		dp, ep = ep, dp
-		d = e
 		sep = -sep
 	}
 	if sep > 17 {
