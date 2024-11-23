@@ -337,7 +337,7 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 		sep = -sep
 	}
 	if sep > 17 {
-		return dp.original
+		return d
 	}
 	var rndStatus discardedDigit
 	var ans decParts
