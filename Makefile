@@ -3,14 +3,11 @@ all: test-all build-linux lint
 
 
 .PHONY: test-all
-test-all: test test-debug test-32
+test-all: test test-32
 
 .PHONY: test
 test:
 	go test $(GOTESTFLAGS)
-
-.PHONY: test-debug
-test-debug:
 	go test $(GOTESTFLAGS) -tags=decimal_debug
 
 .PHONY: test-32
@@ -45,7 +42,6 @@ DOCKERRUN = docker run --rm \
 	-v $(PWD):/app \
 	-v `go env GOCACHE`:/root/.cache/go-build \
 	-v `go env GOMODCACHE`:/go/pkg/mod
-
 
 # Dependency on build-linux primes Go caches.
 .PHONY: lint
