@@ -53,9 +53,8 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 //	 0 if d == e (incl. -0 == 0, -Inf == -Inf, and +Inf == +Inf)
 //	+1 if d >  e
 func (d Decimal64) Cmp(e Decimal64) int {
-	dp := decParts{original: d}
-	ep := decParts{original: e}
-	if checkNan(&dp, &ep) != nil {
+	var dp, ep decParts
+	if checkNan(d, e, &dp, &ep) != nil {
 		return -2
 	}
 	return cmp(&dp, &ep)
@@ -64,9 +63,8 @@ func (d Decimal64) Cmp(e Decimal64) int {
 // Cmp64 returns the same output as Cmp as a Decimal64, unless d or e is NaN, in
 // which case it returns a corresponding NaN result.
 func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
-	dp := decParts{original: d}
-	ep := decParts{original: e}
-	if nan := checkNan(&dp, &ep); nan != nil {
+	var dp, ep decParts
+	if nan := checkNan(d, e, &dp, &ep); nan != nil {
 		return *nan
 	}
 	switch cmp(&dp, &ep) {
@@ -213,7 +211,7 @@ func (d Decimal64) CopySign(e Decimal64) Decimal64 {
 func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
 	dp := decParts{original: d}
 	ep := decParts{original: e}
-	if nan := checkNan(&dp, &ep); nan != nil {
+	if nan := checkNan(d, e, &dp, &ep); nan != nil {
 		return *nan
 	}
 	var ans decParts
@@ -311,7 +309,7 @@ func (d Decimal64) Sqrt() Decimal64 {
 func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 	dp := decParts{original: d}
 	ep := decParts{original: e}
-	if nan := checkNan(&dp, &ep); nan != nil {
+	if nan := checkNan(d, e, &dp, &ep); nan != nil {
 		return *nan
 	}
 	if dp.fl == flInf || ep.fl == flInf {
@@ -364,7 +362,7 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	dp := decParts{original: d}
 	ep := decParts{original: e}
 	fp := decParts{original: f}
-	if nan := checkNan3(&dp, &ep, &fp); nan != nil {
+	if nan := checkNan3(d, e, f, &dp, &ep, &fp); nan != nil {
 		return *nan
 	}
 	var ans decParts
@@ -418,7 +416,7 @@ func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
 	// fle := flav(e)
 	dp := decParts{original: d}
 	ep := decParts{original: e}
-	if nan := checkNan(&dp, &ep); nan != nil {
+	if nan := checkNan(d, e, &dp, &ep); nan != nil {
 		return *nan
 	}
 	var ans decParts
@@ -538,7 +536,7 @@ func (ctx Context64) Round(d, e Decimal64) Decimal64 {
 func (ctx Context64) roundRaw(d, e Decimal64) Decimal64 {
 	dp := decParts{original: d}
 	ep := decParts{original: e}
-	return ctx.roundRefRaw(&dp, &ep)
+	return ctx.roundRefRaw(d, e, &dp, &ep)
 }
 
 var (
@@ -546,8 +544,8 @@ var (
 	qNaN64Raw = new64nostr(0x7c << 56)
 )
 
-func (ctx Context64) roundRefRaw(dp, ep *decParts) Decimal64 {
-	if nan := checkNan(dp, ep); nan != nil {
+func (ctx Context64) roundRefRaw(d, e Decimal64, dp, ep *decParts) Decimal64 {
+	if nan := checkNan(d, e, dp, ep); nan != nil {
 		return *nan
 	}
 	if dp.fl == flInf || ep.fl == flInf {
@@ -593,7 +591,7 @@ func (ctx Context64) ToIntegral(d Decimal64) Decimal64 {
 	if !dp.fl.normal() || dp.exp >= 0 {
 		return d
 	}
-	return new64(ctx.roundRefRaw(&dp, &decPartsOne64).bits)
+	return new64(ctx.roundRefRaw(d, One64, &dp, &decPartsOne64).bits)
 }
 
 func (ctx Context64) round(s, p uint64) (uint64, bool) {
@@ -618,7 +616,7 @@ func (ctx Context64) round(s, p uint64) (uint64, bool) {
 	return s, false
 }
 
-func unsubnormal(exp int, significand uint64) (int, uint64) {
+func unsubnormal(exp int16, significand uint64) (int16, uint64) {
 	if significand != 0 {
 		for significand < decimal64Base {
 			significand *= 10
@@ -628,7 +626,7 @@ func unsubnormal(exp int, significand uint64) (int, uint64) {
 	return exp, significand
 }
 
-func resubnormal(exp int, significand uint64) (int, uint64) {
+func resubnormal(exp int16, significand uint64) (int16, uint64) {
 	for exp < -expOffset || significand >= 10*decimal64Base {
 		significand /= 10
 		exp++

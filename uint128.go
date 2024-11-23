@@ -10,12 +10,12 @@ type uint128T struct {
 	lo, hi uint64
 }
 
-func (a *uint128T) numDecimalDigits() int {
+func (a *uint128T) numDecimalDigits() int16 {
 	if a.hi == 0 {
 		return numDecimalDigitsU64(a.lo)
 	}
 	bitSize := 65 + bits.Len64(a.hi)
-	numDigitsEst := bitSize * 77 / 256
+	numDigitsEst := int16(bitSize * 77 / 256)
 	if !a.lt(&tenToThe128[uint(numDigitsEst)%uint(len(tenToThe128))]) {
 		numDigitsEst++
 	}

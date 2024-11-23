@@ -3,8 +3,8 @@ package decimal
 // decParts stores the constituting decParts of a decimal64.
 type decParts struct {
 	fl          flavor
-	sign        int
-	exp         int
+	sign        int8
+	exp         int16
 	significand uint128T
 	original    Decimal64
 }
@@ -74,7 +74,7 @@ func (dp *decParts) isSubnormal() bool {
 }
 
 // separation gets the separation in decimal places of the MSD's of two decimal 64s
-func (dp *decParts) separation(ep *decParts) int {
+func (dp *decParts) separation(ep *decParts) int16 {
 	return dp.significand.numDecimalDigits() + dp.exp - ep.significand.numDecimalDigits() - ep.exp
 }
 
@@ -116,7 +116,7 @@ func (dp *decParts) isinf() bool {
 	return dp.fl == flInf
 }
 
-func (dp *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
+func (dp *decParts) rescale(targetExp int16) (rndStatus discardedDigit) {
 	expDiff := targetExp - dp.exp
 	mag := dp.significand.numDecimalDigits()
 	rndStatus = roundStatus(dp.significand.lo, dp.exp, targetExp)
@@ -131,19 +131,18 @@ func (dp *decParts) rescale(targetExp int) (rndStatus discardedDigit) {
 }
 
 func (dp *decParts) unpack(d Decimal64) {
-	dp.original = d
 	dp.fl = d.flavor()
-	dp.unpackV2()
+	dp.unpackV2(d)
 }
 
-func (dp *decParts) unpackV2() {
-	d := dp.original
-	dp.sign = int(d.bits >> 63)
+func (dp *decParts) unpackV2(d Decimal64) {
+	dp.original = d
+	dp.sign = int8(d.bits >> 63)
 	switch dp.fl {
 	case flNormal53:
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
-		dp.exp = int((d.bits>>(63-10))&(1<<10-1)) - expOffset
+		dp.exp = int16((d.bits>>(63-10))&(1<<10-1)) - expOffset
 		dp.significand.lo = d.bits & (1<<53 - 1)
 		if dp.significand.lo == 0 {
 			dp.exp = 0
@@ -151,12 +150,11 @@ func (dp *decParts) unpackV2() {
 	case flNormal51:
 		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//     EE ∈ {00, 01, 10}
-		dp.exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
+		dp.exp = int16((d.bits>>(63-12))&(1<<10-1)) - expOffset
 		dp.significand.lo = d.bits&(1<<51-1) | (1 << 53)
 	case flInf:
 	default: // NaN
 		dp.significand.lo = d.bits & (1<<51 - 1) // Payload
-		return
 	}
 }
 

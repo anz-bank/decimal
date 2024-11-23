@@ -166,8 +166,8 @@ func (ctx Context64) Scan(d *Decimal64, state fmt.ScanState, verb rune) error {
 	}
 	exponent += int64(sExp - len(frac))
 
-	partExp, partSignificand := renormalize(int(exponent), uint64(significand))
-	*d = newFromParts(sign, partExp, partSignificand)
+	partExp, partSignificand := renormalize(int16(exponent), uint64(significand))
+	*d = newFromParts(int8(sign), partExp, partSignificand)
 	return nil
 }
 

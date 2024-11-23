@@ -20,7 +20,7 @@ type flavor int8
 
 const (
 	flInf      flavor = 0
-	flNormal53 flavor = 1 << iota
+	flNormal53 flavor = 1 << (iota - 1)
 	flNormal51
 	flQNaN
 	flSNaN
@@ -182,7 +182,7 @@ func New64FromInt64(i int64) Decimal64 {
 }
 
 func new64FromInt64(value int64) Decimal64 {
-	sign := 0
+	sign := int8(0)
 	if value < 0 {
 		sign = 1
 		value = -value
@@ -194,9 +194,8 @@ func new64FromInt64(value int64) Decimal64 {
 	return newFromParts(sign, exp, significand)
 }
 
-func renormalize(exp int, significand uint64) (int, uint64) {
-	numBits := bits.Len64(significand)
-	numDigits := numBits * 3 / 10
+func renormalize(exp int16, significand uint64) (int16, uint64) {
+	numDigits := int16(bits.Len64(significand) * 3 / 10)
 	normExp := 15 - numDigits
 	if normExp > 0 {
 		if normExp > exp+expOffset {
@@ -223,7 +222,7 @@ func renormalize(exp int, significand uint64) (int, uint64) {
 }
 
 // roundStatus gives info about the truncated part of the significand that can't be fully stored in 16 decimal digits.
-func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
+func roundStatus(significand uint64, exp int16, targetExp int16) discardedDigit {
 	expDiff := targetExp - exp
 	if expDiff > 19 && significand != 0 {
 		return lt5
@@ -240,11 +239,11 @@ func roundStatus(significand uint64, exp int, targetExp int) discardedDigit {
 	return gt5
 }
 
-func newFromParts(sign int, exp int, significand uint64) Decimal64 {
+func newFromParts(sign int8, exp int16, significand uint64) Decimal64 {
 	return new64(newFromPartsRaw(sign, exp, significand).bits)
 }
 
-func newFromPartsRaw(sign int, exp int, significand uint64) Decimal64 {
+func newFromPartsRaw(sign int8, exp int16, significand uint64) Decimal64 {
 	s := uint64(sign) << 63
 
 	if significand < 0x8<<50 {
@@ -258,8 +257,8 @@ func newFromPartsRaw(sign int, exp int, significand uint64) Decimal64 {
 	return Decimal64{bits: s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand}
 }
 
-func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
-	sign = int(d.bits >> 63)
+func (d Decimal64) parts() (fl flavor, sign int8, exp int16, significand uint64) {
+	sign = int8(d.bits >> 63)
 	switch (d.bits >> (63 - 4)) & 0xf {
 	case 15:
 		switch (d.bits >> (63 - 6)) & 3 {
@@ -278,13 +277,13 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//     EE ∈ {00, 01, 10}
 		fl = flNormal51
-		exp = int((d.bits>>(63-12))&(1<<10-1)) - expOffset
+		exp = int16((d.bits>>(63-12))&(1<<10-1)) - expOffset
 		significand = d.bits&(1<<51-1) | (1 << 53)
 	default:
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
 		fl = flNormal53
-		exp = int((d.bits>>(63-10))&(1<<10-1)) - expOffset
+		exp = int16((d.bits>>(63-10))&(1<<10-1)) - expOffset
 		significand = d.bits & (1<<53 - 1)
 		if significand == 0 {
 			exp = 0
@@ -293,7 +292,7 @@ func (d Decimal64) parts() (fl flavor, sign int, exp int, significand uint64) {
 	return
 }
 
-func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uint64) {
+func expWholeFrac(exp int16, significand uint64) (exp2 int16, whole uint64, frac uint64) {
 	if significand == 0 {
 		return 0, 0, 0
 	}
@@ -308,7 +307,7 @@ func expWholeFrac(exp int, significand uint64) (exp2 int, whole uint64, frac uin
 	} else {
 		// exp++ till it hits 0 or continuing would throw away digits.
 		for step := 3; step >= 0; step-- {
-			expStep := 1 << uint(step)
+			expStep := int16(1) << step
 			powerOf10 := tenToThe[expStep]
 			for ; n.lo >= powerOf10 && exp <= -expStep; exp += expStep {
 				quo := n.lo / powerOf10
@@ -341,9 +340,9 @@ func (d Decimal64) Float64() float64 {
 			exp--
 			significand *= 10
 		}
-		return float64(1-2*sign) * float64(significand) * math.Pow10(exp)
+		return float64(1-2*sign) * float64(significand) * math.Pow10(int(exp))
 	case flInf:
-		return math.Inf(1 - 2*sign)
+		return math.Inf(1 - 2*int(sign))
 	case flQNaN:
 		return math.NaN()
 	}
@@ -446,9 +445,8 @@ func (d Decimal64) Signbit() bool {
 }
 
 func (d Decimal64) ScaleB(e Decimal64) Decimal64 {
-	dp := decParts{original: d}
-	ep := decParts{original: e}
-	if nan := checkNan(&dp, &ep); nan != nil {
+	var dp, ep decParts
+	if nan := checkNan(d, e, &dp, &ep); nan != nil {
 		return *nan
 	}
 
@@ -463,7 +461,7 @@ func (d Decimal64) ScaleB(e Decimal64) Decimal64 {
 	if !exact {
 		return QNaN64
 	}
-	return scaleBInt(&dp, int(i))
+	return scaleBInt(d, &dp, int(i))
 }
 
 func (d Decimal64) ScaleBInt(i int) Decimal64 {
@@ -472,11 +470,11 @@ func (d Decimal64) ScaleBInt(i int) Decimal64 {
 	if !dp.fl.normal() || dp.isZero() {
 		return d
 	}
-	return scaleBInt(&dp, i)
+	return scaleBInt(d, &dp, i)
 }
 
-func scaleBInt(dp *decParts, i int) Decimal64 {
-	dp.exp += i
+func scaleBInt(d Decimal64, dp *decParts, i int) Decimal64 {
+	dp.exp += int16(i)
 
 	for dp.significand.lo < decimal64Base && dp.exp > -expOffset {
 		dp.exp--
@@ -485,14 +483,14 @@ func scaleBInt(dp *decParts, i int) Decimal64 {
 
 	switch {
 	case dp.exp > expMax:
-		return Infinity64.CopySign(dp.original)
+		return Infinity64.CopySign(d)
 	case dp.exp < -expOffset:
 		for dp.exp < -expOffset {
 			dp.exp++
 			dp.significand.lo /= 10
 		}
 		if dp.significand.lo == 0 {
-			return Zero64.CopySign(dp.original)
+			return Zero64.CopySign(d)
 		}
 	}
 
@@ -533,55 +531,55 @@ func (d Decimal64) Class() string {
 }
 
 // numDecimalDigitsU64 returns the magnitude (number of digits) of a uint64.
-func numDecimalDigitsU64(n uint64) int {
-	numDigits := bits.Len64(n) * 77 / 256 // ~ 3/10
+func numDecimalDigitsU64(n uint64) int16 {
+	numDigits := int16(bits.Len64(n) * 77 / 256) // ~ 3/10
 	if n >= tenToThe[uint(numDigits)%uint(len(tenToThe))] {
 		numDigits++
 	}
 	return numDigits
 }
 
-func checkNan(dp, ep *decParts) *Decimal64 {
-	dp.fl = dp.original.flavor()
-	ep.fl = ep.original.flavor()
+func checkNan(d, e Decimal64, dp, ep *decParts) *Decimal64 {
+	dp.fl = d.flavor()
+	ep.fl = e.flavor()
 	switch {
 	case dp.fl == flSNaN:
-		return &dp.original
+		return &d
 	case ep.fl == flSNaN:
-		return &ep.original
+		return &e
 	case dp.fl == flQNaN:
-		return &dp.original
+		return &d
 	case ep.fl == flQNaN:
-		return &ep.original
+		return &e
 	default:
-		dp.unpackV2()
-		ep.unpackV2()
+		dp.unpackV2(d)
+		ep.unpackV2(e)
 		return nil
 	}
 }
 
 // checkNan3 returns the decimal NaN that is to be propogated and true else first decimal and false
-func checkNan3(dp, ep, fp *decParts) *Decimal64 {
-	dp.fl = dp.original.flavor()
-	ep.fl = ep.original.flavor()
-	fp.fl = fp.original.flavor()
+func checkNan3(d, e, f Decimal64, dp, ep, fp *decParts) *Decimal64 {
+	dp.fl = d.flavor()
+	ep.fl = e.flavor()
+	fp.fl = f.flavor()
 	switch {
 	case dp.fl == flSNaN:
-		return &dp.original
+		return &d
 	case ep.fl == flSNaN:
-		return &ep.original
+		return &e
 	case fp.fl == flSNaN:
-		return &fp.original
+		return &f
 	case dp.fl == flQNaN:
-		return &dp.original
+		return &d
 	case ep.fl == flQNaN:
-		return &ep.original
+		return &e
 	case fp.fl == flQNaN:
-		return &fp.original
+		return &f
 	default:
-		dp.unpackV2()
-		ep.unpackV2()
-		fp.unpackV2()
+		dp.unpackV2(d)
+		ep.unpackV2(e)
+		fp.unpackV2(f)
 		return nil
 	}
 }

@@ -447,7 +447,7 @@ func benchmarkDecimal64Data() []Decimal64 {
 		Pi64,
 		E64,
 		New64FromInt64(42),
-		MustParse64("2345678e100"),
+		MustParse64("9945678e100"),
 		New64FromInt64(1234567),
 		New64FromInt64(-42),
 		MustParse64("3456789e-120"),
