@@ -25,7 +25,9 @@ jobs:
         fi
 
     - name: Test Basic
-      run: go test -v -race ./...
+      run: make ci
+      env:
+        GOTESTFLAGS: -race
 
     - name: Test 32 bit system
       run: GOARCH=386 go test ./...

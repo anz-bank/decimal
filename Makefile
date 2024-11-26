@@ -1,6 +1,8 @@
 .PHONY: all
 all: test-all build-linux lint
 
+.PHONY: ci
+ci: test-all no-allocs
 
 .PHONY: test-all
 test-all: test test-32
@@ -12,7 +14,11 @@ test:
 
 .PHONY: test-32
 test-32:
-	$(DOCKERRUN) -e GOARCH=arm golang:1.23.0 go test $(GOTESTFLAGS)
+	if [ "$(shell go env GOOS)" = "linux" ]; then \
+		GOARCH=386 go test $(GOTESTFLAGS); \
+	else \
+		$(DOCKERRUN) -e GOARCH=arm golang:1.23.0 go test $(GOTESTFLAGS); \
+	fi
 
 .PHONY: build-linux
 build-linux:
@@ -67,4 +73,27 @@ bench.stat: bench.txt
 	benchstat bench.old $< > $@ || (rm -f $@; false)
 
 bench.txt: test
-	go test -run=^$$ -bench=. -benchmem $(GOBENCHFLAGS) > $@ || (rm -f $@; false)
+	go test -run=^$$ -bench=. -benchmem $(GOBENCHFLAGS) | tee $@ || (rm -f $@; false)
+
+NOALLOC = \
+	BenchmarkIODecimal64String2 \
+	BenchmarkIODecimal64Append \
+	BenchmarkDecimal64Abs \
+	BenchmarkDecimal64Add \
+	BenchmarkDecimal64Cmp \
+	BenchmarkDecimal64Mul \
+	BenchmarkFloat64Mul \
+	BenchmarkDecimal64Quo \
+	BenchmarkDecimal64Sqrt \
+	BenchmarkDecimal64Sub
+
+no-allocs:
+	allocs=$$( \
+		go test -run=^$$ -bench="^($$(echo $(NOALLOC) | sed 's/ /|/g'))$$" -benchmem $(GOBENCHFLAGS) | \
+			awk '/^Benchmark/ {if ($$7 != "0") print}' \
+	); \
+	if [ -n "$$allocs" ]; then \
+		echo "** alloc regression **"; \
+		echo "$$allocs"; \
+		false; \
+	fi
