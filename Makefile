@@ -15,7 +15,7 @@ test:
 .PHONY: test-32
 test-32:
 	if [ "$(shell go env GOOS)" = "linux" ]; then \
-		GOARCH=386 go test $(GOTESTFLAGS); \
+		GOARCH=386 go test $(subst -race,,$(GOTESTFLAGS)); \
 	else \
 		$(DOCKERRUN) -e GOARCH=arm golang:1.23.0 go test $(GOTESTFLAGS); \
 	fi
