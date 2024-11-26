@@ -97,10 +97,8 @@ func BenchmarkIODecimal64String2(b *testing.B) {
 		QNaN64,
 		Infinity64,
 	}
-	j := 0
 	for i := 0; i <= b.N; i++ {
-		_ = dd[j%len(dd)].String()
-		j++
+		_ = dd[i%len(dd)].String()
 	}
 }
 
