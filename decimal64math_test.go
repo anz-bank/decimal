@@ -6,11 +6,12 @@ import (
 	"testing"
 )
 
+var sink any
+
 func checkDecimal64BinOp(
 	t *testing.T,
 	expected func(a, b int64) int64,
 	actual func(a, b Decimal64) Decimal64,
-	op string,
 ) {
 	for i := int64(-100); i <= 100; i++ {
 		a := New64FromInt64(i)
@@ -46,7 +47,6 @@ func TestDecimal64Add(t *testing.T) {
 	checkDecimal64BinOp(t,
 		func(a, b int64) int64 { return a + b },
 		func(a, b Decimal64) Decimal64 { return a.Add(b) },
-		"+",
 	)
 }
 
@@ -139,7 +139,6 @@ func TestDecimal64Mul(t *testing.T) {
 	checkDecimal64BinOp(t,
 		func(a, b int64) int64 { return a * b },
 		func(a, b Decimal64) Decimal64 { return a.Mul(b) },
-		"*",
 	)
 }
 
@@ -276,10 +275,10 @@ func TestDecimal64QuoInf(t *testing.T) {
 func TestDecimal64MulPo10(t *testing.T) {
 	t.Parallel()
 
-	for i, u := range tenToThe128 {
-		for j, v := range tenToThe128 {
+	for i, u := range tenToThe128[:39] {
+		for j, v := range tenToThe128[:39] {
 			k := i + j
-			if !(k < len(tenToThe128)) {
+			if !(k < 39) {
 				continue
 			}
 			w := tenToThe128[k]
@@ -288,7 +287,7 @@ func TestDecimal64MulPo10(t *testing.T) {
 			}
 			e := New64FromInt64(int64(w.lo))
 			a := New64FromInt64(int64(u.lo)).Mul(New64FromInt64(int64(v.lo)))
-			equalD64(t, e, a, "%v * %v ≠ %v (expecting %v)", u, v, a, e)
+			equalD64(t, e, a)
 		}
 	}
 }
@@ -300,8 +299,10 @@ func TestDecimal64Sqrt(t *testing.T) {
 		i2 := i * i
 		e := New64FromInt64(i)
 		n := New64FromInt64(i2)
-		a := n.Sqrt()
-		equalD64(t, e, a, "√%v != %v (expected %v)", n, a, e)
+		replayOnFail(t, func() {
+			a := n.Sqrt()
+			equalD64(t, e, a).Or(t.FailNow)
+		})
 	}
 }
 
@@ -330,7 +331,6 @@ func TestDecimal64Sub(t *testing.T) {
 	checkDecimal64BinOp(t,
 		func(a, b int64) int64 { return a - b },
 		func(a, b Decimal64) Decimal64 { return a.Sub(b) },
-		"-",
 	)
 }
 
@@ -447,7 +447,7 @@ func benchmarkDecimal64Data() []Decimal64 {
 		Pi64,
 		E64,
 		New64FromInt64(42),
-		MustParse64("2345678e100"),
+		MustParse64("9945678e100"),
 		New64FromInt64(1234567),
 		New64FromInt64(-42),
 		MustParse64("3456789e-120"),
@@ -456,7 +456,7 @@ func benchmarkDecimal64Data() []Decimal64 {
 
 func BenchmarkDecimal64Abs(b *testing.B) {
 	x := benchmarkDecimal64Data()
-	for i := 0; i <= b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		_ = x[i%len(x)].Abs()
 	}
 }
@@ -464,7 +464,7 @@ func BenchmarkDecimal64Abs(b *testing.B) {
 func BenchmarkDecimal64Add(b *testing.B) {
 	x := benchmarkDecimal64Data()
 	y := x[:len(x)-2]
-	for i := 0; i <= b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		_ = x[i%len(x)].Add(y[i%len(y)])
 	}
 }
@@ -472,30 +472,46 @@ func BenchmarkDecimal64Add(b *testing.B) {
 func BenchmarkDecimal64Cmp(b *testing.B) {
 	x := benchmarkDecimal64Data()
 	y := x[:len(x)-2]
-	for i := 0; i <= b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		_ = x[i%len(x)].Cmp(y[i%len(y)])
 	}
 }
 
 func BenchmarkDecimal64Mul(b *testing.B) {
-	x := benchmarkDecimal64Data()
-	y := x[:len(x)-2]
-	for i := 0; i <= b.N; i++ {
-		_ = x[i%len(x)].Mul(y[i%len(y)])
+	x := One64
+	y, err := Parse64("3.142")
+	if err != nil {
+		b.Fatal(err)
 	}
+	z := x.Quo(y)
+	for i := 0; i < b.N; i++ {
+		x = x.Mul(z)
+		y, z = z, y
+	}
+	sink = x
+}
+
+func BenchmarkFloat64Mul(b *testing.B) {
+	x := 1.0
+	y := 3.142
+	z := 1 / y
+	for i := 0; i < b.N; i++ {
+		x *= z
+		y, z = z, y
+	}
+	sink = x
 }
 
 func BenchmarkDecimal64Quo(b *testing.B) {
 	x := benchmarkDecimal64Data()
-	y := x[:len(x)-2]
-	for i := 0; i <= b.N; i++ {
-		_ = x[i%len(x)].Quo(y[i%len(y)])
+	for i := 0; i < b.N; i++ {
+		_ = x[i%len(x)].Mul(x[(2*i)%len(x)])
 	}
 }
 
 func BenchmarkDecimal64Sqrt(b *testing.B) {
 	x := benchmarkDecimal64Data()
-	for i := 0; i <= b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		_ = x[i%len(x)].Sqrt()
 	}
 }
@@ -503,7 +519,7 @@ func BenchmarkDecimal64Sqrt(b *testing.B) {
 func BenchmarkDecimal64Sub(b *testing.B) {
 	x := benchmarkDecimal64Data()
 	y := x[:len(x)-2]
-	for i := 0; i <= b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		_ = x[i%len(x)].Sub(y[i%len(y)])
 	}
 }

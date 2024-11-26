@@ -1,21 +1,24 @@
 .PHONY: all
 all: test-all build-linux lint
 
+.PHONY: ci
+ci: test-all no-allocs
 
 .PHONY: test-all
-test-all: test test-debug test-32
+test-all: test test-32
 
 .PHONY: test
 test:
 	go test $(GOTESTFLAGS)
-
-.PHONY: test-debug
-test-debug:
 	go test $(GOTESTFLAGS) -tags=decimal_debug
 
 .PHONY: test-32
 test-32:
-	$(DOCKERRUN) -e GOARCH=arm golang:1.23.0 go test $(GOTESTFLAGS)
+	if [ "$(shell go env GOOS)" = "linux" ]; then \
+		GOARCH=386 go test $(subst -race,,$(GOTESTFLAGS)); \
+	else \
+		$(DOCKERRUN) -e GOARCH=arm golang:1.23.0 go test $(GOTESTFLAGS); \
+	fi
 
 .PHONY: build-linux
 build-linux:
@@ -46,19 +49,17 @@ DOCKERRUN = docker run --rm \
 	-v `go env GOCACHE`:/root/.cache/go-build \
 	-v `go env GOMODCACHE`:/go/pkg/mod
 
-
 # Dependency on build-linux primes Go caches.
 .PHONY: lint
 lint: build-linux
 	$(DOCKERRUN) golangci/golangci-lint:v1.60.1-alpine golangci-lint run
 
-.PHONY: profile
-profile: cpu.prof
+%.pprof: %.prof
 	go tool pprof -http=:8080 $<
 
-.INTERMEDIATE: cpu.prof
-cpu.prof:
-	go test -cpuprofile $@ -count=10 $(GOTESTFLAGS)
+.INTERMEDIATE: %.prof
+%.prof: $(wildcard *.go)
+	go test -$*profile $@ -count=10 $(GOPROFILEFLAGS)
 
 .PHONY: bench
 bench: bench.txt
@@ -72,4 +73,27 @@ bench.stat: bench.txt
 	benchstat bench.old $< > $@ || (rm -f $@; false)
 
 bench.txt: test
-	go test -run=^$$ -bench=. -benchmem -count=10 $(GOTESTFLAGS) > $@ || (rm -f $@; false)
+	go test -run=^$$ -bench=. -benchmem $(GOBENCHFLAGS) | tee $@ || (rm -f $@; false)
+
+NOALLOC = \
+	BenchmarkIODecimal64String2 \
+	BenchmarkIODecimal64Append \
+	BenchmarkDecimal64Abs \
+	BenchmarkDecimal64Add \
+	BenchmarkDecimal64Cmp \
+	BenchmarkDecimal64Mul \
+	BenchmarkFloat64Mul \
+	BenchmarkDecimal64Quo \
+	BenchmarkDecimal64Sqrt \
+	BenchmarkDecimal64Sub
+
+no-allocs:
+	allocs=$$( \
+		go test -run=^$$ -bench="^($$(echo $(NOALLOC) | sed 's/ /|/g'))$$" -benchmem $(GOBENCHFLAGS) | \
+			awk '/^Benchmark/ {if ($$7 != "0") print}' \
+	); \
+	if [ -n "$$allocs" ]; then \
+		echo "** alloc regression **"; \
+		echo "$$allocs"; \
+		false; \
+	fi

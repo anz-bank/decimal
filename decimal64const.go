@@ -36,8 +36,7 @@ var E64 = newFromParts(0, -15, 2_718281828459045)
 const neg64 uint64 = 0x80 << 56
 const inf64 uint64 = 0x78 << 56
 
-// 1E15
-const decimal64Base uint64 = 1_000_000_000_000_000
+const decimal64Base uint64 = 1_000_000_000_000_000 // 1E15
 const decimal64Digits = 16
 
 // maxSig is the maximum significand possible that fits in 16 decimal places.

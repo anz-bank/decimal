@@ -80,14 +80,14 @@ func TestDecimal64StringEdgeCases(t *testing.T) {
 }
 
 // Non-representative sample, but retained for comparison purposes.
-func BenchmarkDecimal64String(b *testing.B) {
+func BenchmarkIODecimal64String(b *testing.B) {
 	d := New64FromInt64(123456789)
 	for i := 0; i <= b.N; i++ {
 		_ = d.String()
 	}
 }
 
-func BenchmarkDecimal64String2(b *testing.B) {
+func BenchmarkIODecimal64String2(b *testing.B) {
 	dd := []Decimal64{
 		Zero64,
 		Pi64,
@@ -97,10 +97,8 @@ func BenchmarkDecimal64String2(b *testing.B) {
 		QNaN64,
 		Infinity64,
 	}
-	j := 0
 	for i := 0; i <= b.N; i++ {
-		_ = dd[j%len(dd)].String()
-		j++
+		_ = dd[i%len(dd)].String()
 	}
 }
 
@@ -303,7 +301,7 @@ func TestDecimal64Format2(t *testing.T) {
 	equal(t, "0.000164383562", fmt.Sprintf("%.12f", b))
 }
 
-func BenchmarkDecimal64Format(b *testing.B) {
+func BenchmarkIODecimal64Format(b *testing.B) {
 	d := New64FromInt64(123456789)
 	for i := 0; i <= b.N; i++ {
 		_ = fmt.Sprintf("%v", d)
@@ -345,7 +343,7 @@ func TestDecimal64Append(t *testing.T) {
 
 }
 
-func BenchmarkDecimal64Append(b *testing.B) {
+func BenchmarkIODecimal64Append(b *testing.B) {
 	d := New64FromInt64(123456789)
 	var buf [32]byte
 	for i := 0; i <= b.N; i++ {

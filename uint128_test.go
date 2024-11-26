@@ -1,60 +1,95 @@
 package decimal
 
-import "testing"
+import (
+	"math/bits"
+	"math/rand"
+	"testing"
+)
 
 func TestUint128Shl(t *testing.T) {
 	t.Parallel()
 
-	equal(t, uint128T{}, uint128T{}.shl(1))
-	equal(t, uint128T{2, 0}, uint128T{1, 0}.shl(1))
-	equal(t, uint128T{4, 0}, uint128T{2, 0}.shl(1))
-	equal(t, uint128T{4, 0}, uint128T{1, 0}.shl(2))
-	equal(t, uint128T{0, 1}, uint128T{1, 42}.shl(64))
-	equal(t, uint128T{0, 3}, uint128T{3, 42}.shl(64))
+	test := func(expected, original uint128T, shift uint) {
+		t.Helper()
+		original.shl(&original, shift)
+		equal(t, expected, original)
+	}
+	test(uint128T{}, uint128T{}, 1)
+	test(uint128T{2, 0}, uint128T{1, 0}, 1)
+	test(uint128T{4, 0}, uint128T{2, 0}, 1)
+	test(uint128T{4, 0}, uint128T{1, 0}, 2)
+	test(uint128T{0, 1}, uint128T{1, 42}, 64)
+	test(uint128T{0, 3}, uint128T{3, 42}, 64)
 }
 
-func TestUint128Sqrt(t *testing.T) {
+func TestSqrtu64(t *testing.T) {
 	t.Parallel()
 
-	equal(t, 0, uint128T{}.sqrt())
-	equal(t, 1, uint128T{1, 0}.sqrt())
-	equal(t, 1, uint128T{2, 0}.sqrt())
-	equal(t, 2, uint128T{4, 0}.sqrt())
-	equal(t, 2, uint128T{8, 0}.sqrt())
-	equal(t, 3, uint128T{9, 0}.sqrt())
-	equal(t, uint64(1<<32), uint128T{0, 1}.sqrt())
-	equal(t, uint64(2<<32), uint128T{0, 4}.sqrt())
+	test := func(n uint64) {
+		t.Helper()
+		replayOnFail(t, func() {
+			t.Helper()
+			s := sqrtu64(n)
+			sq := s * s
+			s1q := (s + 1) * (s + 1)
+			// s1q < sq handles overflow cases.
+			check(t, sq <= n && (s1q < sq || s1q >= n)).Or(t.FailNow)
+		})
+	}
+
+	// Fibonacci numbers, just because
+	var a, b uint64 = 1, 1
+	for a < b {
+		test(a)
+		a, b = b, a+b
+	}
+
+	hi := uint64(1<<64 - 1)
+
+	for i := 0; i < 64; i++ {
+		n := uint64(1) << i
+		test(n)
+		test(hi - n)
+	}
+
+	for i := uint64(0); i < 100_000; i++ {
+		test(i)
+		test(hi - i)
+	}
+
+	// (2**64)**1e-6 ~ 1.00004
+	for i := uint64(100_000); i < (1<<64)*99_999/100_004; {
+		test(i)
+		test(hi - i)
+		a, b := bits.Mul64(i, 100_004)
+		i, _ = bits.Div64(a, b, 100_000)
+	}
+
+	s := rand.NewSource(0).(rand.Source64)
+	for i := 0; i < 1_000_000; i++ {
+		test(s.Uint64())
+	}
 }
 
-func TestUint128DivBy10(t *testing.T) {
+func TestSqrtu16(t *testing.T) {
 	t.Parallel()
 
-	equal(t, uint128T{0, 0}, uint128T{0, 0}.divBy10())
-	equal(t, uint128T{0, 0}, uint128T{1, 0}.divBy10())
-	equal(t, uint128T{0, 0}, uint128T{9, 0}.divBy10())
-	equal(t, uint128T{1, 0}, uint128T{10, 0}.divBy10())
-	equal(t, uint128T{1, 0}, uint128T{19, 0}.divBy10())
-	equal(t, uint128T{2, 0}, uint128T{20, 0}.divBy10())
-	equal(t, uint128T{9, 0}, uint128T{99, 0}.divBy10())
-	equal(t, uint128T{10, 0}, uint128T{100, 0}.divBy10())
-	equal(t, uint128T{9999, 0}, uint128T{99999, 0}.divBy10())
-	equal(t, uint128T{10000, 0}, uint128T{100000, 0}.divBy10())
-	equal(t, uint128T{(1 << 64) / 10, 0}, uint128T{0, 1}.divBy10())
-	equal(t, uint128T{(2 << 64) / 10, 0}, uint128T{0, 2}.divBy10())
-	equal(t,
-		uint128T{((123 << 64) / 10) % (1 << 64), ((123 << 64) / 10) >> 64},
-		uint128T{0, 123}.divBy10(),
-	)
-	equal(t,
-		uint128T{((123456789 << 64) / 10) % (1 << 64), ((123456789 << 64) / 10) >> 64},
-		uint128T{0, 123456789}.divBy10(),
-	)
-	equal(t,
-		uint128T{((123 << 56 << 64) / 10) % (1 << 64), ((123 << 56 << 64) / 10) >> 64},
-		uint128T{0, 123 << 56}.divBy10(),
-	)
-	equal(t,
-		uint128T{((1<<128 - 1) / 10) % (1 << 64), ((1<<128 - 1) / 10) >> 64},
-		uint128T{1<<64 - 1, 1<<64 - 1}.divBy10(),
-	)
+	test := func(n uint16) {
+		t.Helper()
+		replayOnFail(t, func() {
+			t.Helper()
+			s := sqrtu16(n) >> 8
+			sq := uint32(s) * uint32(s)
+			s1q := uint32(s+1) * uint32(s+1)
+			// s1q < sq handles overflow cases.
+			check(t, sq <= uint32(n) && (s1q < sq || s1q >= uint32(n))).Or(t.FailNow)
+		})
+	}
+
+	for i := uint16(0); i < 1<<16-1; i++ {
+		test(i)
+	}
+	test(1<<16 - 1)
+	// fmt.Printf("%#v\n", sqrtTable)
+	// t.Fail()
 }

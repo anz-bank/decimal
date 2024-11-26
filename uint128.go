@@ -1,150 +1,154 @@
 package decimal
 
 import (
+	"math"
 	"math/bits"
+	"sync"
 )
 
 type uint128T struct {
 	lo, hi uint64
 }
 
-func (a uint128T) numDecimalDigits() int {
+func (a *uint128T) numDecimalDigits() int16 {
 	if a.hi == 0 {
-		return numDecimalDigits(a.lo)
+		return numDecimalDigitsU64(a.lo)
 	}
-	bitSize := 129 - uint(bits.LeadingZeros64(a.hi))
-	numDigitsEst := int(bitSize * 3 / 10)
-	if a.lt(tenToThe128[numDigitsEst]) {
-		return numDigitsEst
+	bitSize := 65 + bits.Len64(a.hi)
+	numDigitsEst := int16(bitSize * 77 / 256)
+	if !a.lt(&tenToThe128[uint(numDigitsEst)%uint(len(tenToThe128))]) {
+		numDigitsEst++
 	}
-	return numDigitsEst + 1
+	return numDigitsEst
 }
 
-var tenToThe128 = func() [39]uint128T {
-	var ans [39]uint128T
-	for i := range ans {
-		ans[i] = umul64(tenToThe[i/2], tenToThe[(i+1)/2])
+var tenToThe128 = func() [64]uint128T {
+	var ans [64]uint128T
+	for i := range ans[:39] {
+		ans[i].umul64(tenToThe[i/2], tenToThe[(i+1)/2])
 	}
 	return ans
 }()
 
-func umul64(a, b uint64) uint128T {
-	var n uint128T
-	n.hi, n.lo = bits.Mul64(a, b)
-	return n
+func (a *uint128T) umul64(x, y uint64) *uint128T {
+	a.hi, a.lo = bits.Mul64(x, y)
+	return a
 }
 
-func (a uint128T) add(b uint128T) uint128T {
-	lo, carry := bits.Add64(a.lo, b.lo, 0)
-	hi, _ := bits.Add64(a.hi, b.hi, carry)
-	return uint128T{lo, hi}
+func (a *uint128T) add(x, y *uint128T) *uint128T {
+	var carry uint64
+	a.lo, carry = bits.Add64(x.lo, y.lo, 0)
+	a.hi, _ = bits.Add64(x.hi, y.hi, carry)
+	return a
 }
 
-func (a uint128T) bitLen() uint {
-	return 128 - a.leadingZeros()
+func (a *uint128T) sub(x, y *uint128T) *uint128T {
+	var borrow uint64
+	a.lo, borrow = bits.Sub64(x.lo, y.lo, 0)
+	a.hi, _ = bits.Sub64(x.hi, y.hi, borrow)
+	return a
 }
 
-func (a uint128T) div64(d uint64) uint128T {
-	q, _ := a.divrem64(d)
-	return q
-}
-
-func (a uint128T) divrem64(d uint64) (q uint128T, r uint64) {
-	r = 0
-	q.hi, r = bits.Div64(r, a.hi, d)
-	q.lo, r = bits.Div64(r, a.lo, d)
-	return
-}
-
-// See http://www.hackersdelight.org/divcMore.pdf for div-by-const tricks.
-
-func (a uint128T) divBy10() uint128T {
-	q := a.shr(1).add(a.shr(2))
-	q = q.add(q.shr(4))
-	q = q.add(q.shr(8))
-	q = q.add(q.shr(16))
-	q = q.add(q.shr(32))
-	q = q.add(q.shr(64))
-	q = q.shr(3)
-	r := a.sub(q.mulBy10())
-	return q.add(uint128T{(r.lo + 6) >> 4, 0})
-}
-
-func (a uint128T) leadingZeros() uint {
-	if a.hi > 0 {
-		return uint(bits.LeadingZeros64(a.hi))
+func (a *uint128T) divrem64(x *uint128T, d uint64) uint64 {
+	var r uint64
+	if a.hi == 0 {
+		a.lo, r = x.lo/d, x.lo%d
+	} else {
+		a.hi, r = bits.Div64(0, x.hi, d)
+		a.lo, r = bits.Div64(r, x.lo, d)
 	}
-	return uint(64 + bits.LeadingZeros64(a.lo))
+	return r
 }
 
-func (a uint128T) lt(b uint128T) bool {
+// divbase divides a by [decimal64Base].
+func (a *uint128T) divbase(x *uint128T) *uint128T { return a.divc(x, 113, 0x901d7cf73ab0acd9) }
+
+// div10base divides a by 10*[decimal64Base].
+func (a *uint128T) div10base(x *uint128T) *uint128T { return a.divc(x, 117, 0xe69594bec44de15b) }
+
+// divc divides a by n where 1<<po2/rdenom ~ n and po2 is chosen such that rdenom is the largest possible value < 1<<64.
+func (a *uint128T) divc(x *uint128T, po2 int, rdenom uint64) *uint128T {
+	m := x.hi<<(64-43) + x.lo>>43 // (hi, lo) >> 43
+	q, _ := bits.Mul64(m, rdenom)
+	return a.set(0, q>>(po2-(43+64))+1)
+}
+
+func (a *uint128T) lt(b *uint128T) bool {
 	if a.hi != b.hi {
 		return a.hi < b.hi
 	}
 	return a.lo < b.lo
 }
 
-func (a uint128T) mulBy10() uint128T {
-	// a*10 = a*8 + a*2
-	a8 := a.shl(3)
-	a2 := a.shl(1)
-	return a8.add(a2)
+func (a *uint128T) mul(x, y *uint128T) *uint128T {
+	var t, u uint128T
+	t.umul64(x.hi, y.lo)
+	u.umul64(x.lo, y.hi)
+	t.add(&t, &u)
+	t = uint128T{0, t.lo} // t <<= 64
+	u.umul64(x.lo, y.lo)
+	return a.add(&t, &u)
 }
 
-func (a uint128T) mul(b uint128T) uint128T {
-	return umul64(a.hi, b.lo).add(umul64(a.lo, b.hi)).shl(64).add(umul64(a.lo, b.lo))
+func (a *uint128T) mul64(x *uint128T, b uint64) *uint128T {
+	var t uint128T
+	y := uint128T{0, t.umul64(x.hi, b).lo}
+	return a.add(&y, t.umul64(x.lo, b))
 }
 
-func (a uint128T) mul64(b uint64) uint128T {
-	return uint128T{0, umul64(a.hi, b).lo}.add(umul64(a.lo, b))
-}
-
-// 2's-complement negation, used to implement sub.
-func (a uint128T) neg() uint128T {
-	// return ^a + 1
-	a0 := ^a.lo + 1
-	a1 := ^a.hi
-	if a0 == 0 {
-		a1++
-	}
-	return uint128T{a0, a1}
-}
-
-func (a uint128T) sub(b uint128T) uint128T {
-	return a.add(b.neg())
-}
-
-func (a uint128T) shl(s uint) uint128T {
+func (a *uint128T) shl(b *uint128T, s uint) *uint128T {
 	if s < 64 {
-		return uint128T{a.lo << s, a.lo>>(64-s) | a.hi<<s}
+		return a.set(b.lo>>(64-s)|b.hi<<s, b.lo<<s)
 	}
-	return uint128T{0, a.lo << (s - 64)}
+	return a.set(b.lo<<(s-64), 0)
 }
 
-func (a uint128T) shr(s uint) uint128T {
-	if s < 64 {
-		return uint128T{a.lo>>s | a.hi<<(64-s), a.hi >> s}
-	}
-	return uint128T{a.hi >> (s - 64), 0}
+func (a *uint128T) set(hi, lo uint64) *uint128T {
+	*a = uint128T{lo, hi}
+	return a
 }
 
-// Assumes a < 1<<125
-func (a uint128T) sqrt() uint64 {
-	if a.hi == 0 && a.lo < 2 {
-		return a.lo
+func sqrtu64(n uint64) uint64 {
+	const maxu32 = 1<<32 - 1
+	switch {
+	case n < 1<<16:
+		return uint64(sqrtu16(uint16(n)) >> 8)
+	case n >= maxu32*maxu32:
+		return maxu32
 	}
-	for x := uint64(1) << (a.bitLen()/2 + 1); ; {
-		y := (a.div64(x).lo + x) >> 1
-		if y >= x {
-			return x
+
+	// Shift up as far as possible, but must be an even amount.
+	halfshift := bits.LeadingZeros64(n) / 2
+	n <<= 2 * halfshift
+
+	s := sqrtu16(uint16(n >> (64 - 16)))
+	x := uint64(s) << (32 - 16)
+
+	// Two iterations suffice.
+	x = (x + n/x) >> 1
+	// Undo shift in second iteration. Only need 1/2-shift because it's the √.
+	return (x + n/x) >> (1 + halfshift)
+}
+
+const (
+	sqrtSlotSize = 64 / 2 // 1 cache line
+	sqrtElts     = 1 << 16
+)
+
+var (
+	sqrtTable [sqrtElts]uint16
+	sqrtOnce  [sqrtElts / sqrtSlotSize]sync.Once
+)
+
+// sqrtu16 returns √n << 8.
+func sqrtu16(n uint16) uint16 {
+	slot := n / sqrtSlotSize
+	sqrtOnce[slot].Do(func() {
+		a := slot * sqrtSlotSize
+		b := a + sqrtSlotSize
+		for i := a; i != b; i++ { // != because b wraps
+			sqrtTable[i] = uint16(math.Sqrt(float64(uint64(i) << 16)))
 		}
-		x = y
-	}
+	})
+	return sqrtTable[n]
 }
-
-// func (a uint128T) trailingZeros() uint {
-// 	if a.lo > 0 {
-// 		return uint(bits.TrailingZeros64(a.lo))
-// 	}
-// 	return uint(bits.TrailingZeros64(a.hi) + 64)
-// }

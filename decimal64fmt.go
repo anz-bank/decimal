@@ -96,7 +96,7 @@ func (d Decimal64) Append(buf []byte, format byte, prec int) []byte {
 }
 
 func precScale(prec int) Decimal64 {
-	return new64(newFromPartsRaw(0, -15-max(0, prec), decimal64Base).bits)
+	return new64(newFromPartsRaw(0, -15-max(0, int16(prec)), decimal64Base).bits)
 }
 
 // Append appends the text representation of d to buf.
@@ -172,15 +172,15 @@ formatBlock:
 		// pure integer
 		if exp >= 0 {
 			buf = a.uint64New(buf, significand)
-			buf = appendZeros(buf, exp)
+			buf = appendZeros(buf, int(exp))
 			return dotZeros(buf, a.prec)
 		}
 
 		// integer part
-		fracDigits := min(-exp, 16)
+		fracDigits := int(min(-exp, 16))
 		unit := tenToThe[fracDigits]
 		buf = a.uint64New(buf, significand/unit)
-		buf = appendZeros(buf, exp)
+		buf = appendZeros(buf, int(exp))
 
 		// empty fractional part
 		if significand%unit == 0 {
@@ -190,7 +190,7 @@ formatBlock:
 		buf = append(buf, '.')
 
 		// fractional part
-		prefix := max(0, -exp-16)
+		prefix := int(max(0, -exp-16))
 		if a.prec < 0 {
 			buf = appendZeros(buf, prefix)
 			buf = appendFracF(buf, significand, fracDigits, 16)
@@ -201,7 +201,7 @@ formatBlock:
 		return appendFracF(buf, significand, fracDigits, a.prec-prefix)
 	case 'g', 'G':
 		if exp < -decimal64Digits-3 ||
-			a.prec >= 0 && exp > a.prec ||
+			a.prec >= 0 && int(exp) > a.prec ||
 			a.prec < 0 && exp > -decimal64Digits+6 {
 			verb -= 'g' - 'e'
 		} else {

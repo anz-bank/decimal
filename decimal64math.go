@@ -10,9 +10,13 @@ func (d Decimal64) Equal(e Decimal64) bool {
 
 // Abs computes ||d||.
 func (d Decimal64) Abs() Decimal64 {
-	if d.IsNaN() {
+	if d.flavor().nan() {
 		return d
 	}
+	return d.abs()
+}
+
+func (d Decimal64) abs() Decimal64 {
 	return new64(^neg64 & uint64(d.bits))
 }
 
@@ -53,27 +57,21 @@ func (d Decimal64) Quo(e Decimal64) Decimal64 {
 //	 0 if d == e (incl. -0 == 0, -Inf == -Inf, and +Inf == +Inf)
 //	+1 if d >  e
 func (d Decimal64) Cmp(e Decimal64) int {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	if _, isNan := checkNan(&dp, &ep); isNan {
+	var dp, ep decParts
+	if _, nan := checkNan(d, e, &dp, &ep); nan {
 		return -2
 	}
-	return cmp(&dp, &ep)
+	return cmp(d, e, &dp, &ep)
 }
 
 // Cmp64 returns the same output as Cmp as a Decimal64, unless d or e is NaN, in
 // which case it returns a corresponding NaN result.
 func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	if n, isNan := checkNan(&dp, &ep); isNan {
-		return n
+	var dp, ep decParts
+	if nan, is := checkNan(d, e, &dp, &ep); is {
+		return nan
 	}
-	switch cmp(&dp, &ep) {
+	switch cmp(d, e, &dp, &ep) {
 	case -1:
 		return NegOne64
 	case 1:
@@ -83,12 +81,12 @@ func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
 	}
 }
 
-func cmp(dp, ep *decParts) int {
+func cmp(d, e Decimal64, dp, ep *decParts) int {
 	switch {
-	case dp.isZero() && ep.isZero(), dp.original == ep.original:
+	case dp.isZero() && ep.isZero(), d == e:
 		return 0
 	default:
-		diff := dp.original.Sub(ep.original)
+		diff := d.Sub(e)
 		return 1 - 2*int(diff.bits>>63)
 	}
 }
@@ -105,24 +103,23 @@ func (d Decimal64) Max(e Decimal64) Decimal64 {
 
 // Min returns the lower of d and e.
 func (d Decimal64) min(e Decimal64, sign int) Decimal64 {
-	var dp decParts
+	var dp, ep decParts
 	dp.unpack(d)
-	var ep decParts
 	ep.unpack(e)
 
-	dnan := dp.isNaN()
-	enan := ep.isNaN()
+	dnan := dp.fl.nan()
+	enan := ep.fl.nan()
 
 	switch {
 	case !dnan && !enan: // Fast path for non-NaNs.
-		if sign*cmp(&dp, &ep) < 0 {
+		if sign*cmp(d, e, &dp, &ep) < 0 {
 			return d
 		}
 		return e
 
-	case dp.isSNaN():
+	case dp.fl == flSNaN:
 		return d.quiet()
-	case ep.isSNaN():
+	case ep.fl == flSNaN:
 		return e.quiet()
 
 	case !enan:
@@ -144,17 +141,18 @@ func (d Decimal64) MaxMag(e Decimal64) Decimal64 {
 
 // MinMag returns the lower of d and e.
 func (d Decimal64) minMag(e Decimal64, sign int) Decimal64 {
+	da, ea := d.abs(), e.abs()
 	var dp decParts
-	dp.unpack(d.Abs())
+	dp.unpack(da)
 	var ep decParts
-	ep.unpack(e.Abs())
+	ep.unpack(ea)
 
-	dnan := dp.isNaN()
-	enan := ep.isNaN()
+	dnan := dp.fl.nan()
+	enan := ep.fl.nan()
 
 	switch {
 	case !dnan && !enan: // Fast path for non-NaNs.
-		switch sign * cmp(&dp, &ep) {
+		switch sign * cmp(da, ea, &dp, &ep) {
 		case -1:
 			return d
 		case 1:
@@ -165,9 +163,9 @@ func (d Decimal64) minMag(e Decimal64, sign int) Decimal64 {
 			}
 			return e
 		}
-	case dp.isSNaN():
+	case dp.fl == flSNaN:
 		return d.quiet()
-	case ep.isSNaN():
+	case ep.fl == flSNaN:
 		return e.quiet()
 	case !enan:
 		return e
@@ -178,7 +176,7 @@ func (d Decimal64) minMag(e Decimal64, sign int) Decimal64 {
 
 // Neg computes -d.
 func (d Decimal64) Neg() Decimal64 {
-	if d.IsNaN() {
+	if d.flavor().nan() {
 		return d
 	}
 	return new64(neg64 ^ d.bits)
@@ -186,12 +184,13 @@ func (d Decimal64) Neg() Decimal64 {
 
 // Logb return the integral log10 of d.
 func (d Decimal64) Logb() Decimal64 {
+	fl := d.flavor()
 	switch {
-	case d.IsNaN():
+	case fl.nan():
 		return d
 	case d.IsZero():
 		return NegInfinity64
-	case d.IsInf():
+	case fl == flInf:
 		return Infinity64
 	default:
 		var dp decParts
@@ -215,11 +214,8 @@ func (d Decimal64) CopySign(e Decimal64) Decimal64 {
 // Quo computes d / e.
 // Rounding rules are applied as per the context.
 func (ctx Context64) Quo(d, e Decimal64) Decimal64 {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	if nan, isNan := checkNan(&dp, &ep); isNan {
+	var dp, ep decParts
+	if nan, is := checkNan(d, e, &dp, &ep); is {
 		return nan
 	}
 	var ans decParts
@@ -294,7 +290,7 @@ func (d Decimal64) Sqrt() Decimal64 {
 		return d
 	case flSNaN:
 		return SNaN64
-	case flNormal:
+	case flNormal53, flNormal51:
 	}
 	if significand == 0 {
 		return d
@@ -303,21 +299,20 @@ func (d Decimal64) Sqrt() Decimal64 {
 		return QNaN64
 	}
 	if exp&1 == 1 {
-		exp--
+		exp++
 		significand *= 10
+	} else {
+		significand *= 100
 	}
-	sqrt := umul64(10*decimal64Base, significand).sqrt()
-	exp, significand = renormalize(exp/2-8, sqrt)
+	s := sqrtu64(significand) / 10
+	exp, significand = renormalize(exp/2, s)
 	return newFromParts(sign, exp, significand)
 }
 
 // Add computes d + e
 func (ctx Context64) Add(d, e Decimal64) Decimal64 {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	if nan, isNan := checkNan(&dp, &ep); isNan {
+	var dp, ep decParts
+	if nan, is := checkNan(d, e, &dp, &ep); is {
 		return nan
 	}
 	if dp.fl == flInf || ep.fl == flInf {
@@ -329,25 +324,31 @@ func (ctx Context64) Add(d, e Decimal64) Decimal64 {
 		}
 		return QNaN64
 	}
+	return ctx.add(d, e, &dp, &ep)
+}
+
+// Add computes d + e
+func (ctx Context64) add(d, e Decimal64, dp, ep *decParts) Decimal64 {
 	if dp.significand.lo == 0 {
 		return e
 	} else if ep.significand.lo == 0 {
 		return d
 	}
-	ep.removeZeros()
-	dp.removeZeros()
-	sep := dp.separation(&ep)
+	sep := dp.separation(ep)
 
+	if sep < -17 {
+		return e
+	}
 	if sep < 0 {
 		dp, ep = ep, dp
 		sep = -sep
 	}
 	if sep > 17 {
-		return dp.original
+		return d
 	}
 	var rndStatus discardedDigit
-	dp.matchScales128(&ep)
-	ans := dp.add128(&ep)
+	var ans decParts
+	ans.add128(dp, ep)
 	rndStatus = ans.roundToLo()
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
@@ -369,13 +370,8 @@ func (ctx Context64) Sub(d, e Decimal64) Decimal64 {
 
 // FMA computes d*e + f
 func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	var fp decParts
-	fp.unpack(f)
-	if nan, isNan := checkNan3(&dp, &ep, &fp); isNan {
+	var dp, ep, fp decParts
+	if nan, is := checkNan3(d, e, f, &dp, &ep, &fp); is {
 		return nan
 	}
 	var ans decParts
@@ -400,13 +396,13 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	ep.removeZeros()
 	dp.removeZeros()
 	ans.exp = dp.exp + ep.exp
-	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
+	ans.significand.umul64(dp.significand.lo, ep.significand.lo)
 	sep := ans.separation(&fp)
 	if fp.significand.lo != 0 {
 		if sep < -17 {
 			return f
 		} else if sep <= 17 {
-			ans = ans.add128(&fp)
+			ans.add128(&ans, &fp)
 		}
 	}
 	rndStatus = ans.roundToLo()
@@ -423,30 +419,31 @@ func (ctx Context64) FMA(d, e, f Decimal64) Decimal64 {
 	return ans.decimal64()
 }
 
-// Mul computes d * e
+// Mul computes d * e.
 func (ctx Context64) Mul(d, e Decimal64) Decimal64 {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	if nan, isNan := checkNan(&dp, &ep); isNan {
+	var dp, ep decParts
+	if nan, is := checkNan(d, e, &dp, &ep); is {
 		return nan
 	}
 	var ans decParts
 	ans.sign = dp.sign ^ ep.sign
 	if dp.fl == flInf || ep.fl == flInf {
-		if ep.isZero() || dp.isZero() {
+		if dp.isZero() || ep.isZero() {
 			return QNaN64
 		}
 		return infinities64[ans.sign]
 	}
+	return ctx.mul(&dp, &ep, &ans)
+}
+
+func (ctx Context64) mul(dp, ep, ans *decParts) Decimal64 {
 	if ep.significand.lo == 0 || dp.significand.lo == 0 {
 		return zeroes64[ans.sign]
 	}
 	var roundStatus discardedDigit
-	ans.significand = umul64(dp.significand.lo, ep.significand.lo)
+	ans.significand.umul64(dp.significand.lo, ep.significand.lo)
 	ans.exp = dp.exp + ep.exp + 15
-	ans.significand = ans.significand.div64(decimal64Base)
+	ans.significand.divbase(&ans.significand)
 	if ans.exp >= -expOffset {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	} else if ans.exp < 1-expMax {
@@ -468,7 +465,7 @@ func (d Decimal64) NextPlus() Decimal64 {
 			return NegMax64
 		}
 		return Infinity64
-	case flav != flNormal:
+	case !flav.normal():
 		return d
 	case significand == 0:
 		return Min64
@@ -505,7 +502,7 @@ func (d Decimal64) NextMinus() Decimal64 {
 			return Max64
 		}
 		return NegInfinity64
-	case flav != flNormal:
+	case !flav.normal():
 		return d
 	case significand == 0:
 		return NegMin64
@@ -547,11 +544,8 @@ func (ctx Context64) Round(d, e Decimal64) Decimal64 {
 }
 
 func (ctx Context64) roundRaw(d, e Decimal64) Decimal64 {
-	var dp decParts
-	dp.unpack(d)
-	var ep decParts
-	ep.unpack(e)
-	return ctx.roundRefRaw(&dp, &ep)
+	var dp, ep decParts
+	return ctx.roundRefRaw(d, e, &dp, &ep)
 }
 
 var (
@@ -559,13 +553,13 @@ var (
 	qNaN64Raw = new64nostr(0x7c << 56)
 )
 
-func (ctx Context64) roundRefRaw(dp, ep *decParts) Decimal64 {
-	if nan, is := checkNan(dp, ep); is {
+func (ctx Context64) roundRefRaw(d, e Decimal64, dp, ep *decParts) Decimal64 {
+	if nan, is := checkNan(d, e, dp, ep); is {
 		return nan
 	}
 	if dp.fl == flInf || ep.fl == flInf {
 		if dp.fl == flInf && ep.fl == flInf {
-			return dp.original
+			return d
 		}
 		return qNaN64Raw
 	}
@@ -578,7 +572,7 @@ func (ctx Context64) roundRefRaw(dp, ep *decParts) Decimal64 {
 		return zero64Raw
 	}
 	if delta > 14 {
-		return dp.original
+		return d
 	}
 	p := tenToThe[14-delta]
 	s, grew := ctx.round(dsignificand, p)
@@ -603,10 +597,10 @@ var decPartsOne64 decParts = unpack(One64)
 func (ctx Context64) ToIntegral(d Decimal64) Decimal64 {
 	var dp decParts
 	dp.unpack(d)
-	if dp.fl != flNormal || dp.exp >= 0 {
+	if !dp.fl.normal() || dp.exp >= 0 {
 		return d
 	}
-	return new64(ctx.roundRefRaw(&dp, &decPartsOne64).bits)
+	return new64(ctx.roundRefRaw(d, One64, &dp, &decPartsOne64).bits)
 }
 
 func (ctx Context64) round(s, p uint64) (uint64, bool) {
@@ -631,7 +625,7 @@ func (ctx Context64) round(s, p uint64) (uint64, bool) {
 	return s, false
 }
 
-func unsubnormal(exp int, significand uint64) (int, uint64) {
+func unsubnormal(exp int16, significand uint64) (int16, uint64) {
 	if significand != 0 {
 		for significand < decimal64Base {
 			significand *= 10
@@ -641,7 +635,7 @@ func unsubnormal(exp int, significand uint64) (int, uint64) {
 	return exp, significand
 }
 
-func resubnormal(exp int, significand uint64) (int, uint64) {
+func resubnormal(exp int16, significand uint64) (int16, uint64) {
 	for exp < -expOffset || significand >= 10*decimal64Base {
 		significand /= 10
 		exp++
