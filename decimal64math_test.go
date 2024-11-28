@@ -1,6 +1,7 @@
 package decimal
 
 import (
+	"cmp"
 	"fmt"
 	"log"
 	"testing"
@@ -48,6 +49,25 @@ func TestDecimal64Add(t *testing.T) {
 		func(a, b int64) int64 { return a + b },
 		func(a, b Decimal64) Decimal64 { return a.Add(b) },
 	)
+
+	add := func(a, b, expected string, ctx *Context64) func(*testing.T) {
+		return func(*testing.T) {
+			t.Helper()
+
+			e := MustParse64(expected)
+			x := MustParse64(a)
+			y := MustParse64(b)
+			replayOnFail(t, func() {
+				z := cmp.Or(ctx, &DefaultContext64).Add(x, y)
+				equalD64(t, e, z)
+			})
+		}
+	}
+
+	t.Run("tiny-neg", add("1E-383", "-1E-398", "9.99999999999999E-384", nil))
+
+	he := Context64{Rounding: HalfEven}
+	t.Run("round-even", add("12345678", "0.1234567850000000", "12345678.12345678", &he))
 }
 
 func TestDecimal64AddNaN(t *testing.T) {

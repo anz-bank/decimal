@@ -222,8 +222,7 @@ func renormalize(exp int16, significand uint64) (int16, uint64) {
 }
 
 // roundStatus gives info about the truncated part of the significand that can't be fully stored in 16 decimal digits.
-func roundStatus(significand uint64, exp int16, targetExp int16) discardedDigit {
-	expDiff := targetExp - exp
+func roundStatus(significand uint64, expDiff int16) discardedDigit {
 	if expDiff > 19 && significand != 0 {
 		return lt5
 	}
@@ -528,15 +527,6 @@ func (d Decimal64) Class() string {
 		return "+Subnormal-Subnormal"[10*dp.sign : 10*(dp.sign+1)]
 	}
 	return "+Normal-Normal"[7*dp.sign : 7*(dp.sign+1)]
-}
-
-// numDecimalDigitsU64 returns the magnitude (number of digits) of a uint64.
-func numDecimalDigitsU64(n uint64) int16 {
-	numDigits := int16(bits.Len64(n) * 77 / 256) // ~ 3/10
-	if n >= tenToThe[uint(numDigits)%uint(len(tenToThe))] {
-		numDigits++
-	}
-	return numDigits
 }
 
 func checkNan(d, e Decimal64, dp, ep *decParts) (Decimal64, bool) {
