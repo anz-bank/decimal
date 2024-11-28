@@ -111,13 +111,6 @@ func (dp *decParts) separation(ep *decParts) int16 {
 	return sep
 }
 
-// separation gets the separation in decimal places of the MSD's of two decimal 64s
-func (dp *decParts) separationV2(ep *decParts) int16 {
-	sep := int16(numDecimalDigitsU64(dp.significand.lo)) + dp.exp
-	sep -= int16(numDecimalDigitsU64(ep.significand.lo)) + ep.exp
-	return sep
-}
-
 // removeZeros removes zeros and increments the exponent to match.
 func (dp *decParts) removeZeros() {
 	e := dp.exp
