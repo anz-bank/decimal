@@ -67,7 +67,7 @@ func TestDecimal64Add(t *testing.T) {
 	t.Run("tiny-neg", add("1E-383", "-1E-398", "9.99999999999999E-384", nil))
 
 	he := Context64{Rounding: HalfEven}
-	t.Run("round-even", add("12345678", "0.1234567850000000", "12345678.12345678", &he))
+	t.Run("round-even", add("12345678", "0.123456785", "12345678.12345678", &he))
 }
 
 func TestDecimal64AddNaN(t *testing.T) {
