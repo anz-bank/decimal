@@ -1,5 +1,5 @@
 .PHONY: all
-all: test-all build-linux lint
+all: test-all build-linux lint no-allocs
 
 .PHONY: ci
 ci: test-all no-allocs
