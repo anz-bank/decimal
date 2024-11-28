@@ -1,7 +1,6 @@
 package decimal
 
 import (
-	"cmp"
 	"fmt"
 	"log"
 	"testing"
@@ -57,8 +56,11 @@ func TestDecimal64Add(t *testing.T) {
 			e := MustParse64(expected)
 			x := MustParse64(a)
 			y := MustParse64(b)
+			if ctx == nil {
+				ctx = &DefaultContext64
+			}
 			replayOnFail(t, func() {
-				z := cmp.Or(ctx, &DefaultContext64).Add(x, y)
+				z := ctx.Add(x, y)
 				equalD64(t, e, z)
 			})
 		}
