@@ -61,7 +61,7 @@ func (d Decimal64) Cmp(e Decimal64) int {
 	if _, nan := checkNan(d, e, &dp, &ep); nan {
 		return -2
 	}
-	return cmp(d, e, &dp, &ep)
+	return cmp64(d, e, &dp, &ep)
 }
 
 // Cmp64 returns the same output as Cmp as a Decimal64, unless d or e is NaN, in
@@ -71,7 +71,7 @@ func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
 	if nan, is := checkNan(d, e, &dp, &ep); is {
 		return nan
 	}
-	switch cmp(d, e, &dp, &ep) {
+	switch cmp64(d, e, &dp, &ep) {
 	case -1:
 		return NegOne64
 	case 1:
@@ -81,9 +81,9 @@ func (d Decimal64) Cmp64(e Decimal64) Decimal64 {
 	}
 }
 
-func cmp(d, e Decimal64, dp, ep *decParts) int {
+func cmp64(d, e Decimal64, dp, ep *decParts) int {
 	switch {
-	case dp.isZero() && ep.isZero(), d == e:
+	case d == e, dp.isZero() && ep.isZero():
 		return 0
 	default:
 		diff := d.Sub(e)
@@ -112,7 +112,7 @@ func (d Decimal64) min(e Decimal64, sign int) Decimal64 {
 
 	switch {
 	case !dnan && !enan: // Fast path for non-NaNs.
-		if sign*cmp(d, e, &dp, &ep) < 0 {
+		if sign*cmp64(d, e, &dp, &ep) < 0 {
 			return d
 		}
 		return e
@@ -152,7 +152,7 @@ func (d Decimal64) minMag(e Decimal64, sign int) Decimal64 {
 
 	switch {
 	case !dnan && !enan: // Fast path for non-NaNs.
-		switch sign * cmp(da, ea, &dp, &ep) {
+		switch sign * cmp64(da, ea, &dp, &ep) {
 		case -1:
 			return d
 		case 1:
@@ -334,7 +334,7 @@ func (ctx Context64) add(d, e Decimal64, dp, ep *decParts) Decimal64 {
 	} else if ep.significand.lo == 0 {
 		return d
 	}
-	sep := dp.separation(ep)
+	sep := dp.exp - ep.exp
 
 	if sep < -17 {
 		return e
@@ -348,13 +348,26 @@ func (ctx Context64) add(d, e Decimal64, dp, ep *decParts) Decimal64 {
 	}
 	var rndStatus discardedDigit
 	var ans decParts
-	ans.add128(dp, ep)
+	switch {
+	case sep == 0:
+		ans.add64(dp, ep)
+	case sep < 4:
+		dp.significand.lo *= tenToThe[sep]
+		dp.exp -= sep
+		ans.add64(dp, ep)
+	default:
+		dp.significand.mul64(&dp.significand, tenToThe[17])
+		dp.exp -= 17
+		ep.significand.mul64(&ep.significand, tenToThe[17-sep])
+		ep.exp -= 17 - sep
+		ans.add128V2(dp, ep)
+	}
 	rndStatus = ans.roundToLo()
 	if ans.exp < -expOffset {
 		rndStatus = ans.rescale(-expOffset)
 	}
 	ans.significand.lo = ctx.Rounding.round(ans.significand.lo, rndStatus)
-	if ans.exp >= -expOffset && ans.significand.lo != 0 {
+	if ans.significand.lo != 0 {
 		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
 	}
 	if ans.exp > expMax || ans.significand.lo > maxSig {
@@ -365,7 +378,7 @@ func (ctx Context64) add(d, e Decimal64, dp, ep *decParts) Decimal64 {
 
 // Add computes d + e
 func (ctx Context64) Sub(d, e Decimal64) Decimal64 {
-	return d.Add(e.Neg())
+	return d.Add(new64(neg64 ^ e.bits))
 }
 
 // FMA computes d*e + f

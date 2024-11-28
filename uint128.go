@@ -10,16 +10,25 @@ type uint128T struct {
 	lo, hi uint64
 }
 
-func (a *uint128T) numDecimalDigits() int16 {
+func (a *uint128T) numDecimalDigits() int {
 	if a.hi == 0 {
 		return numDecimalDigitsU64(a.lo)
 	}
 	bitSize := 65 + bits.Len64(a.hi)
-	numDigitsEst := int16(bitSize * 77 / 256)
-	if !a.lt(&tenToThe128[uint(numDigitsEst)%uint(len(tenToThe128))]) {
+	numDigitsEst := uint(bitSize) * 77 / 256
+	if !a.lt(&tenToThe128[numDigitsEst%uint(len(tenToThe128))]) {
 		numDigitsEst++
 	}
-	return numDigitsEst
+	return int(numDigitsEst)
+}
+
+// numDecimalDigitsU64 returns the magnitude (number of digits) of a uint64.
+func numDecimalDigitsU64(n uint64) int {
+	numDigits := uint(bits.Len64(n)) * 77 / 256 // ~ 3/10
+	if n >= tenToThe[numDigits%uint(len(tenToThe))] {
+		numDigits++
+	}
+	return int(numDigits)
 }
 
 var tenToThe128 = func() [64]uint128T {

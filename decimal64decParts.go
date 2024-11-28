@@ -38,6 +38,38 @@ func (ans *decParts) add128(dp, ep *decParts) {
 	}
 }
 
+// add64 adds the low 64 bits of two decParts
+func (ans *decParts) add64(dp, ep *decParts) {
+	ans.exp = dp.exp
+	switch {
+	case dp.sign == ep.sign:
+		ans.sign = dp.sign
+		ans.significand.lo = dp.significand.lo + ep.significand.lo
+	case dp.significand.lt(&ep.significand):
+		ans.sign = ep.sign
+		ans.significand.lo = ep.significand.lo - dp.significand.lo
+	case ep.significand.lt(&dp.significand):
+		ans.sign = dp.sign
+		ans.significand.lo = dp.significand.lo - ep.significand.lo
+	}
+}
+
+// add128 adds two decParts with full precision in 128 bits of significand
+func (ans *decParts) add128V2(dp, ep *decParts) {
+	ans.exp = dp.exp
+	switch {
+	case dp.sign == ep.sign:
+		ans.sign = dp.sign
+		ans.significand.add(&dp.significand, &ep.significand)
+	case dp.significand.lt(&ep.significand):
+		ans.sign = ep.sign
+		ans.significand.sub(&ep.significand, &dp.significand)
+	case ep.significand.lt(&dp.significand):
+		ans.sign = dp.sign
+		ans.significand.sub(&dp.significand, &ep.significand)
+	}
+}
+
 func (dp *decParts) matchScales128(ep *decParts) {
 	expDiff := ep.exp - dp.exp
 	if (ep.significand != uint128T{0, 0}) {
@@ -56,10 +88,10 @@ func (dp *decParts) roundToLo() discardedDigit {
 
 	if ds := &dp.significand; ds.hi > 0 || ds.lo >= 10*decimal64Base {
 		var remainder uint64
-		expDiff := ds.numDecimalDigits() - 16
+		expDiff := int16(ds.numDecimalDigits()) - 16
 		dp.exp += expDiff
 		remainder = ds.divrem64(ds, tenToThe[expDiff])
-		rndStatus = roundStatus(remainder, 0, expDiff)
+		rndStatus = roundStatus(remainder, expDiff)
 	}
 	return rndStatus
 }
@@ -74,7 +106,9 @@ func (dp *decParts) isSubnormal() bool {
 
 // separation gets the separation in decimal places of the MSD's of two decimal 64s
 func (dp *decParts) separation(ep *decParts) int16 {
-	return dp.significand.numDecimalDigits() + dp.exp - ep.significand.numDecimalDigits() - ep.exp
+	sep := int16(dp.significand.numDecimalDigits()) + dp.exp
+	sep -= int16(ep.significand.numDecimalDigits()) + ep.exp
+	return sep
 }
 
 // removeZeros removes zeros and increments the exponent to match.
@@ -115,18 +149,17 @@ func (dp *decParts) isinf() bool {
 	return dp.fl == flInf
 }
 
-func (dp *decParts) rescale(targetExp int16) (rndStatus discardedDigit) {
+func (dp *decParts) rescale(targetExp int16) discardedDigit {
 	expDiff := targetExp - dp.exp
-	mag := dp.significand.numDecimalDigits()
-	rndStatus = roundStatus(dp.significand.lo, dp.exp, targetExp)
-	if expDiff > mag {
+	rndStatus := roundStatus(dp.significand.lo, expDiff)
+	if expDiff > int16(dp.significand.numDecimalDigits()) {
 		dp.significand.lo, dp.exp = 0, targetExp
-		return
+		return rndStatus
 	}
 	divisor := tenToThe[expDiff]
 	dp.significand.lo = dp.significand.lo / divisor
 	dp.exp = targetExp
-	return
+	return rndStatus
 }
 
 func (dp *decParts) unpack(d Decimal64) {
@@ -142,9 +175,6 @@ func (dp *decParts) unpackV2(d Decimal64) {
 		//   EE ∈ {00, 01, 10}
 		dp.exp = int16((d.bits>>(63-10))&(1<<10-1)) - expOffset
 		dp.significand.lo = d.bits & (1<<53 - 1)
-		if dp.significand.lo == 0 {
-			dp.exp = 0
-		}
 	case flNormal51:
 		// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//     EE ∈ {00, 01, 10}

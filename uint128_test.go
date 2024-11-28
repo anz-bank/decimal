@@ -22,6 +22,16 @@ func TestUint128Shl(t *testing.T) {
 	test(uint128T{0, 3}, uint128T{3, 42}, 64)
 }
 
+func TestNumDecimalDigits(t *testing.T) {
+	t.Parallel()
+
+	for i, num := range tenToThe {
+		for j := uint64(1); j < 10 && i < 19; j++ {
+			equal(t, i+1, int(numDecimalDigitsU64(num*j)))
+		}
+	}
+}
+
 func TestSqrtu64(t *testing.T) {
 	t.Parallel()
 

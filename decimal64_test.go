@@ -315,16 +315,6 @@ func TestDecimal64isZero(t *testing.T) {
 	check(t, !One64.IsZero())
 }
 
-func TestNumDecimalDigits(t *testing.T) {
-	t.Parallel()
-
-	for i, num := range tenToThe {
-		for j := uint64(1); j < 10 && i < 19; j++ {
-			equal(t, i+1, int(numDecimalDigitsU64(num*j)))
-		}
-	}
-}
-
 func TestIsSubnormal(t *testing.T) {
 	t.Parallel()
 

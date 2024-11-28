@@ -265,88 +265,69 @@ func convertToDec64(testvals *testCase) (opResult, error) {
 }
 
 // runTest completes the tests and compares actual and expected results.
-func runTest(t *testing.T, context Context64, expected opResult, testValStrings *testCase) bool {
-	actual := execOp(context, expected.val1, expected.val2, expected.val3, testValStrings.function)
-
-	if actual.text != "" {
-		if testValStrings.function == "compare" && actual.text == "-2" && expected.result.IsNaN() {
-			return true
-		}
-		if actual.text != testValStrings.expectedResult {
-			t.Errorf("test:\n%s\ncalculated text: %s", testValStrings, actual.text)
-			return false
-		}
-		return true
-	}
-	if actual.result.IsNaN() || expected.result.IsNaN() {
-		e := expected.result.String()
-		a := actual.result.String()
-		if e != a {
+func runTest(t *testing.T, context Context64, expected opResult, testValStrings *testCase) pass {
+	return replayOnFail(t, func() {
+		actual := execOp(context, expected.val1, expected.val2, expected.val3, testValStrings.function)
+		switch {
+		case actual.text != "":
+			if testValStrings.function == "compare" && actual.text == "-2" && expected.result.IsNaN() {
+				return
+			}
+			if actual.text != testValStrings.expectedResult {
+				t.Errorf("test:\n%s\ncalculated text: %s", testValStrings, actual.text)
+			}
+		case actual.result.IsNaN() || expected.result.IsNaN():
+			e := expected.result.String()
+			a := actual.result.String()
+			if e != a {
+				t.Errorf("test:\n%s\ncalculated result: %v", testValStrings, actual.result)
+			}
+		case expected.result.Cmp(actual.result) != 0:
 			t.Errorf("test:\n%s\ncalculated result: %v", testValStrings, actual.result)
-			return false
 		}
-		return true
-	}
-	if expected.result.Cmp(actual.result) != 0 {
-		t.Errorf("test:\n%s\ncalculated result: %v", testValStrings, actual.result)
-		return false
-	}
-	return true
+	})
 }
 
 var textResults = set{"class": {}}
 
+var ops = map[string]func(ctx Context64, a, b, c Decimal64) any{
+	"add":         func(ctx Context64, a, b, c Decimal64) any { return ctx.Add(a, b) },
+	"abs":         func(ctx Context64, a, b, c Decimal64) any { return a.Abs() },
+	"class":       func(ctx Context64, a, b, c Decimal64) any { return a.Class() },
+	"compare":     func(ctx Context64, a, b, c Decimal64) any { return a.Cmp64(b) },
+	"copysign":    func(ctx Context64, a, b, c Decimal64) any { return a.CopySign(b) },
+	"divide":      func(ctx Context64, a, b, c Decimal64) any { return ctx.Quo(a, b) },
+	"fma":         func(ctx Context64, a, b, c Decimal64) any { return ctx.FMA(a, b, c) },
+	"logb":        func(ctx Context64, a, b, c Decimal64) any { return a.Logb() },
+	"max":         func(ctx Context64, a, b, c Decimal64) any { return a.Max(b) },
+	"maxmag":      func(ctx Context64, a, b, c Decimal64) any { return a.MaxMag(b) },
+	"min":         func(ctx Context64, a, b, c Decimal64) any { return a.Min(b) },
+	"minmag":      func(ctx Context64, a, b, c Decimal64) any { return a.MinMag(b) },
+	"minus":       func(ctx Context64, a, b, c Decimal64) any { return a.Neg() },
+	"multiply":    func(ctx Context64, a, b, c Decimal64) any { return ctx.Mul(a, b) },
+	"nextminus":   func(ctx Context64, a, b, c Decimal64) any { return a.NextMinus() },
+	"nextplus":    func(ctx Context64, a, b, c Decimal64) any { return a.NextPlus() },
+	"plus":        func(ctx Context64, a, b, c Decimal64) any { return a },
+	"scaleb":      func(ctx Context64, a, b, c Decimal64) any { return a.ScaleB(b) },
+	"round":       func(ctx Context64, a, b, c Decimal64) any { return ctx.Round(a, b) },
+	"tointegralx": func(ctx Context64, a, b, c Decimal64) any { return ctx.ToIntegral(a) },
+	"subtract":    func(ctx Context64, a, b, c Decimal64) any { return ctx.Add(a, b.Neg()) },
+	"squareroot":  func(ctx Context64, a, b, c Decimal64) any { return a.Sqrt() },
+	// "quantize":    func(ctx Context64, a, b, c Decimal64) any { return ctx.Quantize(a, b) },
+}
+
 // TODO: get runTest to run more functions such as FMA.
 // execOp returns the calculated answer to the operation as Decimal64.
 func execOp(ctx Context64, a, b, c Decimal64, op string) opResult {
-	switch op {
-	case "add":
-		return opResult{result: ctx.Add(a, b)}
-	case "abs":
-		return opResult{result: a.Abs()}
-	case "class":
-		return opResult{text: a.Class()}
-	case "compare":
-		return opResult{result: a.Cmp64(b)}
-	case "copysign":
-		return opResult{result: a.CopySign(b)}
-	case "divide":
-		return opResult{result: ctx.Quo(a, b)}
-	case "fma":
-		return opResult{result: ctx.FMA(a, b, c)}
-	case "logb":
-		return opResult{result: a.Logb()}
-	case "max":
-		return opResult{result: a.Max(b)}
-	case "maxmag":
-		return opResult{result: a.MaxMag(b)}
-	case "min":
-		return opResult{result: a.Min(b)}
-	case "minmag":
-		return opResult{result: a.MinMag(b)}
-	case "minus":
-		return opResult{result: a.Neg()}
-	case "multiply":
-		return opResult{result: ctx.Mul(a, b)}
-	case "nextminus":
-		return opResult{result: a.NextMinus()}
-	case "nextplus":
-		return opResult{result: a.NextPlus()}
-	case "plus":
-		return opResult{result: a}
-	// case "quantize":
-	// 	return opResult{result: ctx.Quantize(a, b)}
-	case "scaleb":
-		return opResult{result: a.ScaleB(b)}
-	case "round":
-		return opResult{result: ctx.Round(a, b)}
-	case "tointegralx":
-		return opResult{result: ctx.ToIntegral(a)}
-	case "subtract":
-		return opResult{result: ctx.Add(a, b.Neg())}
-	case "squareroot":
-		return opResult{result: a.Sqrt()}
-	default:
-		panic(fmt.Errorf("unhandled op: %s", op))
+	if f, has := ops[op]; has {
+		switch a := f(ctx, a, b, c).(type) {
+		case string:
+			return opResult{text: a}
+		case Decimal64:
+			return opResult{result: a}
+		default:
+			panic("wat?")
+		}
 	}
+	panic(fmt.Errorf("unhandled op: %s", op))
 }

@@ -48,6 +48,28 @@ func TestDecimal64Add(t *testing.T) {
 		func(a, b int64) int64 { return a + b },
 		func(a, b Decimal64) Decimal64 { return a.Add(b) },
 	)
+
+	add := func(a, b, expected string, ctx *Context64) func(*testing.T) {
+		return func(*testing.T) {
+			t.Helper()
+
+			e := MustParse64(expected)
+			x := MustParse64(a)
+			y := MustParse64(b)
+			if ctx == nil {
+				ctx = &DefaultContext64
+			}
+			replayOnFail(t, func() {
+				z := ctx.Add(x, y)
+				equalD64(t, e, z)
+			})
+		}
+	}
+
+	t.Run("tiny-neg", add("1E-383", "-1E-398", "9.99999999999999E-384", nil))
+
+	he := Context64{Rounding: HalfEven}
+	t.Run("round-even", add("12345678", "0.123456785", "12345678.12345678", &he))
 }
 
 func TestDecimal64AddNaN(t *testing.T) {

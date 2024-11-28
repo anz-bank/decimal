@@ -1,5 +1,5 @@
 .PHONY: all
-all: test-all build-linux lint
+all: test-all build-linux lint no-allocs
 
 .PHONY: ci
 ci: test-all no-allocs
@@ -8,9 +8,12 @@ ci: test-all no-allocs
 test-all: test test-32
 
 .PHONY: test
-test:
-	go test $(GOTESTFLAGS)
+test: test-release
 	go test $(GOTESTFLAGS) -tags=decimal_debug
+
+.PHONY: test-release
+test-release:
+	go test $(GOTESTFLAGS)
 
 .PHONY: test-32
 test-32:
@@ -59,7 +62,7 @@ lint: build-linux
 
 .INTERMEDIATE: %.prof
 %.prof: $(wildcard *.go)
-	go test -$*profile $@ -count=10 $(GOPROFILEFLAGS)
+	go test -$*profile $@ $(GOPROFILEFLAGS)
 
 .PHONY: bench
 bench: bench.txt
