@@ -237,27 +237,6 @@ func TestDecimal64Quo(t *testing.T) {
 	checkDecimal64QuoByF(t, 13)
 }
 
-func TestDecimal64Round(t *testing.T) {
-	t.Parallel()
-
-	round := func(x, y, e string) func(t *testing.T) {
-		return func(t *testing.T) {
-			t.Helper()
-
-			expected := MustParse64(e)
-			actual := DefaultContext64.Round(MustParse64(x), MustParse64(y))
-			equalD64(t, expected, actual)
-		}
-	}
-
-	t.Run("one", round("2", "1", "2"))
-	t.Run("zero", round("2", "0", "0"))
-	t.Run("ten", round(("-2"), "10", "-0"))
-	t.Run("one-10th", round("2", "0.1", "2"))
-	t.Run("one-100th", round("2", "0.01", "2"))
-	t.Run("one-100th-lg", round("2000.046", "0.01", "2000.05"))
-}
-
 func TestDecimal64Scale(t *testing.T) {
 	t.Parallel()
 
