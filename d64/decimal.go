@@ -1,5 +1,4 @@
-// Deprecated: Use github.com/anz-bank/decimal/d64 instead.
-package decimal
+package d64
 
 import (
 	"fmt"
@@ -83,8 +82,8 @@ func (r Rounding) String() string {
 	}
 }
 
-// Context64 may be used to tune the behaviour of arithmetic operations.
-type Context64 struct {
+// Context may be used to tune the behaviour of arithmetic operations.
+type Context struct {
 	// Rounding sets the rounding behaviour of arithmetic operations.
 	Rounding Rounding
 
@@ -135,54 +134,54 @@ func (ctx Rounding) round(significand uint64, rndStatus discardedDigit) uint64 {
 	return significand
 }
 
-var ErrNaN64 error = Error("sNaN64")
+var ErrNaN error = Error("sNaN64")
 
-var small64s = []Decimal64{
-	new64str(newFromPartsRaw(1, -14, 1*decimal64Base).bits, "-10"),
+var smalls = []Decimal{
+	newStr(newFromPartsRaw(1, -14, 1*decimalBase).bits, "-10"),
 
-	new64str(newFromPartsRaw(1, -15, 9*decimal64Base).bits, "-9"),
-	new64str(newFromPartsRaw(1, -15, 8*decimal64Base).bits, "-8"),
-	new64str(newFromPartsRaw(1, -15, 7*decimal64Base).bits, "-7"),
-	new64str(newFromPartsRaw(1, -15, 6*decimal64Base).bits, "-6"),
-	new64str(newFromPartsRaw(1, -15, 5*decimal64Base).bits, "-5"),
-	new64str(newFromPartsRaw(1, -15, 4*decimal64Base).bits, "-4"),
-	new64str(newFromPartsRaw(1, -15, 3*decimal64Base).bits, "-3"),
-	new64str(newFromPartsRaw(1, -15, 2*decimal64Base).bits, "-2"),
-	new64str(newFromPartsRaw(1, -15, 1*decimal64Base).bits, "-1"),
+	newStr(newFromPartsRaw(1, -15, 9*decimalBase).bits, "-9"),
+	newStr(newFromPartsRaw(1, -15, 8*decimalBase).bits, "-8"),
+	newStr(newFromPartsRaw(1, -15, 7*decimalBase).bits, "-7"),
+	newStr(newFromPartsRaw(1, -15, 6*decimalBase).bits, "-6"),
+	newStr(newFromPartsRaw(1, -15, 5*decimalBase).bits, "-5"),
+	newStr(newFromPartsRaw(1, -15, 4*decimalBase).bits, "-4"),
+	newStr(newFromPartsRaw(1, -15, 3*decimalBase).bits, "-3"),
+	newStr(newFromPartsRaw(1, -15, 2*decimalBase).bits, "-2"),
+	newStr(newFromPartsRaw(1, -15, 1*decimalBase).bits, "-1"),
 
 	// TODO: Decimal64{}?
-	new64str(newFromPartsRaw(0, 0, 0).bits, "0"),
+	newStr(newFromPartsRaw(0, 0, 0).bits, "0"),
 
-	new64str(newFromPartsRaw(0, -15, 1*decimal64Base).bits, "1"),
-	new64str(newFromPartsRaw(0, -15, 2*decimal64Base).bits, "2"),
-	new64str(newFromPartsRaw(0, -15, 3*decimal64Base).bits, "3"),
-	new64str(newFromPartsRaw(0, -15, 4*decimal64Base).bits, "4"),
-	new64str(newFromPartsRaw(0, -15, 5*decimal64Base).bits, "5"),
-	new64str(newFromPartsRaw(0, -15, 6*decimal64Base).bits, "6"),
-	new64str(newFromPartsRaw(0, -15, 7*decimal64Base).bits, "7"),
-	new64str(newFromPartsRaw(0, -15, 8*decimal64Base).bits, "8"),
-	new64str(newFromPartsRaw(0, -15, 9*decimal64Base).bits, "9"),
+	newStr(newFromPartsRaw(0, -15, 1*decimalBase).bits, "1"),
+	newStr(newFromPartsRaw(0, -15, 2*decimalBase).bits, "2"),
+	newStr(newFromPartsRaw(0, -15, 3*decimalBase).bits, "3"),
+	newStr(newFromPartsRaw(0, -15, 4*decimalBase).bits, "4"),
+	newStr(newFromPartsRaw(0, -15, 5*decimalBase).bits, "5"),
+	newStr(newFromPartsRaw(0, -15, 6*decimalBase).bits, "6"),
+	newStr(newFromPartsRaw(0, -15, 7*decimalBase).bits, "7"),
+	newStr(newFromPartsRaw(0, -15, 8*decimalBase).bits, "8"),
+	newStr(newFromPartsRaw(0, -15, 9*decimalBase).bits, "9"),
 
-	new64str(newFromPartsRaw(0, -14, 1*decimal64Base).bits, "10"),
+	newStr(newFromPartsRaw(0, -14, 1*decimalBase).bits, "10"),
 }
 
-var small64Strings = func() map[uint64]string {
-	m := make(map[uint64]string, len(small64s))
+var smallStrings = func() map[uint64]string {
+	m := make(map[uint64]string, len(smalls))
 	for i := -10; i <= 10; i++ {
-		m[small64s[10+i].bits] = strconv.Itoa(i)
+		m[smalls[10+i].bits] = strconv.Itoa(i)
 	}
 	return m
 }()
 
-// New64FromInt64 returns a new Decimal64 with the given value.
-func New64FromInt64(i int64) Decimal64 {
+// NewFromInt64 returns a new [Decimal] with the given value.
+func NewFromInt64(i int64) Decimal {
 	if i >= -10 && i <= 10 {
-		return small64s[10+i]
+		return smalls[10+i]
 	}
-	return new64FromInt64(i)
+	return newFromInt64(i)
 }
 
-func new64FromInt64(value int64) Decimal64 {
+func newFromInt64(value int64) Decimal {
 	sign := int8(0)
 	if value < 0 {
 		sign = 1
@@ -213,9 +212,9 @@ func renormalize(exp int16, significand uint64) (int16, uint64) {
 		significand /= tenToThe[-normExp]
 	}
 	switch {
-	case significand < decimal64Base && exp > -expOffset:
+	case significand < decimalBase && exp > -expOffset:
 		return exp - 1, significand * 10
-	case significand >= 10*decimal64Base:
+	case significand >= 10*decimalBase:
 		return exp + 1, significand / 10
 	default:
 		return exp, significand
@@ -239,25 +238,25 @@ func roundStatus(significand uint64, expDiff int16) discardedDigit {
 	return gt5
 }
 
-func newFromParts(sign int8, exp int16, significand uint64) Decimal64 {
-	return new64(newFromPartsRaw(sign, exp, significand).bits)
+func newFromParts(sign int8, exp int16, significand uint64) Decimal {
+	return newDec(newFromPartsRaw(sign, exp, significand).bits)
 }
 
-func newFromPartsRaw(sign int8, exp int16, significand uint64) Decimal64 {
+func newFromPartsRaw(sign int8, exp int16, significand uint64) Decimal {
 	s := uint64(sign) << 63
 
 	if significand < 0x8<<50 {
 		// s EEeeeeeeee   (0)ttt tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 		//   EE ∈ {00, 01, 10}
-		return Decimal64{bits: s | uint64(exp+expOffset)<<(63-10) | significand}
+		return Decimal{bits: s | uint64(exp+expOffset)<<(63-10) | significand}
 	}
 	// s 11EEeeeeeeee (100)t tttttttttt tttttttttt tttttttttt tttttttttt tttttttttt
 	//     EE ∈ {00, 01, 10}
 	significand &= 0x8<<50 - 1
-	return Decimal64{bits: s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand}
+	return Decimal{bits: s | uint64(0xc00|(exp+expOffset))<<(63-12) | significand}
 }
 
-func (d Decimal64) parts() (fl flavor, sign int8, exp int16, significand uint64) {
+func (d Decimal) parts() (fl flavor, sign int8, exp int16, significand uint64) {
 	sign = int8(d.bits >> 63)
 	switch (d.bits >> (63 - 4)) & 0xf {
 	case 15:
@@ -322,14 +321,14 @@ func expWholeFrac(exp int16, significand uint64) (exp2 int16, whole uint64, frac
 	var whole128 uint128T
 	whole128.div10base(&n)
 	var x uint128T
-	x.mul64(&whole128, 10*decimal64Base)
+	x.mul64(&whole128, 10*decimalBase)
 	var frac128 uint128T
 	frac128.sub(&n, &x)
 	return exp, whole128.lo, frac128.lo
 }
 
 // Float64 returns a float64 representation of d.
-func (d Decimal64) Float64() float64 {
+func (d Decimal) Float64() float64 {
 	fl, sign, exp, significand := d.parts()
 	switch fl {
 	case flNormal53, flNormal51:
@@ -346,19 +345,19 @@ func (d Decimal64) Float64() float64 {
 	case flQNaN:
 		return math.NaN()
 	}
-	panic(ErrNaN64)
+	panic(ErrNaN)
 }
 
 // Int64 returns an int64 representation of d, clamped to [[math.MinInt64], [math.MaxInt64]].
-func (d Decimal64) Int64() int64 {
+func (d Decimal) Int64() int64 {
 	i, _ := d.Int64x()
 	return i
 }
 
-// Int64 returns an int64 representation of d, clamped to [[math.MinInt64],
+// Int64x returns an int64 representation of d, clamped to [[math.MinInt64],
 // [math.MaxInt64]].
-// The second return value, exact indicates whether New64FromInt64(i) == d.
-func (d Decimal64) Int64x() (i int64, exact bool) {
+// The second return value, exact, indicates whether [NewFromInt64](i) == d.
+func (d Decimal) Int64x() (i int64, exact bool) {
 	fl, sign, exp, significand := d.parts()
 	switch fl {
 	case flInf:
@@ -369,7 +368,7 @@ func (d Decimal64) Int64x() (i int64, exact bool) {
 	case flQNaN:
 		return 0, false
 	case flSNaN:
-		panic(ErrNaN64)
+		panic(ErrNaN)
 	}
 	exp, whole, frac := expWholeFrac(exp, significand)
 	for exp > 0 && whole < math.MaxInt64/10 {
@@ -382,34 +381,34 @@ func (d Decimal64) Int64x() (i int64, exact bool) {
 	return int64(1-2*sign) * int64(whole), frac == 0
 }
 
-// IsZero returns true if the Decimal encodes a zero value.
-func (d Decimal64) IsZero() bool {
+// IsZero returns true if the [Decimal] encodes a zero value.
+func (d Decimal) IsZero() bool {
 	fl, _, _, significand := d.parts()
 	return significand == 0 && fl.normal()
 }
 
 // IsInf indicates whether d is ±∞.
-func (d Decimal64) IsInf() bool {
+func (d Decimal) IsInf() bool {
 	return d.flavor() == flInf
 }
 
 // IsNaN indicates whether d is not a number.
-func (d Decimal64) IsNaN() bool {
+func (d Decimal) IsNaN() bool {
 	return d.flavor().nan()
 }
 
 // IsQNaN indicates whether d is a quiet NaN.
-func (d Decimal64) IsQNaN() bool {
+func (d Decimal) IsQNaN() bool {
 	return d.flavor() == flQNaN
 }
 
 // IsSNaN indicates whether d is a signalling NaN.
-func (d Decimal64) IsSNaN() bool {
+func (d Decimal) IsSNaN() bool {
 	return d.flavor() == flSNaN
 }
 
 // IsInt indicates whether d is an integer.
-func (d Decimal64) IsInt() bool {
+func (d Decimal) IsInt() bool {
 	fl, _, exp, significand := d.parts()
 	switch fl {
 	case flNormal53, flNormal51:
@@ -421,30 +420,30 @@ func (d Decimal64) IsInt() bool {
 }
 
 // quiet returns a quiet form of d, which must be a NaN.
-func (d Decimal64) quiet() Decimal64 {
-	return new64(d.bits &^ (2 << 56))
+func (d Decimal) quiet() Decimal {
+	return newDec(d.bits &^ (2 << 56))
 }
 
 // IsSubnormal indicates whether d is a subnormal.
-func (d Decimal64) IsSubnormal() bool {
+func (d Decimal) IsSubnormal() bool {
 	fl, _, _, significand := d.parts()
-	return significand != 0 && significand < decimal64Base && fl.normal()
+	return significand != 0 && significand < decimalBase && fl.normal()
 }
 
 // Sign returns -1/0/1 if d is </=/> 0, respectively.
-func (d Decimal64) Sign() int {
-	if d == Zero64 || d == NegZero64 {
+func (d Decimal) Sign() int {
+	if d == Zero || d == NegZero {
 		return 0
 	}
 	return 1 - 2*int(d.bits>>63)
 }
 
 // Signbit indicates whether d is negative or -0.
-func (d Decimal64) Signbit() bool {
+func (d Decimal) Signbit() bool {
 	return d.bits>>63 == 1
 }
 
-func (d Decimal64) ScaleB(e Decimal64) Decimal64 {
+func (d Decimal) ScaleB(e Decimal) Decimal {
 	var dp, ep decParts
 	if nan, is := checkNan(d, e, &dp, &ep); is {
 		return nan
@@ -454,17 +453,17 @@ func (d Decimal64) ScaleB(e Decimal64) Decimal64 {
 		return d
 	}
 	if !ep.fl.normal() {
-		return QNaN64
+		return QNaN
 	}
 
 	i, exact := e.Int64x()
 	if !exact {
-		return QNaN64
+		return QNaN
 	}
 	return scaleBInt(d, &dp, int(i))
 }
 
-func (d Decimal64) ScaleBInt(i int) Decimal64 {
+func (d Decimal) ScaleBInt(i int) Decimal {
 	var dp decParts
 	dp.unpack(d)
 	if !dp.fl.normal() || dp.isZero() {
@@ -473,28 +472,28 @@ func (d Decimal64) ScaleBInt(i int) Decimal64 {
 	return scaleBInt(d, &dp, i)
 }
 
-func scaleBInt(d Decimal64, dp *decParts, i int) Decimal64 {
+func scaleBInt(d Decimal, dp *decParts, i int) Decimal {
 	dp.exp += int16(i)
 
-	for dp.significand.lo < decimal64Base && dp.exp > -expOffset {
+	for dp.significand.lo < decimalBase && dp.exp > -expOffset {
 		dp.exp--
 		dp.significand.lo *= 10
 	}
 
 	switch {
 	case dp.exp > expMax:
-		return Infinity64.CopySign(d)
+		return Inf.CopySign(d)
 	case dp.exp < -expOffset:
 		for dp.exp < -expOffset {
 			dp.exp++
 			dp.significand.lo /= 10
 		}
 		if dp.significand.lo == 0 {
-			return Zero64.CopySign(d)
+			return Zero.CopySign(d)
 		}
 	}
 
-	return dp.decimal64()
+	return dp.decimal()
 }
 
 // Class returns a string representing the number's 'type' that the decimal is.
@@ -510,7 +509,7 @@ func scaleBInt(d Decimal64, dp *decParts, i int) Decimal64 {
 //   - "-Infinity"
 //   - "NaN"
 //   - "sNaN"
-func (d Decimal64) Class() string {
+func (d Decimal) Class() string {
 	var dp decParts
 	dp.unpack(d)
 	if dp.fl == flSNaN {
@@ -530,7 +529,7 @@ func (d Decimal64) Class() string {
 	return "+Normal-Normal"[7*dp.sign : 7*(dp.sign+1)]
 }
 
-func checkNan(d, e Decimal64, dp, ep *decParts) (Decimal64, bool) {
+func checkNan(d, e Decimal, dp, ep *decParts) (Decimal, bool) {
 	dp.fl = d.flavor()
 	ep.fl = e.flavor()
 	switch {
@@ -545,12 +544,12 @@ func checkNan(d, e Decimal64, dp, ep *decParts) (Decimal64, bool) {
 	default:
 		dp.unpackV2(d)
 		ep.unpackV2(e)
-		return Decimal64{}, false
+		return Decimal{}, false
 	}
 }
 
 // checkNan3 returns the decimal NaN that is to be propogated and true else first decimal and false
-func checkNan3(d, e, f Decimal64, dp, ep, fp *decParts) (Decimal64, bool) {
+func checkNan3(d, e, f Decimal, dp, ep, fp *decParts) (Decimal, bool) {
 	dp.fl = d.flavor()
 	ep.fl = e.flavor()
 	fp.fl = f.flavor()
@@ -571,6 +570,6 @@ func checkNan3(d, e, f Decimal64, dp, ep, fp *decParts) (Decimal64, bool) {
 		dp.unpackV2(d)
 		ep.unpackV2(e)
 		fp.unpackV2(f)
-		return Decimal64{}, false
+		return Decimal{}, false
 	}
 }
