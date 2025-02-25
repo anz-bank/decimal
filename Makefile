@@ -9,18 +9,18 @@ test-all: test test-32
 
 .PHONY: test
 test: test-release
-	go test $(GOTESTFLAGS) -tags=decimal_debug
+	go test $(GOTESTFLAGS) -tags=decimal_debug ./d64
 
 .PHONY: test-release
 test-release:
-	go test $(GOTESTFLAGS)
+	go test $(GOTESTFLAGS) ./d64
 
 .PHONY: test-32
 test-32:
 	if [ "$(shell go env GOOS)" = "linux" ]; then \
-		GOARCH=386 go test $(subst -race,,$(GOTESTFLAGS)); \
+		GOARCH=386 go test $(subst -race,,$(GOTESTFLAGS)) ./d64; \
 	else \
-		$(DOCKERRUN) -e GOARCH=arm golang:1.23.0 go test $(GOTESTFLAGS); \
+		$(DOCKERRUN) -e GOARCH=arm golang:1.23.0 go test $(GOTESTFLAGS) ./d64; \
 	fi
 
 .PHONY: build-linux
@@ -32,19 +32,23 @@ build-linux:
 build: build-64-bit build-32-bit
 
 .PHONY: build-32-bit build-64-bit
-build-32-bit: decimal.32.release.test decimal.32.debug.test
-build-64-bit: decimal.64.release.test decimal.64.debug.test
+build-32-bit: d64/decimal.32.release.test d64/decimal.32.debug.test
+build-64-bit: d64/decimal.64.release.test d64/decimal.64.debug.test
 
 GOARCH.32=arm
 GOARCH.64=
 
-.INTERMEDIATE: decimal.32.release.test decimal.64.release.test
-decimal.%.release.test:
-	GOARCH=$(GOARCH.$*) go test -c -o $@ $(GOTESTFLAGS) .
+.INTERMEDIATE: d64/decimal.32.debug.test d64/decimal.64.debug.test
+d64/decimal.%.debug.test:
+	GOARCH=$(GOARCH.$*) go test -c -o $@ -tags=decimal_debug $(GOTESTFLAGS) ./d64
 
-.INTERMEDIATE: decimal.32.debug.test decimal.64.debug.test
-decimal.%.debug.test:
-	GOARCH=$(GOARCH.$*) go test -c -o $@ -tags=decimal_debug $(GOTESTFLAGS) .
+.INTERMEDIATE: d64/decimal.32.release.test d64/decimal.64.release.test
+d64/decimal.%.release.test:
+	GOARCH=$(GOARCH.$*) go test -c -o $@ $(GOTESTFLAGS) ./d64
+
+.PHONY: clean
+clean:
+	rm -f decimal.*.release.test decimal.*.debug.test
 
 DOCKERRUN = docker run --rm \
 	-w /app \
@@ -55,7 +59,7 @@ DOCKERRUN = docker run --rm \
 # Dependency on build-linux primes Go caches.
 .PHONY: lint
 lint: build-linux
-	$(DOCKERRUN) golangci/golangci-lint:v1.60.1-alpine golangci-lint run
+	$(DOCKERRUN) golangci/golangci-lint:v1.64.5-alpine golangci-lint run
 
 %.pprof: %.prof
 	go tool pprof -http=:8080 $<
@@ -65,18 +69,19 @@ lint: build-linux
 	go test -$*profile $@ $(GOPROFILEFLAGS)
 
 .PHONY: bench
-bench: bench.txt
+bench: d64/bench.txt
 	cat $<
 
-bench-stat: bench.stat
+.PHONY: bench-stat
+bench-stat: d64/bench.stat
 	cat $<
 
-bench.stat: bench.txt
-	[ -f bench.old ] || git show @:$< > bench.old || (rm -f $@; false)
-	benchstat bench.old $< > $@ || (rm -f $@; false)
+d64/bench.stat: d64/bench.txt
+	[ -f d64/bench.old ] || git show @:$< > d64/bench.old || (rm -f $@; false)
+	benchstat d64/bench.old $< > $@ || (rm -f $@; false)
 
-bench.txt: test
-	go test -run=^$$ -bench=. -benchmem $(GOBENCHFLAGS) | tee $@ || (rm -f $@; false)
+d64/bench.txt: test
+	go test -run=^$$ -bench=. -benchmem $(GOBENCHFLAGS) ./d64 | tee $@ || (rm -f $@; false)
 
 NOALLOC = \
 	BenchmarkIODecimal64String2 \
@@ -92,7 +97,7 @@ NOALLOC = \
 
 no-allocs:
 	allocs=$$( \
-		go test -run=^$$ -bench="^($$(echo $(NOALLOC) | sed 's/ /|/g'))$$" -benchmem $(GOBENCHFLAGS) | \
+		go test -run=^$$ -bench="^($$(echo $(NOALLOC) | sed 's/ /|/g'))$$" -benchmem $(GOBENCHFLAGS) ./d64 | \
 			awk '/^Benchmark/ {if ($$7 != "0") print}' \
 	); \
 	if [ -n "$$allocs" ]; then \

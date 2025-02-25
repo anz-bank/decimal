@@ -1,0 +1,20 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/anz-bank/decimal/d64
+cpu: Apple M4 Max
+BenchmarkIODecimalString-16     	45000848	        26.82 ns/op	      16 B/op	       1 allocs/op
+BenchmarkIODecimalString2-16    	50688696	        22.96 ns/op	      13 B/op	       0 allocs/op
+BenchmarkIODecimalFormat-16     	16520335	        72.77 ns/op	      56 B/op	       3 allocs/op
+BenchmarkIODecimalAppend-16     	65414551	        18.39 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDecimalAbs-16          	1000000000	         0.5281 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDecimalAdd-16          	169439442	         7.296 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDecimalCmp-16          	121484217	         9.711 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDecimalMul-16          	155150511	         7.752 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFloat64Mul-16          	1000000000	         0.8068 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDecimalQuo-16          	217405482	         5.582 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDecimalSqrt-16         	216664428	         5.596 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDecimalSub-16          	164511207	         7.313 ns/op	       0 B/op	       0 allocs/op
+BenchmarkIOParse-16             	 6746329	       181.2 ns/op	      64 B/op	       2 allocs/op
+BenchmarkIODecimalScan-16       	 9673527	       123.8 ns/op	      80 B/op	       2 allocs/op
+PASS
+ok  	github.com/anz-bank/decimal/d64	21.807s
