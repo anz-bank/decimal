@@ -5,7 +5,7 @@ More info can be found at <http://speleotrove.com/decimal/>.
 
 ## Features
 
-- Decimal64, partial implementation of the ieee-754R standard
+- Decimal, partial implementation of the ieee-754R standard
 - Rounding modes: half up, half even, down (towards zero)
 - Up to 3 times faster than arbitrary precision decimal libraries in Go
 
@@ -63,7 +63,7 @@ For maximum control, use `fmt.Printf` &co or invoke the `fmt.Formatter` interfac
 
 tl;dr: Use the `decimal_debug` compiler tag during debugging to greatly ease runtime inspection of `Decimal` values.
 
-Debugging with the `decimal` package can be challenging because a `Decimal` number is encoded in a `uint64` and the values it holds are inscrutable even to the trained eye.
+Debugging with the `d64` package can be challenging because a decimal number is encoded in a `uint64` and the values it holds are inscrutable even to the trained eye.
 For example, the number one `One` is represented internally as the number `3450757314565799936` (`2fe38d7ea4c68000` in hexadecimal).
 
 To ease debugging, `Decimal` holds an optional `debugInfo` structure that contains a string representation and unpacked components of the `uint64` representation for every `Decimal` value.
@@ -74,7 +74,7 @@ The size and runtime cost of this feature is zero when the compiler tag is not p
 
 ## Docs
 
-<https://godoc.org/github.com/anz-bank/decimal>
+<https://godoc.org/github.com/anz-bank/decimal/d64>
 
 ## Why decimal?
 
