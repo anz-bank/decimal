@@ -69,10 +69,10 @@ func (a *uint128T) divrem64(x *uint128T, d uint64) uint64 {
 	return r
 }
 
-// divbase divides a by [decimal64Base].
+// divbase divides a by [decimalBase].
 func (a *uint128T) divbase(x *uint128T) *uint128T { return a.divc(x, 113, 0x901d7cf73ab0acd9) }
 
-// div10base divides a by 10*[decimal64Base].
+// div10base divides a by 10*[decimalBase].
 func (a *uint128T) div10base(x *uint128T) *uint128T { return a.divc(x, 117, 0xe69594bec44de15b) }
 
 // divc divides a by n where 1<<po2/rdenom ~ n and po2 is chosen such that rdenom is the largest possible value < 1<<64.
