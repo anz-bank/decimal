@@ -181,6 +181,11 @@ func NewFromInt64(i int64) Decimal {
 	return newFromInt64(i)
 }
 
+func NewFromFloat64(f float64) Decimal {
+	// TODO: Find a more mathsy solution.
+	return MustParse(strconv.FormatFloat(f, 'g', -1, 64))
+}
+
 func newFromInt64(value int64) Decimal {
 	sign := int8(0)
 	if value < 0 {

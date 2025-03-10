@@ -1,6 +1,7 @@
 package d64
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"testing"
@@ -48,6 +49,48 @@ func TestNewFromInt64Big(t *testing.T) {
 			equal(t, i, j)
 		})
 	}
+}
+
+func equalString(expected string, f float64) func(t *testing.T) {
+	return func(t *testing.T) {
+		t.Helper()
+		equal(t, expected, NewFromFloat64(f).String())
+	}
+}
+
+func equalFloat64(f float64) func(t *testing.T) {
+	return func(t *testing.T) {
+		t.Helper()
+		equalString(MustParse(fmt.Sprint(f)).String(), f)(t)
+	}
+}
+
+func TestNewFromFloat64(t *testing.T) {
+	t.Parallel()
+
+	var zero float64 = 0.0
+
+	t.Run("	0", equalFloat64(0))
+	t.Run("-0", equalFloat64(-zero))
+	t.Run("1", equalFloat64(1.0))
+	t.Run("-1", equalFloat64(-1.0))
+	t.Run("1.5", equalFloat64(1.5))
+	t.Run("-1.5", equalFloat64(-1.5))
+	t.Run("123456.789", equalFloat64(123456.789))
+	t.Run("-123456.789", equalFloat64(-123456.789))
+	t.Run("1.23456789e-10", equalFloat64(1.23456789e-10))
+	t.Run("-1.23456789e-10", equalFloat64(-1.23456789e-10))
+}
+
+func TestNewFromFloat64EdgeCases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("max", equalFloat64(math.MaxFloat64))
+	t.Run("min", equalFloat64(math.SmallestNonzeroFloat64))
+
+	t.Run("nan", equalFloat64(math.NaN()))
+	t.Run("inf", equalFloat64(math.Inf(1)))
+	t.Run("-inf", equalFloat64(math.Inf(-1)))
 }
 
 func TestDecimalParse(t *testing.T) {
