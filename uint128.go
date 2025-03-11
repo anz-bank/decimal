@@ -81,13 +81,6 @@ func (a *uint128T) div10base(x *uint128T) *uint128T {
 	return a
 }
 
-// divc divides a by n where 1<<po2/rdenom ~ n and po2 is chosen such that rdenom is the largest possible value < 1<<64.
-func (a *uint128T) divc(x *uint128T, po2 int, rdenom uint64) *uint128T {
-	m := x.hi<<(64-43) + x.lo>>43 // (hi, lo) >> 43
-	q, _ := bits.Mul64(m, rdenom)
-	return a.set(0, q>>(po2-(43+64))+1)
-}
-
 func (a *uint128T) lt(b *uint128T) bool {
 	if a.hi != b.hi {
 		return a.hi < b.hi
