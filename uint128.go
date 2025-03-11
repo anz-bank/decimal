@@ -60,7 +60,7 @@ func (a *uint128T) sub(x, y *uint128T) *uint128T {
 
 func (a *uint128T) divrem64(x *uint128T, d uint64) uint64 {
 	var r uint64
-	if a.hi == 0 {
+	if x.hi == 0 {
 		a.lo, r = x.lo/d, x.lo%d
 	} else {
 		a.hi, r = bits.Div64(0, x.hi, d)
@@ -70,10 +70,16 @@ func (a *uint128T) divrem64(x *uint128T, d uint64) uint64 {
 }
 
 // divbase divides a by [decimal64Base].
-func (a *uint128T) divbase(x *uint128T) *uint128T { return a.divc(x, 113, 0x901d7cf73ab0acd9) }
+func (a *uint128T) divbase(x *uint128T) *uint128T {
+	a.divrem64(x, decimal64Base)
+	return a
+}
 
 // div10base divides a by 10*[decimal64Base].
-func (a *uint128T) div10base(x *uint128T) *uint128T { return a.divc(x, 117, 0xe69594bec44de15b) }
+func (a *uint128T) div10base(x *uint128T) *uint128T {
+	a.divrem64(x, 10*decimal64Base)
+	return a
+}
 
 // divc divides a by n where 1<<po2/rdenom ~ n and po2 is chosen such that rdenom is the largest possible value < 1<<64.
 func (a *uint128T) divc(x *uint128T, po2 int, rdenom uint64) *uint128T {
