@@ -1,0 +1,3 @@
+[submodule "reference/decimal"]
+	path = reference/decimal
+	url = https://github.com/cppalliance/decimal.git
