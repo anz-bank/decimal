@@ -58,6 +58,20 @@ func equalD64(t *testing.T, expected, actual Decimal) pass {
 	return equal(t, expected.String(), actual.String())
 }
 
+func testBinop(op func(a, b Decimal) Decimal) func(expected, a, b string) func(*testing.T) {
+	return func(expected, a, b string) func(*testing.T) {
+		return func(t *testing.T) {
+			t.Helper()
+
+			e := MustParse(expected)
+			x := MustParse(a)
+			y := MustParse(b)
+			z := op(x, y)
+			equalD64(t, e, z)
+		}
+	}
+}
+
 func isnil(t *testing.T, a any) pass {
 	t.Helper()
 	if a != nil {

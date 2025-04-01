@@ -99,6 +99,13 @@ func TestDecimalAddInf(t *testing.T) {
 	equal(t, QNaN, NegInf.Add(Inf))
 }
 
+func TestAddAdhoc(t *testing.T) {
+	t.Parallel()
+
+	add := testBinop(Decimal.Add)
+	t.Run("1", add("0.4164333216995442", "0.16281181901984032", "0.25362150267970385"))
+}
+
 func TestDecimalCmp(t *testing.T) {
 	t.Parallel()
 
