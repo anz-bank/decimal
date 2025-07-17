@@ -317,14 +317,19 @@ func (ctx Context) Add(d, e Decimal) Decimal {
 	}
 	if dp.fl == flInf || ep.fl == flInf {
 		if dp.fl != flInf {
-			return e
+			return e.noSigInf()
 		}
 		if ep.fl != flInf || ep.sign == dp.sign {
-			return d
+			return d.noSigInf()
 		}
 		return QNaN
 	}
 	return ctx.add(d, e, &dp, &ep)
+}
+
+// noSigInf returns the same inf but with all ignored bits set to zero.
+func (d Decimal) noSigInf() Decimal {
+	return newDec(d.bits &^ ((1 << (64 - 1 - 5)) - 1))
 }
 
 // Add computes d + e
@@ -334,42 +339,55 @@ func (ctx Context) add(d, e Decimal, dp, ep *decParts) Decimal {
 	} else if ep.significand.lo == 0 {
 		return d
 	}
-	sep := dp.exp - ep.exp
 
-	if sep < -17 {
-		return e
-	}
-	if sep < 0 {
-		dp, ep = ep, dp
-		sep = -sep
-	}
-	if sep > 17 {
-		return d
-	}
-	var rndStatus discardedDigit
 	var ans decParts
+
+	sep := dp.exp - ep.exp
 	switch {
-	case sep == 0:
-		ans.add64(dp, ep)
-	case sep < 4:
-		dp.significand.lo *= tenToThe[sep]
-		dp.exp -= sep
-		ans.add64(dp, ep)
+	case sep < -17:
+		ans = *ep
+	case sep > 17:
+		ans = *dp
 	default:
-		dp.significand.mul64(&dp.significand, tenToThe[17])
-		dp.exp -= 17
-		ep.significand.mul64(&ep.significand, tenToThe[17-sep])
-		ep.exp -= 17 - sep
-		ans.add128V2(dp, ep)
+		if sep < 0 {
+			dp, ep = ep, dp
+			sep = -sep
+		}
+		var rndStatus discardedDigit
+		switch {
+		case sep == 0:
+			ans.add64(dp, ep)
+		case sep < 4:
+			dp.significand.lo *= tenToThe[sep]
+			dp.exp -= sep
+			ans.add64(dp, ep)
+		default:
+			dp.significand.mul64(&dp.significand, tenToThe[17])
+			dp.exp -= 17
+			ep.significand.mul64(&ep.significand, tenToThe[17-sep])
+			ep.exp -= 17 - sep
+			ans.add128V2(dp, ep)
+		}
+		rndStatus = ans.roundToLo()
+		if ans.exp < -expOffset {
+			rndStatus = ans.rescale(-expOffset)
+		}
+		ans.significand.lo = ctx.Rounding.round(ans.significand.lo, rndStatus)
 	}
-	rndStatus = ans.roundToLo()
-	if ans.exp < -expOffset {
-		rndStatus = ans.rescale(-expOffset)
+
+	prefexp := min(dp.exp, ep.exp)
+	// TODO: replace O(n) loops with O(1) or O(log n) rescaling.
+	for ans.exp < prefexp && ans.significand.lo%10 == 0 {
+		ans.significand.lo /= 10
+		ans.exp++
 	}
-	ans.significand.lo = ctx.Rounding.round(ans.significand.lo, rndStatus)
-	if ans.significand.lo != 0 {
-		ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
+	for ans.exp > prefexp && ans.significand.lo < decimalBase {
+		ans.significand.lo *= 10
+		ans.exp--
 	}
+	// if ans.significand.lo != 0 {
+	// 	ans.exp, ans.significand.lo = renormalize(ans.exp, ans.significand.lo)
+	// }
 	if ans.exp > expMax || ans.significand.lo > maxSig {
 		return infinities[ans.sign]
 	}

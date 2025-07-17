@@ -539,18 +539,23 @@ func checkNan(d, e Decimal, dp, ep *decParts) (Decimal, bool) {
 	ep.fl = e.flavor()
 	switch {
 	case dp.fl == flSNaN:
-		return d, true
 	case ep.fl == flSNaN:
-		return e, true
+		d = e
 	case dp.fl == flQNaN:
-		return d, true
 	case ep.fl == flQNaN:
-		return e, true
+		d = e
 	default:
 		dp.unpackV2(d)
 		ep.unpackV2(e)
 		return Decimal{}, false
 	}
+	return d.qNan(), true
+}
+
+func (d Decimal) qNan() Decimal {
+	// Remove the exponent bits from the NaN.
+	// This is a hack to make sure that the NaN is not interpreted as a normal number.
+	return newDec(d.bits &^ (0xff << 50))
 }
 
 // checkNan3 returns the decimal NaN that is to be propogated and true else first decimal and false
@@ -560,21 +565,20 @@ func checkNan3(d, e, f Decimal, dp, ep, fp *decParts) (Decimal, bool) {
 	fp.fl = f.flavor()
 	switch {
 	case dp.fl == flSNaN:
-		return d, true
 	case ep.fl == flSNaN:
-		return e, true
+		d = e
 	case fp.fl == flSNaN:
-		return f, true
+		d = f
 	case dp.fl == flQNaN:
-		return d, true
 	case ep.fl == flQNaN:
-		return e, true
+		d = e
 	case fp.fl == flQNaN:
-		return f, true
+		d = f
 	default:
 		dp.unpackV2(d)
 		ep.unpackV2(e)
 		fp.unpackV2(f)
 		return Decimal{}, false
 	}
+	return d.qNan(), true
 }
