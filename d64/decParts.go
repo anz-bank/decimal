@@ -187,27 +187,52 @@ func (dp *decParts) unpackV2(d Decimal) {
 }
 
 // https://en.wikipedia.org/wiki/Decimal64_floating-point_format#Binary_integer_significand_field
-var flavMap = [...]flavor{
-	/* 0000xx */ flNormal53, flNormal53, flNormal53, flNormal53,
-	/* 0001xx */ flNormal53, flNormal53, flNormal53, flNormal53,
-	/* 0010xx */ flNormal53, flNormal53, flNormal53, flNormal53,
-	/* 0011xx */ flNormal53, flNormal53, flNormal53, flNormal53,
-	/* 0100xx */ flNormal53, flNormal53, flNormal53, flNormal53,
-	/* 0101xx */ flNormal53, flNormal53, flNormal53, flNormal53,
-	/* 0110xx */ flNormal53, flNormal53, flNormal53, flNormal53,
-	/* 0111xx */ flNormal53, flNormal53, flNormal53, flNormal53,
-	/* 1000xx */ flNormal53, flNormal53, flNormal53, flNormal53,
-	/* 1001xx */ flNormal53, flNormal53, flNormal53, flNormal53,
-	/* 1010xx */ flNormal53, flNormal53, flNormal53, flNormal53,
-	/* 1011xx */ flNormal53, flNormal53, flNormal53, flNormal53,
-	/* 1100xx */ flNormal51, flNormal51, flNormal51, flNormal51,
-	/* 1101xx */ flNormal51, flNormal51, flNormal51, flNormal51,
-	/* 1110xx */ flNormal51, flNormal51, flNormal51, flNormal51,
-	/* 11110x */ flInf, flInf,
-	/* 111110 */ flQNaN,
-	/* 111111 */ flSNaN,
-}
+var flavMap = func() [128]flavor {
+	fm := [...]flavor{
+		/* 0000xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0001xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0010xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0011xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0100xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0101xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0110xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0111xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 1000xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 1001xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 1010xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 1011xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 1100xx */ flNormal51, flNormal51, flNormal51, flNormal51,
+		/* 1101xx */ flNormal51, flNormal51, flNormal51, flNormal51,
+		/* 1110xx */ flNormal51, flNormal51, flNormal51, flNormal51,
+		/* 11110x */ flInf, flInf,
+		/* 111110 */ flQNaN,
+		/* 111111 */ flSNaN,
+		/* 0000xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0001xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0010xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0011xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0100xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0101xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0110xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 0111xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 1000xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 1001xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 1010xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 1011xx */ flNormal53, flNormal53, flNormal53, flNormal53,
+		/* 1100xx */ flNormal51, flNormal51, flNormal51, flNormal51,
+		/* 1101xx */ flNormal51, flNormal51, flNormal51, flNormal51,
+		/* 1110xx */ flNormal51, flNormal51, flNormal51, flNormal51,
+		/* 11110x */ flInf, flInf,
+		/* 111110 */ flQNaN,
+		/* 111111 */ flSNaN,
+	}
+	return fm
+}()
 
 func (d Decimal) flavor() flavor {
-	return flavMap[int(d.bits>>(64-7))%len(flavMap)]
+	return flavMap[int(d.bits>>(64-7))]
+}
+
+func (d Decimal) isFinite() bool {
+	return d.bits>>(64-5)&0b1111 < 0b1111
 }

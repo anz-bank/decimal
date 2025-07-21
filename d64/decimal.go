@@ -450,7 +450,7 @@ func (d Decimal) Signbit() bool {
 
 func (d Decimal) ScaleB(e Decimal) Decimal {
 	var dp, ep decParts
-	if nan, is := checkNan(d, e, &dp, &ep); is {
+	if nan, is := checkNan2(d, e, &dp, &ep); is {
 		return nan
 	}
 
@@ -534,7 +534,18 @@ func (d Decimal) Class() string {
 	return "+Normal-Normal"[7*dp.sign : 7*(dp.sign+1)]
 }
 
-func checkNan(d, e Decimal, dp, ep *decParts) (Decimal, bool) {
+func checkFinite2(d, e Decimal, dp, ep *decParts) bool {
+	if d.isFinite() && e.isFinite() {
+		dp.fl = d.flavor()
+		ep.fl = e.flavor()
+		dp.unpackV2(d)
+		ep.unpackV2(e)
+		return true
+	}
+	return false
+}
+
+func checkNan2(d, e Decimal, dp, ep *decParts) (Decimal, bool) {
 	dp.fl = d.flavor()
 	ep.fl = e.flavor()
 	switch {

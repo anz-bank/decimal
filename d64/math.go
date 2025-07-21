@@ -58,7 +58,7 @@ func (d Decimal) Quo(e Decimal) Decimal {
 //	+1 if d >  e
 func (d Decimal) Cmp(e Decimal) int {
 	var dp, ep decParts
-	if _, nan := checkNan(d, e, &dp, &ep); nan {
+	if _, nan := checkNan2(d, e, &dp, &ep); nan {
 		return -2
 	}
 	return cmp(d, e, &dp, &ep)
@@ -68,7 +68,7 @@ func (d Decimal) Cmp(e Decimal) int {
 // If d or e is NaN, it returns a corresponding NaN result.
 func (d Decimal) CmpDec(e Decimal) Decimal {
 	var dp, ep decParts
-	if nan, is := checkNan(d, e, &dp, &ep); is {
+	if nan, is := checkNan2(d, e, &dp, &ep); is {
 		return nan
 	}
 	switch cmp(d, e, &dp, &ep) {
@@ -215,7 +215,7 @@ func (d Decimal) CopySign(e Decimal) Decimal {
 // Rounding rules are applied as per the context.
 func (ctx Context) Quo(d, e Decimal) Decimal {
 	var dp, ep decParts
-	if nan, is := checkNan(d, e, &dp, &ep); is {
+	if nan, is := checkNan2(d, e, &dp, &ep); is {
 		return nan
 	}
 	var ans decParts
@@ -312,19 +312,19 @@ func (d Decimal) Sqrt() Decimal {
 // Add computes d + e
 func (ctx Context) Add(d, e Decimal) Decimal {
 	var dp, ep decParts
-	if nan, is := checkNan(d, e, &dp, &ep); is {
+	if checkFinite2(d, e, &dp, &ep) {
+		return ctx.add(d, e, &dp, &ep)
+	}
+	if nan, is := checkNan2(d, e, &dp, &ep); is {
 		return nan
 	}
-	if dp.fl == flInf || ep.fl == flInf {
-		if dp.fl != flInf {
-			return e.noSigInf()
-		}
-		if ep.fl != flInf || ep.sign == dp.sign {
-			return d.noSigInf()
-		}
-		return QNaN
+	if dp.fl != flInf {
+		return e.noSigInf()
 	}
-	return ctx.add(d, e, &dp, &ep)
+	if ep.fl != flInf || ep.sign == dp.sign {
+		return d.noSigInf()
+	}
+	return QNaN
 }
 
 // noSigInf returns the same inf but with all ignored bits set to zero.
@@ -334,6 +334,12 @@ func (d Decimal) noSigInf() Decimal {
 
 // Add computes d + e
 func (ctx Context) add(d, e Decimal, dp, ep *decParts) Decimal {
+	if dp.exp == ep.exp && dp.sign == ep.sign {
+		if sig := dp.significand.lo + ep.significand.lo; sig < 10*decimalBase {
+			dp.significand.lo = sig
+			return dp.decimal()
+		}
+	}
 	if dp.significand.lo == 0 {
 		return e
 	} else if ep.significand.lo == 0 {
@@ -453,7 +459,7 @@ func (ctx Context) FMA(d, e, f Decimal) Decimal {
 // Mul computes d * e.
 func (ctx Context) Mul(d, e Decimal) Decimal {
 	var dp, ep decParts
-	if nan, is := checkNan(d, e, &dp, &ep); is {
+	if nan, is := checkNan2(d, e, &dp, &ep); is {
 		return nan
 	}
 	var ans decParts
@@ -585,7 +591,7 @@ var (
 )
 
 func (ctx Context) roundRefRaw(d, e Decimal, dp, ep *decParts) Decimal {
-	if nan, is := checkNan(d, e, dp, ep); is {
+	if nan, is := checkNan2(d, e, dp, ep); is {
 		return nan
 	}
 	if dp.fl == flInf || ep.fl == flInf {

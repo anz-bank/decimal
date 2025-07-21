@@ -13,6 +13,8 @@ func checkDecimalBinOp(
 	expected func(a, b int64) int64,
 	actual func(a, b Decimal) Decimal,
 ) {
+	t.Helper()
+
 	for i := int64(-100); i <= 100; i++ {
 		a := NewFromInt64(i)
 		for j := int64(-100); j <= 100; j++ {
