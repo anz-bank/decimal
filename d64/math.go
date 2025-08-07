@@ -359,7 +359,6 @@ func (ctx Context) add(d, e Decimal, dp, ep *decParts) Decimal {
 			dp, ep = ep, dp
 			sep = -sep
 		}
-		var rndStatus discardedDigit
 		switch {
 		case sep == 0:
 			ans.add64(dp, ep)
@@ -368,13 +367,13 @@ func (ctx Context) add(d, e Decimal, dp, ep *decParts) Decimal {
 			dp.exp -= sep
 			ans.add64(dp, ep)
 		default:
-			dp.significand.mul64(&dp.significand, tenToThe[17])
+			dp.significand.mul64(&dp.significand, 100_000_000_000_000_000) // 10¹⁷
 			dp.exp -= 17
-			ep.significand.mul64(&ep.significand, tenToThe[17-sep])
+			ep.significand.umul64(ep.significand.lo, tenToThe[17-sep])
 			ep.exp -= 17 - sep
 			ans.add128V2(dp, ep)
 		}
-		rndStatus = ans.roundToLo()
+		rndStatus := ans.roundToLo()
 		if ans.exp < -expOffset {
 			rndStatus = ans.rescale(-expOffset)
 		}
