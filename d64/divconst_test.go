@@ -70,7 +70,7 @@ var globalUint64 uint64
 func BenchmarkDiv64_10_16(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		hi := uint64(i * 5421010862428)
+		hi := uint64(i) * uint64(5421010862428)
 		lo := uint64(i)
 		globalUint64 = u128_div_10_16(hi, lo)
 	}
