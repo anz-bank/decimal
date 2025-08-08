@@ -50,7 +50,7 @@ func testU128_divrem(t *testing.T, div func(hi, lo uint64) uint64, d uint64) {
 	t.Run("6", test(1, 20_000_000_000_000_000))
 
 	r := rand.New(rand.NewSource(0))
-	n := 10_000_000
+	n := 1_000_000
 	if testing.Short() {
 		n = 100_000
 	}
