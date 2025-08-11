@@ -9,12 +9,12 @@ import "fmt"
 // It uses the binary representation method.
 // Decimal is intentionally a struct to ensure users don't accidentally cast it to uint64.
 type Decimal struct {
+	bits        uint64
 	s           string
 	fl          flavor
 	sign        int8
 	exp         int16
 	significand uint64
-	bits        uint64
 }
 
 func newDec(bits uint64) Decimal {

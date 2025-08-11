@@ -13,6 +13,8 @@ func checkDecimalBinOp(
 	expected func(a, b int64) int64,
 	actual func(a, b Decimal) Decimal,
 ) {
+	t.Helper()
+
 	for i := int64(-100); i <= 100; i++ {
 		a := NewFromInt64(i)
 		for j := int64(-100); j <= 100; j++ {
@@ -492,6 +494,32 @@ func benchmarkDecimalData() []Decimal {
 		NewFromInt64(42),
 		MustParse("9945678e100"),
 		NewFromInt64(1234567),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
+		NewFromInt64(-42),
 		NewFromInt64(-42),
 		MustParse("3456789e-120"),
 	}

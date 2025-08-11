@@ -61,9 +61,9 @@ func (a *uint128T) sub(x, y *uint128T) *uint128T {
 func (a *uint128T) divrem64(x *uint128T, d uint64) uint64 {
 	var r uint64
 	if x.hi == 0 {
-		a.lo, r = x.lo/d, x.lo%d
+		a.hi, a.lo, r = 0, x.lo/d, x.lo%d
 	} else {
-		a.hi, r = bits.Div64(0, x.hi, d)
+		a.hi, r = x.hi/d, x.hi%d
 		a.lo, r = bits.Div64(r, x.lo, d)
 	}
 	return r
@@ -71,14 +71,69 @@ func (a *uint128T) divrem64(x *uint128T, d uint64) uint64 {
 
 // divbase divides a by [decimalBase].
 func (a *uint128T) divbase(x *uint128T) *uint128T {
-	a.divrem64(x, decimalBase)
+	a.hi, a.lo = 0, u128_div_10_15(x.hi, x.lo)
 	return a
+}
+
+// Fast division by 10**15
+func u128_div_10_15(hi, lo uint64) uint64 {
+	if hi == 0 {
+		return lo / 1_000_000_000_000_000
+	}
+	const M = 5575186299632655785383929569
+	return u128_div(hi, lo, M/(1<<64), M%(1<<64))
 }
 
 // div10base divides a by 10*[decimalBase].
 func (a *uint128T) div10base(x *uint128T) *uint128T {
-	a.divrem64(x, 10*decimalBase)
+	a.hi, a.lo = 0, u128_div_10_16(x.hi, x.lo)
 	return a
+}
+
+// Fast division by 10**16
+func u128_div_10_16(hi, lo uint64) (q uint64) {
+	if hi == 0 {
+		return lo / 10_000_000_000_000_000
+	}
+	const M = 557518629963265578538392957
+	return u128_div(hi, lo, M/(1<<64), M%(1<<64))
+}
+
+// u128_div supports u128_div_10_15 and u128_div_10_16. It is not validated for any other value of M.
+// M is computed with the following Python code from Hacker's Delight §10-15 https://doc.lagout.org/security/Hackers%20Delight.pdf:
+//
+//	def magicgu(nmax, d):
+//	   from math import log
+//	   nc = (nmax//d)*d - 1
+//	   nbits = int(log(nmax, 2)) + 1
+//	   for p in range(0, 2*nbits + 1):
+//	       if 2**p > nc*(d - 1 - (2**p - 1)%d):
+//	           m = (2**p + d - 1 - (2**p - 1)%d)//d
+//	           return (m, p)
+//	   raise ValueError("Can't find p, something is wrong.")
+//
+//	>>> magicgu((10**32-1)//2**15, 5**15)
+//	(5575186299632655785383929569, 127)
+//	>>> magicgu((10**32-1)//2**16, 5**16)
+//	(557518629963265578538392957, 126)
+func u128_div(hi, lo, Mhi, Mlo uint64) uint64 {
+	// Values of M are chosen such that:
+	//  - n/10**15 = M*(n/2¹⁵)>>127
+	//  - n/10**16 = M*(n/2¹⁶)>>126
+	// Dividing by 2¹⁴, both become M*(n/2¹⁴)>>128, placing the result in the high word.
+	lo = hi<<50 | lo>>14
+	hi >>= 14
+
+	// c:b:_ = hi:lo * Mhi:Mlo
+	b1, _ := bits.Mul64(lo, Mlo)
+	c2, b2 := bits.Mul64(hi, Mlo)
+	c3, b3 := bits.Mul64(lo, Mhi)
+	c4 := hi * Mhi
+
+	b, carry1 := bits.Add64(b1, b2, 0)
+	_, carry2 := bits.Add64(b, b3, 0)
+
+	return carry1 + carry2 + c2 + c3 + c4
 }
 
 func (a *uint128T) lt(b *uint128T) bool {

@@ -450,7 +450,7 @@ func (d Decimal) Signbit() bool {
 
 func (d Decimal) ScaleB(e Decimal) Decimal {
 	var dp, ep decParts
-	if nan, is := checkNan(d, e, &dp, &ep); is {
+	if nan, is := checkNan2(d, e, &dp, &ep); is {
 		return nan
 	}
 
@@ -534,23 +534,39 @@ func (d Decimal) Class() string {
 	return "+Normal-Normal"[7*dp.sign : 7*(dp.sign+1)]
 }
 
-func checkNan(d, e Decimal, dp, ep *decParts) (Decimal, bool) {
+func checkFinite2(d, e Decimal, dp, ep *decParts) bool {
+	if d.isFinite() && e.isFinite() {
+		dp.fl = d.flavor()
+		ep.fl = e.flavor()
+		dp.unpackV2(d)
+		ep.unpackV2(e)
+		return true
+	}
+	return false
+}
+
+func checkNan2(d, e Decimal, dp, ep *decParts) (Decimal, bool) {
 	dp.fl = d.flavor()
 	ep.fl = e.flavor()
 	switch {
 	case dp.fl == flSNaN:
-		return d, true
 	case ep.fl == flSNaN:
-		return e, true
+		d = e
 	case dp.fl == flQNaN:
-		return d, true
 	case ep.fl == flQNaN:
-		return e, true
+		d = e
 	default:
 		dp.unpackV2(d)
 		ep.unpackV2(e)
 		return Decimal{}, false
 	}
+	return d.qNan(), true
+}
+
+func (d Decimal) qNan() Decimal {
+	// Remove the exponent bits from the NaN.
+	// This is a hack to make sure that the NaN is not interpreted as a normal number.
+	return newDec(d.bits &^ (0xff << 50))
 }
 
 // checkNan3 returns the decimal NaN that is to be propogated and true else first decimal and false
@@ -560,21 +576,20 @@ func checkNan3(d, e, f Decimal, dp, ep, fp *decParts) (Decimal, bool) {
 	fp.fl = f.flavor()
 	switch {
 	case dp.fl == flSNaN:
-		return d, true
 	case ep.fl == flSNaN:
-		return e, true
+		d = e
 	case fp.fl == flSNaN:
-		return f, true
+		d = f
 	case dp.fl == flQNaN:
-		return d, true
 	case ep.fl == flQNaN:
-		return e, true
+		d = e
 	case fp.fl == flQNaN:
-		return f, true
+		d = f
 	default:
 		dp.unpackV2(d)
 		ep.unpackV2(e)
 		fp.unpackV2(f)
 		return Decimal{}, false
 	}
+	return d.qNan(), true
 }
